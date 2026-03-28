@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom'
-import { Wallet, BarChart2, LogOut, List } from 'lucide-react'
+import { Wallet, BarChart2, LogOut, List, Tag } from 'lucide-react'
 import { useAuthStore } from '@/store/authStore'
 
 export function DashboardPage() {
@@ -45,6 +45,13 @@ export function DashboardPage() {
           >
             <List size={24} className="text-primary" />
             <span className="text-sm font-medium">Транзакции</span>
+          </Link>
+          <Link
+            to="/tags"
+            className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted"
+          >
+            <Tag size={24} className="text-primary" />
+            <span className="text-sm font-medium">Теги</span>
           </Link>
           <div className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 opacity-40">
             <BarChart2 size={24} className="text-muted-foreground" />

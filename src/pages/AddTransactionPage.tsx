@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
 import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
+import { TagInput } from '@/components/TagInput'
 import { cn } from '@/lib/utils'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
@@ -44,6 +45,7 @@ export function AddTransactionPage() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(todayISO())
   const [includeInBalance, setIncludeInBalance] = useState(true)
+  const [tags, setTags] = useState<string[]>([])
 
   // Shares
   const [customShares, setCustomShares] = useState(false)
@@ -127,6 +129,7 @@ export function AddTransactionPage() {
       ...(categoryId ? { categoryId } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
       ...(type === 'transfer' && toAccountId ? { toAccountId } : {}),
+      ...(tags.length > 0 ? { tags } : {}),
     }
 
     if (isShared && members.length > 1) {
@@ -271,6 +274,12 @@ export function AddTransactionPage() {
               placeholder="Необязательно"
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Теги</label>
+            <TagInput value={tags} onChange={setTags} />
           </div>
 
           {/* Include in balance */}

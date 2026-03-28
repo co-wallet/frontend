@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type UpdateTransactionDto } from '@/api/transactions'
 import { accountsApi, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
+import { TagInput } from '@/components/TagInput'
 
 function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
   const result: CategoryNode[] = []
@@ -31,6 +32,7 @@ export function EditTransactionPage() {
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
   const [includeInBalance, setIncludeInBalance] = useState(true)
+  const [tags, setTags] = useState<string[]>([])
   const [customShares, setCustomShares] = useState(false)
   const [shareAmounts, setShareAmounts] = useState<Record<string, string>>({})
   const [initialized, setInitialized] = useState(false)
@@ -71,6 +73,7 @@ export function EditTransactionPage() {
     setDescription(tx.description ?? '')
     setDate(tx.date.slice(0, 10))
     setIncludeInBalance(tx.includeInBalance)
+    setTags(tx.tags?.map((t) => t.name) ?? [])
 
     if (tx.shares.length > 0) {
       const hasCustom = tx.shares.some((s) => s.isCustom)
@@ -123,6 +126,7 @@ export function EditTransactionPage() {
       description: description.trim() || null,
       date: date + 'T00:00:00Z',
       includeInBalance,
+      tags,
     }
 
     if (isShared && members.length > 1) {
@@ -219,6 +223,12 @@ export function EditTransactionPage() {
               placeholder="Необязательно"
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
+          </div>
+
+          {/* Tags */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Теги</label>
+            <TagInput value={tags} onChange={setTags} />
           </div>
 
           {/* Include in balance */}

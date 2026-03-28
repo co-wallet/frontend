@@ -9,6 +9,7 @@ import CategoriesPage from '@/pages/CategoriesPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
 import { AddTransactionPage } from '@/pages/AddTransactionPage'
 import { EditTransactionPage } from '@/pages/EditTransactionPage'
+import { TagsPage } from '@/pages/TagsPage'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
@@ -29,6 +30,7 @@ function App() {
           <Route path="/transactions" element={<TransactionsPage />} />
           <Route path="/transactions/add" element={<AddTransactionPage />} />
           <Route path="/transactions/:txID/edit" element={<EditTransactionPage />} />
+          <Route path="/tags" element={<TagsPage />} />
         </Route>
 
         {/* Default */}

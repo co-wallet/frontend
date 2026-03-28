@@ -8,6 +8,11 @@ export interface TransactionShare {
   isCustom: boolean
 }
 
+export interface TransactionTag {
+  id: string
+  name: string
+}
+
 export interface Transaction {
   id: string
   accountId: string
@@ -23,6 +28,7 @@ export interface Transaction {
   createdBy: string
   createdAt: string
   shares: TransactionShare[]
+  tags: TransactionTag[]
 }
 
 export interface CreateTransactionDto {
@@ -36,6 +42,7 @@ export interface CreateTransactionDto {
   date: string
   includeInBalance: boolean
   shares?: { userId: string; amount: number }[]
+  tags?: string[]
 }
 
 export interface UpdateTransactionDto {
@@ -45,6 +52,7 @@ export interface UpdateTransactionDto {
   date?: string
   includeInBalance?: boolean
   shares?: { userId: string; amount: number }[]
+  tags?: string[]
 }
 
 export interface TransactionFilter {
