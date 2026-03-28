@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 
@@ -72,10 +72,7 @@ export function LoginPage() {
         </form>
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          Нет аккаунта?{' '}
-          <Link to="/register" className="text-primary font-medium hover:underline">
-            Зарегистрироваться
-          </Link>
+          Доступ предоставляется по приглашению администратора.
         </p>
       </div>
     </div>

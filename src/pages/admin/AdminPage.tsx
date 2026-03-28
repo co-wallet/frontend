@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Users, Coins, ArrowLeft } from 'lucide-react'
+import { Users, Coins, ArrowLeft, Mail } from 'lucide-react'
 
 export function AdminPage() {
   return (
@@ -21,8 +21,15 @@ export function AdminPage() {
             <span className="text-sm font-medium">Пользователи</span>
           </Link>
           <Link
-            to="/admin/currencies"
+            to="/admin/invites"
             className="bg-card rounded-lg border p-5 flex flex-col items-center gap-3 hover:bg-muted transition-colors"
+          >
+            <Mail size={28} className="text-primary" />
+            <span className="text-sm font-medium">Приглашения</span>
+          </Link>
+          <Link
+            to="/admin/currencies"
+            className="bg-card rounded-lg border p-5 flex flex-col items-center gap-3 hover:bg-muted transition-colors col-span-2"
           >
             <Coins size={28} className="text-primary" />
             <span className="text-sm font-medium">Валюты</span>

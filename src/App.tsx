@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/pages/LoginPage'
-import { RegisterPage } from '@/pages/RegisterPage'
+import { InvitePage } from '@/pages/InvitePage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { AccountsPage } from '@/pages/AccountsPage'
 import { AccountDetailPage } from '@/pages/AccountDetailPage'
@@ -13,6 +13,7 @@ import { TagsPage } from '@/pages/TagsPage'
 import { AdminPage } from '@/pages/admin/AdminPage'
 import { AdminUsersPage } from '@/pages/admin/AdminUsersPage'
 import { AdminCurrenciesPage } from '@/pages/admin/AdminCurrenciesPage'
+import { AdminInvitesPage } from '@/pages/admin/AdminInvitesPage'
 import { ProtectedRoute, AdminRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
@@ -21,7 +22,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/invite/:token" element={<InvitePage />} />
 
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
@@ -40,6 +41,7 @@ function App() {
             <Route path="/admin" element={<AdminPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/currencies" element={<AdminCurrenciesPage />} />
+            <Route path="/admin/invites" element={<AdminInvitesPage />} />
           </Route>
         </Route>
 
