@@ -72,6 +72,15 @@ function TransactionCard({
           {account?.name ?? tx.accountId}
           {toAccount ? ` → ${toAccount.name}` : ''}
         </p>
+        {tx.tags?.length > 0 && (
+          <div className="flex gap-1 mt-1 flex-wrap">
+            {tx.tags.map((t) => (
+              <span key={t.id} className="text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
+                #{t.name}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         <span className={`text-sm font-semibold ${amountColor}`}>
