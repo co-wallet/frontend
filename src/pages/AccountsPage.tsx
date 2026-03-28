@@ -152,7 +152,15 @@ function AccountForm({
   )
 }
 
-function AccountCard({ account, onDelete }: { account: Account; onDelete: (id: string) => void }) {
+function AccountCard({
+  account,
+  onEdit,
+  onDelete,
+}: {
+  account: Account
+  onEdit: (a: Account) => void
+  onDelete: (id: string) => void
+}) {
   const user = useAuthStore((s) => s.user)
   const isOwner = account.ownerId === user?.id
 
@@ -177,12 +185,12 @@ function AccountCard({ account, onDelete }: { account: Account; onDelete: (id: s
               <Users size={16} />
             </Link>
           )}
-          <Link
-            to={`/accounts/${account.id}/edit`}
+          <button
+            onClick={() => onEdit(account)}
             className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
           >
             <Pencil size={16} />
-          </Link>
+          </button>
           {isOwner && (
             <button
               onClick={() => onDelete(account.id)}
@@ -202,7 +210,8 @@ function AccountCard({ account, onDelete }: { account: Account; onDelete: (id: s
 
 export function AccountsPage() {
   const qc = useQueryClient()
-  const [showForm, setShowForm] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [editingAccount, setEditingAccount] = useState<Account | null>(null)
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts'],
@@ -213,7 +222,16 @@ export function AccountsPage() {
     mutationFn: accountsApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
-      setShowForm(false)
+      setShowCreateForm(false)
+    },
+  })
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
+      accountsApi.update(id, { name: dto.name, icon: dto.icon, includeInBalance: dto.includeInBalance }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      setEditingAccount(null)
     },
   })
 
@@ -227,26 +245,38 @@ export function AccountsPage() {
       <div className="max-w-lg mx-auto p-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground text-sm">
+            <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
               ← Назад
             </Link>
             <h1 className="text-xl font-bold">Счета</h1>
           </div>
           <button
-            onClick={() => setShowForm(true)}
+            onClick={() => { setShowCreateForm(true); setEditingAccount(null) }}
             className="flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
           >
             <Plus size={16} /> Добавить
           </button>
         </div>
 
-        {showForm && (
+        {showCreateForm && (
           <div className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Новый счёт</h2>
             <AccountForm
               onSubmit={(dto) => createMutation.mutate(dto)}
-              onCancel={() => setShowForm(false)}
+              onCancel={() => setShowCreateForm(false)}
               loading={createMutation.isPending}
+            />
+          </div>
+        )}
+
+        {editingAccount && (
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <h2 className="font-semibold mb-4">Редактировать счёт</h2>
+            <AccountForm
+              initial={editingAccount}
+              onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
+              onCancel={() => setEditingAccount(null)}
+              loading={updateMutation.isPending}
             />
           </div>
         )}
@@ -264,6 +294,7 @@ export function AccountsPage() {
               <AccountCard
                 key={a.id}
                 account={a}
+                onEdit={(a) => { setEditingAccount(a); setShowCreateForm(false) }}
                 onDelete={(id) => {
                   if (confirm('Удалить счёт?')) deleteMutation.mutate(id)
                 }}

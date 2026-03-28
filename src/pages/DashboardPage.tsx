@@ -52,7 +52,8 @@ export function DashboardPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [displayCurrency, setDisplayCurrency] = useState('RUB')
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
-  const params = periodParams(period)
+  const baseParams = periodParams(period)
+  const params: AnalyticsParams = { ...baseParams, currency: displayCurrency }
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
@@ -61,11 +62,6 @@ export function DashboardPage() {
   })
 
   const selectedCurrency: Currency | undefined = currencies.find((c) => c.code === displayCurrency)
-
-  // Convert amount from USD-based analytics to display currency.
-  // Analytics returns amounts in the account's native currency (mixed).
-  // We keep it simple: show values as-is since conversion requires per-tx currency info.
-  // The currency switcher is here for UI completeness and future use.
 
   const { data: summary } = useQuery({
     queryKey: ['analytics', 'summary', params],
