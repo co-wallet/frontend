@@ -1,12 +1,24 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { LoginPage } from '@/pages/LoginPage'
+import { RegisterPage } from '@/pages/RegisterPage'
+import { DashboardPage } from '@/pages/DashboardPage'
+import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
-        <Route path="/dashboard" element={<div>Dashboard — coming soon</div>} />
-        <Route path="/login" element={<div>Login — coming soon</div>} />
+        {/* Public */}
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+
+        {/* Protected */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+        </Route>
+
+        {/* Default */}
+        <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </BrowserRouter>
   )

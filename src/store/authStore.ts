@@ -1,35 +1,28 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-
-interface User {
-  id: string
-  username: string
-  email: string
-  defaultCurrency: string
-  isAdmin: boolean
-}
+import type { User } from '@/api/auth'
 
 interface AuthState {
   token: string | null
+  refreshToken: string | null
   user: User | null
-  setAuth: (token: string, user: User) => void
+  setAuth: (token: string, refreshToken: string, user: User) => void
   logout: () => void
+  isAuthenticated: () => boolean
 }
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       token: null,
+      refreshToken: null,
       user: null,
-      setAuth: (token, user) => set({ token, user }),
-      logout: () => {
-        localStorage.removeItem('token')
-        set({ token: null, user: null })
-      },
+      setAuth: (token, refreshToken, user) => set({ token, refreshToken, user }),
+      logout: () => set({ token: null, refreshToken: null, user: null }),
+      isAuthenticated: () => !!get().token,
     }),
     {
       name: 'auth-storage',
-      partialize: (state) => ({ token: state.token, user: state.user }),
     },
   ),
 )
