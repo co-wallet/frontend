@@ -40,8 +40,9 @@ function periodParams(period: Period): AnalyticsParams {
   return { date_from: fmt(from), date_to: today }
 }
 
-function formatAmount(n: number): string {
-  return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+function formatAmount(n: number, symbol?: string): string {
+  const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+  return symbol ? `${symbol} ${num}` : num
 }
 
 export function DashboardPage() {
@@ -62,6 +63,7 @@ export function DashboardPage() {
   })
 
   const selectedCurrency: Currency | undefined = currencies.find((c) => c.code === displayCurrency)
+  const sym = selectedCurrency?.symbol ?? displayCurrency
 
   const { data: summary } = useQuery({
     queryKey: ['analytics', 'summary', params],
@@ -150,21 +152,21 @@ export function DashboardPage() {
               <Scale size={14} />
               <span className="text-xs">Баланс</span>
             </div>
-            <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0)}</p>
+            <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0, sym)}</p>
           </div>
           <div className="bg-card rounded-lg border p-3">
             <div className="flex items-center gap-1 text-red-500 mb-1">
               <TrendingDown size={14} />
               <span className="text-xs">Расходы</span>
             </div>
-            <p className="text-sm font-semibold text-red-600 truncate">{formatAmount(summary?.expenses ?? 0)}</p>
+            <p className="text-sm font-semibold text-red-600 truncate">{formatAmount(summary?.expenses ?? 0, sym)}</p>
           </div>
           <div className="bg-card rounded-lg border p-3">
             <div className="flex items-center gap-1 text-green-600 mb-1">
               <TrendingUp size={14} />
               <span className="text-xs">Доходы</span>
             </div>
-            <p className="text-sm font-semibold text-green-700 truncate">{formatAmount(summary?.income ?? 0)}</p>
+            <p className="text-sm font-semibold text-green-700 truncate">{formatAmount(summary?.income ?? 0, sym)}</p>
           </div>
         </div>
 
@@ -188,7 +190,7 @@ export function DashboardPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => formatAmount(value)}
+                  formatter={(value: number) => formatAmount(value, sym)}
                   labelFormatter={(label) => String(label)}
                 />
               </PieChart>
@@ -205,7 +207,7 @@ export function DashboardPage() {
                       {s.icon ? `${s.icon} ` : ''}{s.categoryName}
                     </span>
                   </div>
-                  <span className="font-medium">{formatAmount(s.amount)}</span>
+                  <span className="font-medium">{formatAmount(s.amount, sym)}</span>
                 </div>
               ))}
             </div>
@@ -220,7 +222,7 @@ export function DashboardPage() {
               {byTag.slice(0, 6).map((s) => (
                 <div key={s.tagId} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">#{s.tagName}</span>
-                  <span className="font-medium">{formatAmount(s.amount)}</span>
+                  <span className="font-medium">{formatAmount(s.amount, sym)}</span>
                 </div>
               ))}
             </div>
