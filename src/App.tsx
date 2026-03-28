@@ -5,6 +5,7 @@ import { DashboardPage } from '@/pages/DashboardPage'
 import { AccountsPage } from '@/pages/AccountsPage'
 import { AccountDetailPage } from '@/pages/AccountDetailPage'
 import { AccountMembersPage } from '@/pages/AccountMembersPage'
+import CategoriesPage from '@/pages/CategoriesPage'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
           <Route path="/accounts" element={<AccountsPage />} />
           <Route path="/accounts/:accountID" element={<AccountDetailPage />} />
           <Route path="/accounts/:accountID/members" element={<AccountMembersPage />} />
+          <Route path="/categories" element={<CategoriesPage />} />
         </Route>
 
         {/* Default */}
