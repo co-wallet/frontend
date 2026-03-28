@@ -8,6 +8,18 @@ import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
 const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
+function fmtCurrency(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`
+  }
+}
+
 function AccountForm({
   initial,
   defaultCurrency,
@@ -203,6 +215,41 @@ function AccountCard({
           )}
         </div>
       </div>
+      {account.balance && (
+        <div className="mt-3 pt-3 border-t border-border">
+          {account.type === 'shared' ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Мой баланс</p>
+                <p className="font-medium">{fmtCurrency(account.balance.native, account.currency)}</p>
+                {account.balance.displayCurrency !== account.currency && (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Всего на счёте</p>
+                <p className="font-medium">{fmtCurrency(account.balance.totalNative, account.currency)}</p>
+                {account.balance.displayCurrency !== account.currency && (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {fmtCurrency(account.balance.totalDisplay, account.balance.displayCurrency)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm">
+              <p className="font-medium">{fmtCurrency(account.balance.native, account.currency)}</p>
+              {account.balance.displayCurrency !== account.currency && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {!account.includeInBalance && (
         <p className="mt-2 text-xs text-muted-foreground">Не учитывается в балансе</p>
       )}
@@ -218,8 +265,8 @@ export function AccountsPage() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
 
   const { data: accounts = [], isLoading } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: accountsApi.list,
+    queryKey: ['accounts', defaultCurrency],
+    queryFn: () => accountsApi.list(defaultCurrency),
   })
 
   const createMutation = useMutation({

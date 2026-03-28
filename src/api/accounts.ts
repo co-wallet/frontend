@@ -9,6 +9,14 @@ export interface AccountMember {
   defaultShare: number
 }
 
+export interface AccountBalance {
+  native: number           // user's share in account's currency
+  display: number          // user's share in display currency
+  totalNative: number      // all-member total in account's currency
+  totalDisplay: number     // all-member total in display currency
+  displayCurrency: string
+}
+
 export interface Account {
   id: string
   ownerId: string
@@ -20,6 +28,7 @@ export interface Account {
   initialBalance: number
   initialBalanceDate: string | null
   members?: AccountMember[]
+  balance?: AccountBalance
   createdAt: string
   updatedAt: string
 }
@@ -41,8 +50,10 @@ export interface UpdateAccountDto {
 }
 
 export const accountsApi = {
-  list: async (): Promise<Account[]> => {
-    const { data } = await apiClient.get<Account[]>('/accounts')
+  list: async (currency?: string): Promise<Account[]> => {
+    const { data } = await apiClient.get<Account[]>('/accounts', {
+      params: currency ? { currency } : {},
+    })
     return data
   },
 
