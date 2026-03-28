@@ -1,4 +1,4 @@
-import api from './axios'
+import { apiClient as api } from './client'
 
 export interface AnalyticsSummary {
   balance: number
