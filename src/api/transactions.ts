@@ -58,6 +58,8 @@ export interface UpdateTransactionDto {
 export interface TransactionFilter {
   accountIds?: string[]
   categoryIds?: string[]
+  tagIds?: string[]
+  tagMode?: 'or' | 'and'
   dateFrom?: string
   dateTo?: string
   page?: number
@@ -69,6 +71,8 @@ export const transactionsApi = {
     const params: Record<string, string> = {}
     if (filter.accountIds?.length) params.account_ids = filter.accountIds.join(',')
     if (filter.categoryIds?.length) params.category_ids = filter.categoryIds.join(',')
+    if (filter.tagIds?.length) params.tag_ids = filter.tagIds.join(',')
+    if (filter.tagMode === 'and') params.tag_mode = 'and'
     if (filter.dateFrom) params.date_from = filter.dateFrom
     if (filter.dateTo) params.date_to = filter.dateTo
     if (filter.page) params.page = String(filter.page)

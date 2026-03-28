@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil } from 'lucide-react'
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
 import { accountsApi, type Account } from '@/api/accounts'
+import { FilterSheet } from '@/components/FilterSheet'
 
 const TYPE_LABELS: Record<string, string> = {
   expense: 'Расход',
@@ -106,9 +107,6 @@ function TransactionCard({
 export function TransactionsPage() {
   const qc = useQueryClient()
   const [filter, setFilter] = useState<TransactionFilter>({})
-  const [showFilters, setShowFilters] = useState(false)
-  const [dateFrom, setDateFrom] = useState('')
-  const [dateTo, setDateTo] = useState('')
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
@@ -125,30 +123,14 @@ export function TransactionsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
   })
 
-  function applyFilters() {
-    setFilter({
-      ...(dateFrom ? { dateFrom } : {}),
-      ...(dateTo ? { dateTo } : {}),
-    })
-    setShowFilters(false)
-  }
-
-  function clearFilters() {
-    setDateFrom('')
-    setDateTo('')
-    setFilter({})
-    setShowFilters(false)
-  }
-
   const grouped = groupByDate(transactions)
-  const hasFilters = !!(filter.dateFrom || filter.dateTo)
 
   return (
     <div className="min-h-screen bg-muted">
       <div className="max-w-lg mx-auto p-4">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground text-sm">
+            <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
               ← Назад
             </Link>
             <h1 className="text-xl font-bold">Транзакции</h1>
@@ -161,53 +143,10 @@ export function TransactionsPage() {
           </Link>
         </div>
 
-        {/* Filter toggle */}
-        <div className="flex items-center gap-2 mb-4">
-          <button
-            onClick={() => setShowFilters((v) => !v)}
-            className={`text-sm px-3 py-1.5 rounded-md border ${
-              hasFilters ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border text-foreground'
-            }`}
-          >
-            Фильтры {hasFilters ? '●' : ''}
-          </button>
-          {hasFilters && (
-            <button onClick={clearFilters} className="text-sm text-muted-foreground hover:text-foreground">
-              Сбросить
-            </button>
-          )}
+        {/* Filter */}
+        <div className="mb-4">
+          <FilterSheet value={filter} onChange={setFilter} />
         </div>
-
-        {showFilters && (
-          <div className="bg-card rounded-lg border p-4 mb-4 space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium mb-1 text-muted-foreground">С даты</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-medium mb-1 text-muted-foreground">По дату</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-            <button
-              onClick={applyFilters}
-              className="w-full rounded-md bg-primary text-primary-foreground py-2 text-sm font-medium"
-            >
-              Применить
-            </button>
-          </div>
-        )}
 
         {isLoading ? (
           <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
