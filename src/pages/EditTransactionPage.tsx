@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type UpdateTransactionDto } from '@/api/transactions'
@@ -33,6 +33,7 @@ export function EditTransactionPage() {
   const [date, setDate] = useState('')
   const [includeInBalance, setIncludeInBalance] = useState(true)
   const [tags, setTags] = useState<string[]>([])
+  const pendingTagRef = useRef('')
   const [customShares, setCustomShares] = useState(false)
   const [shareAmounts, setShareAmounts] = useState<Record<string, string>>({})
   const [initialized, setInitialized] = useState(false)
@@ -120,13 +121,18 @@ export function EditTransactionPage() {
     e.preventDefault()
     if (!sharesValid) return
 
+    const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
+    const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
+      ? [...tags, pendingTrimmed]
+      : tags
+
     const dto: UpdateTransactionDto = {
       amount: totalAmount,
       categoryId: categoryId || null,
       description: description.trim() || null,
       date: date + 'T00:00:00Z',
       includeInBalance,
-      tags,
+      tags: allTags,
     }
 
     if (isShared && members.length > 1) {
@@ -228,7 +234,7 @@ export function EditTransactionPage() {
           {/* Tags */}
           <div>
             <label className="block text-sm font-medium mb-1">Теги</label>
-            <TagInput value={tags} onChange={setTags} />
+            <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
           </div>
 
           {/* Include in balance */}
