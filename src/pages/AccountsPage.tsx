@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Wallet, Users, Trash2, Pencil } from 'lucide-react'
 import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts'
+import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
-
-const CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'CNY']
 const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
 function AccountForm({
@@ -26,6 +25,12 @@ function AccountForm({
   const [icon, setIcon] = useState(initial?.icon ?? '💳')
   const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
   const [initialBalance, setInitialBalance] = useState(initial?.initialBalance ?? 0)
+
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: currenciesApi.list,
+    staleTime: 60_000,
+  })
 
   return (
     <form
@@ -93,9 +98,16 @@ function AccountForm({
           onChange={(e) => setCurrency(e.target.value)}
           className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
         >
-          {CURRENCIES.map((c) => (
-            <option key={c} value={c}>{c}</option>
-          ))}
+          {currencies.length > 0
+            ? currencies.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
+                </option>
+              ))
+            : ['RUB', 'USD', 'EUR', 'GBP', 'CNY'].map((c) => (
+                <option key={c} value={c}>{c}</option>
+              ))
+          }
         </select>
       </div>
 

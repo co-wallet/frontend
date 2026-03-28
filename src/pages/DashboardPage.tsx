@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList } from 'lucide-react'
+import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
+import { currenciesApi, type Currency } from '@/api/currencies'
 
 type Period = 'month' | 'quarter' | 'year'
 
@@ -49,7 +50,22 @@ export function DashboardPage() {
   const navigate = useNavigate()
 
   const [period, setPeriod] = useState<Period>('month')
+  const [displayCurrency, setDisplayCurrency] = useState('RUB')
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const params = periodParams(period)
+
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: currenciesApi.list,
+    staleTime: 60_000,
+  })
+
+  const selectedCurrency: Currency | undefined = currencies.find((c) => c.code === displayCurrency)
+
+  // Convert amount from USD-based analytics to display currency.
+  // Analytics returns amounts in the account's native currency (mixed).
+  // We keep it simple: show values as-is since conversion requires per-tx currency info.
+  // The currency switcher is here for UI completeness and future use.
 
   const { data: summary } = useQuery({
     queryKey: ['analytics', 'summary', params],
@@ -79,12 +95,41 @@ export function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">co-wallet</h1>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <LogOut size={16} /> Выйти
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Currency picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowCurrencyPicker((v) => !v)}
+                className="flex items-center gap-1 text-sm font-medium border rounded-md px-2 py-1 hover:bg-muted"
+              >
+                {selectedCurrency?.symbol ?? ''} {displayCurrency}
+                <ChevronDown size={12} />
+              </button>
+              {showCurrencyPicker && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowCurrencyPicker(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-20 bg-card border rounded-lg shadow-lg w-48 max-h-64 overflow-y-auto">
+                    {currencies.map((c) => (
+                      <button
+                        key={c.code}
+                        onClick={() => { setDisplayCurrency(c.code); setShowCurrencyPicker(false) }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between ${c.code === displayCurrency ? 'text-primary font-medium' : ''}`}
+                      >
+                        <span>{c.code}</span>
+                        <span className="text-xs text-muted-foreground">{c.symbol}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LogOut size={16} /> Выйти
+            </button>
+          </div>
         </div>
 
         {/* Period switcher */}
