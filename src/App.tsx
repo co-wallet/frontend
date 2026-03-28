@@ -10,7 +10,10 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { AddTransactionPage } from '@/pages/AddTransactionPage'
 import { EditTransactionPage } from '@/pages/EditTransactionPage'
 import { TagsPage } from '@/pages/TagsPage'
-import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
+import { AdminPage } from '@/pages/admin/AdminPage'
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage'
+import { AdminCurrenciesPage } from '@/pages/admin/AdminCurrenciesPage'
+import { ProtectedRoute, AdminRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
   return (
@@ -31,6 +34,13 @@ function App() {
           <Route path="/transactions/add" element={<AddTransactionPage />} />
           <Route path="/transactions/:txID/edit" element={<EditTransactionPage />} />
           <Route path="/tags" element={<TagsPage />} />
+
+          {/* Admin (requires isAdmin) */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/currencies" element={<AdminCurrenciesPage />} />
+          </Route>
         </Route>
 
         {/* Default */}

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown } from 'lucide-react'
+import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ShieldCheck } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
@@ -259,6 +259,15 @@ export function DashboardPage() {
             <LayoutList size={24} className="text-primary" />
             <span className="text-sm font-medium">Категории</span>
           </Link>
+          {user?.isAdmin && (
+            <Link
+              to="/admin"
+              className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted col-span-2"
+            >
+              <ShieldCheck size={24} className="text-primary" />
+              <span className="text-sm font-medium">Администрирование</span>
+            </Link>
+          )}
         </div>
 
         {/* Greeting */}
