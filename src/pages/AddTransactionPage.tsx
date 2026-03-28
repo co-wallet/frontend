@@ -6,6 +6,7 @@ import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
+import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
@@ -37,6 +38,7 @@ function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
 export function AddTransactionPage() {
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
   const [type, setType] = useState<TransactionType>('expense')
   const [accountId, setAccountId] = useState('')
@@ -136,7 +138,7 @@ export function AddTransactionPage() {
       accountId,
       type,
       amount: totalAmount,
-      currency: selectedAccount?.currency ?? 'RUB',
+      currency: selectedAccount?.currency ?? userDefaultCurrency,
       date: date + 'T00:00:00Z',
       includeInBalance,
       ...(categoryId ? { categoryId } : {}),
