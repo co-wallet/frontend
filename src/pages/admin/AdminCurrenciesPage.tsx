@@ -11,11 +11,16 @@ function AddCurrencyForm({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState('')
   const [symbol, setSymbol] = useState('')
   const [isActive, setIsActive] = useState(true)
+  const [apiError, setApiError] = useState<string | null>(null)
 
   const mutation = useMutation({
     mutationFn: () =>
       adminApi.createCurrency({ code: code.toUpperCase(), name, symbol: symbol || undefined, isActive }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['admin', 'currencies'] }); onClose() },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) => {
+      setApiError(err?.response?.data?.error ?? 'Ошибка при создании валюты')
+    },
   })
 
   return (
@@ -23,7 +28,7 @@ function AddCurrencyForm({ onClose }: { onClose: () => void }) {
       <h2 className="font-semibold mb-3">Новая валюта</h2>
       <form
         className="space-y-3"
-        onSubmit={(e) => { e.preventDefault(); mutation.mutate() }}
+        onSubmit={(e) => { e.preventDefault(); setApiError(null); mutation.mutate() }}
       >
         <div className="grid grid-cols-2 gap-2">
           <div>
@@ -67,6 +72,9 @@ function AddCurrencyForm({ onClose }: { onClose: () => void }) {
           />
           Активна
         </label>
+        {apiError && (
+          <p className="text-xs text-destructive bg-destructive/10 rounded-md px-3 py-2">{apiError}</p>
+        )}
         <div className="flex gap-2">
           <button
             type="button"
