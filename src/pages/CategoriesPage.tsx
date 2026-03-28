@@ -2,6 +2,22 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
 
+const EXPENSE_ICONS = [
+  '🛒', '🍔', '🍕', '☕', '🍺', '🍽️',
+  '🚗', '⛽', '🚌', '✈️', '🚕', '🚂',
+  '🏠', '💡', '📱', '💻', '🛠️', '🧹',
+  '👗', '👟', '💄', '🛍️', '👒', '⌚',
+  '💊', '🏥', '💉', '🧴', '🦷', '👓',
+  '🎬', '🎮', '🎵', '📚', '🏋️', '⚽',
+  '🐾', '🌿', '🎁', '✂️', '🧺', '📦',
+]
+
+const INCOME_ICONS = [
+  '💼', '💰', '💵', '💳', '📈', '🏦',
+  '🤝', '🎓', '👔', '🏢', '💹', '🪙',
+  '🏡', '🚀', '🎯', '🎪', '🎁', '🏆',
+]
+
 export default function CategoriesPage() {
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showForm, setShowForm] = useState(false);
@@ -124,13 +140,25 @@ export default function CategoriesPage() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
-              <input
-                type="text"
-                placeholder="Иконка (эмодзи или код)"
-                value={formData.icon}
-                onChange={e => setFormData(f => ({ ...f, icon: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Иконка</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(activeTab === 'expense' ? EXPENSE_ICONS : INCOME_ICONS).map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setFormData(f => ({ ...f, icon: f.icon === icon ? '' : icon }))}
+                      className={`w-9 h-9 rounded-lg border text-xl flex items-center justify-center transition-colors ${
+                        formData.icon === icon
+                          ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {!editingId && (
                 <select
                   value={formData.parentId}
