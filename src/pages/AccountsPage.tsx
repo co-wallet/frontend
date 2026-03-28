@@ -10,18 +10,20 @@ const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
 function AccountForm({
   initial,
+  defaultCurrency,
   onSubmit,
   onCancel,
   loading,
 }: {
   initial?: Partial<CreateAccountDto>
+  defaultCurrency: string
   onSubmit: (dto: CreateAccountDto) => void
   onCancel: () => void
   loading: boolean
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
-  const [currency, setCurrency] = useState(initial?.currency ?? 'RUB')
+  const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency)
   const [icon, setIcon] = useState(initial?.icon ?? '💳')
   const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
   const [initialBalance, setInitialBalance] = useState(initial?.initialBalance ?? 0)
@@ -210,6 +212,8 @@ function AccountCard({
 
 export function AccountsPage() {
   const qc = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const defaultCurrency = user?.defaultCurrency ?? 'USD'
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
 
@@ -262,6 +266,7 @@ export function AccountsPage() {
           <div className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Новый счёт</h2>
             <AccountForm
+              defaultCurrency={defaultCurrency}
               onSubmit={(dto) => createMutation.mutate(dto)}
               onCancel={() => setShowCreateForm(false)}
               loading={createMutation.isPending}
@@ -274,6 +279,7 @@ export function AccountsPage() {
             <h2 className="font-semibold mb-4">Редактировать счёт</h2>
             <AccountForm
               initial={editingAccount}
+              defaultCurrency={defaultCurrency}
               onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
               onCancel={() => setEditingAccount(null)}
               loading={updateMutation.isPending}

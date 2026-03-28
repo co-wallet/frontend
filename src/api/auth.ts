@@ -21,6 +21,12 @@ export interface LoginResponse {
   tokens: TokenPair
 }
 
+export interface UserSummary {
+  id: string
+  username: string
+  email: string
+}
+
 export const authApi = {
   register: async (username: string, email: string, password: string): Promise<User> => {
     const { data } = await apiClient.post<User>('/auth/register', { username, email, password })
@@ -39,6 +45,11 @@ export const authApi = {
 
   me: async (): Promise<User> => {
     const { data } = await apiClient.get<User>('/users/me')
+    return data
+  },
+
+  listUsers: async (): Promise<UserSummary[]> => {
+    const { data } = await apiClient.get<UserSummary[]>('/users')
     return data
   },
 

@@ -1,18 +1,21 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserPlus, Trash2 } from 'lucide-react'
 import { accountsApi } from '@/api/accounts'
+import { authApi, type UserSummary } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 
 export function AccountMembersPage() {
   const { accountID } = useParams<{ accountID: string }>()
   const qc = useQueryClient()
-  const user = useAuthStore((s) => s.user)
+  const currentUser = useAuthStore((s) => s.user)
 
-  const [username, setUsername] = useState('')
+  const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null)
+  const [search, setSearch] = useState('')
   const [share, setShare] = useState(0.5)
   const [showForm, setShowForm] = useState(false)
+  const [showDropdown, setShowDropdown] = useState(false)
   const [error, setError] = useState('')
 
   const { data: account } = useQuery({
@@ -25,11 +28,33 @@ export function AccountMembersPage() {
     queryFn: () => accountsApi.getMembers(accountID!),
   })
 
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: authApi.listUsers,
+    staleTime: 60_000,
+  })
+
+  // Exclude users already in the account
+  const memberIds = useMemo(() => new Set(members.map((m) => m.userId)), [members])
+  const availableUsers = useMemo(
+    () => allUsers.filter((u) => !memberIds.has(u.id)),
+    [allUsers, memberIds],
+  )
+  const filteredUsers = useMemo(() => {
+    const q = search.toLowerCase()
+    return q
+      ? availableUsers.filter(
+          (u) => u.username.toLowerCase().includes(q) || u.email.toLowerCase().includes(q),
+        )
+      : availableUsers
+  }, [availableUsers, search])
+
   const addMutation = useMutation({
-    mutationFn: () => accountsApi.addMember(accountID!, username, share),
+    mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, share),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
-      setUsername('')
+      setSelectedUser(null)
+      setSearch('')
       setShare(0.5)
       setShowForm(false)
       setError('')
@@ -50,7 +75,7 @@ export function AccountMembersPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['account-members', accountID] }),
   })
 
-  const isOwner = account?.ownerId === user?.id
+  const isOwner = account?.ownerId === currentUser?.id
 
   return (
     <div className="min-h-screen bg-muted">
@@ -114,19 +139,57 @@ export function AccountMembersPage() {
             ) : (
               <div className="bg-card rounded-lg border p-4">
                 <h3 className="font-medium mb-3 text-sm">Добавить участника</h3>
-                {error && (
-                  <p className="mb-2 text-xs text-destructive">{error}</p>
-                )}
+                {error && <p className="mb-2 text-xs text-destructive">{error}</p>}
                 <div className="space-y-3">
+
+                  {/* User picker */}
                   <div>
-                    <label className="text-xs font-medium block mb-1">Имя пользователя</label>
-                    <input
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)}
-                      placeholder="username"
-                      className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
+                    <label className="text-xs font-medium block mb-1">Пользователь</label>
+                    <div className="relative">
+                      <input
+                        value={selectedUser ? `${selectedUser.username} (${selectedUser.email})` : search}
+                        onChange={(e) => {
+                          setSearch(e.target.value)
+                          setSelectedUser(null)
+                          setShowDropdown(true)
+                        }}
+                        onFocus={() => setShowDropdown(true)}
+                        placeholder="Поиск по имени или email..."
+                        className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      {showDropdown && !selectedUser && filteredUsers.length > 0 && (
+                        <>
+                          <div
+                            className="fixed inset-0 z-10"
+                            onClick={() => setShowDropdown(false)}
+                          />
+                          <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-card border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                            {filteredUsers.map((u) => (
+                              <button
+                                key={u.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedUser(u)
+                                  setSearch('')
+                                  setShowDropdown(false)
+                                }}
+                                className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between"
+                              >
+                                <span className="font-medium">{u.username}</span>
+                                <span className="text-xs text-muted-foreground">{u.email}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                      {showDropdown && !selectedUser && search && filteredUsers.length === 0 && (
+                        <div className="absolute z-20 left-0 right-0 top-full mt-1 bg-card border rounded-lg shadow-lg px-3 py-2 text-xs text-muted-foreground">
+                          Пользователи не найдены
+                        </div>
+                      )}
+                    </div>
                   </div>
+
                   <div>
                     <label className="text-xs font-medium block mb-1">
                       Доля по умолчанию (0–1)
@@ -141,16 +204,17 @@ export function AccountMembersPage() {
                       className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
+
                   <div className="flex gap-2">
                     <button
-                      onClick={() => { setShowForm(false); setError('') }}
+                      onClick={() => { setShowForm(false); setError(''); setSelectedUser(null); setSearch('') }}
                       className="flex-1 rounded border py-2 text-sm hover:bg-muted"
                     >
                       Отмена
                     </button>
                     <button
                       onClick={() => addMutation.mutate()}
-                      disabled={addMutation.isPending || !username}
+                      disabled={addMutation.isPending || !selectedUser}
                       className="flex-1 rounded bg-primary text-primary-foreground py-2 text-sm disabled:opacity-50"
                     >
                       {addMutation.isPending ? 'Добавление...' : 'Добавить'}

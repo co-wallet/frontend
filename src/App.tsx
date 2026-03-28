@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/pages/LoginPage'
-import { RegisterPage } from '@/pages/RegisterPage'
+import { InvitePage } from '@/pages/InvitePage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { AccountsPage } from '@/pages/AccountsPage'
 import { AccountDetailPage } from '@/pages/AccountDetailPage'
@@ -10,7 +10,11 @@ import { TransactionsPage } from '@/pages/TransactionsPage'
 import { AddTransactionPage } from '@/pages/AddTransactionPage'
 import { EditTransactionPage } from '@/pages/EditTransactionPage'
 import { TagsPage } from '@/pages/TagsPage'
-import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
+import { AdminPage } from '@/pages/admin/AdminPage'
+import { AdminUsersPage } from '@/pages/admin/AdminUsersPage'
+import { AdminCurrenciesPage } from '@/pages/admin/AdminCurrenciesPage'
+import { AdminInvitesPage } from '@/pages/admin/AdminInvitesPage'
+import { ProtectedRoute, AdminRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
   return (
@@ -18,7 +22,7 @@ function App() {
       <Routes>
         {/* Public */}
         <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/invite/:token" element={<InvitePage />} />
 
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
@@ -31,6 +35,14 @@ function App() {
           <Route path="/transactions/add" element={<AddTransactionPage />} />
           <Route path="/transactions/:txID/edit" element={<EditTransactionPage />} />
           <Route path="/tags" element={<TagsPage />} />
+
+          {/* Admin (requires isAdmin) */}
+          <Route element={<AdminRoute />}>
+            <Route path="/admin" element={<AdminPage />} />
+            <Route path="/admin/users" element={<AdminUsersPage />} />
+            <Route path="/admin/currencies" element={<AdminCurrenciesPage />} />
+            <Route path="/admin/invites" element={<AdminInvitesPage />} />
+          </Route>
         </Route>
 
         {/* Default */}
