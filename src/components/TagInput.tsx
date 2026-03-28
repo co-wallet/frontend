@@ -6,9 +6,11 @@ import { tagsApi } from '@/api/tags'
 interface TagInputProps {
   value: string[]
   onChange: (tags: string[]) => void
+  /** Called on every keystroke so the parent can read pending text at submit time */
+  onPendingChange?: (pending: string) => void
 }
 
-export function TagInput({ value, onChange }: TagInputProps) {
+export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
   const [input, setInput] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -30,6 +32,7 @@ export function TagInput({ value, onChange }: TagInputProps) {
     onChange([...value, trimmed])
     setInput('')
     setShowSuggestions(false)
+    onPendingChange?.('')
   }
 
   function removeTag(name: string) {
@@ -81,7 +84,7 @@ export function TagInput({ value, onChange }: TagInputProps) {
         <input
           ref={inputRef}
           value={input}
-          onChange={(e) => { setInput(e.target.value); setShowSuggestions(true) }}
+          onChange={(e) => { setInput(e.target.value); setShowSuggestions(true); onPendingChange?.(e.target.value) }}
           onKeyDown={handleKeyDown}
           onFocus={() => input && setShowSuggestions(true)}
           placeholder={value.length === 0 ? 'Добавить тег...' : ''}

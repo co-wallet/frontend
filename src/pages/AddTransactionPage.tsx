@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
@@ -46,6 +46,7 @@ export function AddTransactionPage() {
   const [date, setDate] = useState(todayISO())
   const [includeInBalance, setIncludeInBalance] = useState(true)
   const [tags, setTags] = useState<string[]>([])
+  const pendingTagRef = useRef('')
 
   // Shares
   const [customShares, setCustomShares] = useState(false)
@@ -119,6 +120,11 @@ export function AddTransactionPage() {
     e.preventDefault()
     if (!sharesValid) return
 
+    const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
+    const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
+      ? [...tags, pendingTrimmed]
+      : tags
+
     const dto: CreateTransactionDto = {
       accountId,
       type,
@@ -129,7 +135,7 @@ export function AddTransactionPage() {
       ...(categoryId ? { categoryId } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
       ...(type === 'transfer' && toAccountId ? { toAccountId } : {}),
-      ...(tags.length > 0 ? { tags } : {}),
+      ...(allTags.length > 0 ? { tags: allTags } : {}),
     }
 
     if (isShared && members.length > 1) {
@@ -279,7 +285,7 @@ export function AddTransactionPage() {
           {/* Tags */}
           <div>
             <label className="block text-sm font-medium mb-1">Теги</label>
-            <TagInput value={tags} onChange={setTags} />
+            <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
           </div>
 
           {/* Include in balance */}

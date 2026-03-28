@@ -1,6 +1,23 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
+
+const EXPENSE_ICONS = [
+  '🛒', '🍔', '🍕', '☕', '🍺', '🍽️',
+  '🚗', '⛽', '🚌', '✈️', '🚕', '🚂',
+  '🏠', '💡', '📱', '💻', '🛠️', '🧹',
+  '👗', '👟', '💄', '🛍️', '👒', '⌚',
+  '💊', '🏥', '💉', '🧴', '🦷', '👓',
+  '🎬', '🎮', '🎵', '📚', '🏋️', '⚽',
+  '🐾', '🌿', '🎁', '✂️', '🧺', '📦',
+]
+
+const INCOME_ICONS = [
+  '💼', '💰', '💵', '💳', '📈', '🏦',
+  '🤝', '🎓', '👔', '🏢', '💹', '🪙',
+  '🏡', '🚀', '🎯', '🎪', '🎁', '🏆',
+]
 
 export default function CategoriesPage() {
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
@@ -81,7 +98,10 @@ export default function CategoriesPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-2xl mx-auto px-4 py-6">
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Категории</h1>
+          <div className="flex items-center gap-3">
+            <Link to="/" className="text-sm text-gray-500 hover:text-gray-800">← Главная</Link>
+            <h1 className="text-2xl font-bold text-gray-900">Категории</h1>
+          </div>
           {!showForm && (
             <button
               onClick={() => setShowForm(true)}
@@ -124,13 +144,25 @@ export default function CategoriesPage() {
                 className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               />
-              <input
-                type="text"
-                placeholder="Иконка (эмодзи или код)"
-                value={formData.icon}
-                onChange={e => setFormData(f => ({ ...f, icon: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
+              <div>
+                <p className="text-xs text-gray-500 mb-1.5">Иконка</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(activeTab === 'expense' ? EXPENSE_ICONS : INCOME_ICONS).map(icon => (
+                    <button
+                      key={icon}
+                      type="button"
+                      onClick={() => setFormData(f => ({ ...f, icon: f.icon === icon ? '' : icon }))}
+                      className={`w-9 h-9 rounded-lg border text-xl flex items-center justify-center transition-colors ${
+                        formData.icon === icon
+                          ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50'
+                          : 'border-gray-200 hover:border-gray-400'
+                      }`}
+                    >
+                      {icon}
+                    </button>
+                  ))}
+                </div>
+              </div>
               {!editingId && (
                 <select
                   value={formData.parentId}
