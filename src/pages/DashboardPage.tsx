@@ -1,11 +1,12 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useMutation } from '@tanstack/react-query'
 import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ShieldCheck } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { currenciesApi, type Currency } from '@/api/currencies'
+import { authApi } from '@/api/auth'
 
 type Period = 'month' | 'quarter' | 'year'
 
@@ -48,11 +49,17 @@ function formatAmount(n: number, symbol?: string): string {
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
+  const updateUser = useAuthStore((s) => s.updateUser)
   const navigate = useNavigate()
 
   const [period, setPeriod] = useState<Period>('month')
-  const [displayCurrency, setDisplayCurrency] = useState('RUB')
+  const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+
+  const saveCurrency = useMutation({
+    mutationFn: (code: string) => authApi.updateMe(code),
+    onSuccess: (updatedUser) => updateUser(updatedUser),
+  })
   const baseParams = periodParams(period)
   const params: AnalyticsParams = { ...baseParams, currency: displayCurrency }
 
@@ -110,7 +117,11 @@ export function DashboardPage() {
                     {currencies.map((c) => (
                       <button
                         key={c.code}
-                        onClick={() => { setDisplayCurrency(c.code); setShowCurrencyPicker(false) }}
+                        onClick={() => {
+                          setDisplayCurrency(c.code)
+                          setShowCurrencyPicker(false)
+                          saveCurrency.mutate(c.code)
+                        }}
                         className={`w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between ${c.code === displayCurrency ? 'text-primary font-medium' : ''}`}
                       >
                         <span>{c.code}</span>
