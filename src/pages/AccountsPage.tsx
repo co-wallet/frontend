@@ -278,7 +278,7 @@ export function AccountsPage() {
           <div className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Редактировать счёт</h2>
             <AccountForm
-              initial={editingAccount}
+              initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined, initialBalanceDate: editingAccount.initialBalanceDate ?? undefined }}
               defaultCurrency={defaultCurrency}
               onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
               onCancel={() => setEditingAccount(null)}
