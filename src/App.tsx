@@ -2,6 +2,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from '@/pages/LoginPage'
 import { RegisterPage } from '@/pages/RegisterPage'
 import { DashboardPage } from '@/pages/DashboardPage'
+import { AccountsPage } from '@/pages/AccountsPage'
+import { AccountDetailPage } from '@/pages/AccountDetailPage'
+import { AccountMembersPage } from '@/pages/AccountMembersPage'
 import { ProtectedRoute } from '@/components/layout/ProtectedRoute'
 
 function App() {
@@ -15,6 +18,9 @@ function App() {
         {/* Protected */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/accounts" element={<AccountsPage />} />
+          <Route path="/accounts/:accountID" element={<AccountDetailPage />} />
+          <Route path="/accounts/:accountID/members" element={<AccountMembersPage />} />
         </Route>
 
         {/* Default */}
