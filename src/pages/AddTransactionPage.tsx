@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
 import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
+import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
 import { cn } from '@/lib/utils'
 
@@ -55,6 +56,12 @@ export function AddTransactionPage() {
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
     queryFn: accountsApi.list,
+  })
+
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: currenciesApi.list,
+    staleTime: 60_000,
   })
 
   const selectedAccount: Account | undefined = accounts.find((a) => a.id === accountId)
@@ -236,6 +243,15 @@ export function AddTransactionPage() {
               placeholder="0.00"
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
+            {selectedAccount && (() => {
+              const cur = currencies.find((c) => c.code === selectedAccount.currency)
+              if (!cur || cur.rateToUsd === 0 || selectedAccount.currency === 'USD') return null
+              return (
+                <p className="text-xs text-muted-foreground mt-1">
+                  1 USD = {cur.rateToUsd.toFixed(2)} {selectedAccount.currency}
+                </p>
+              )
+            })()}
           </div>
 
           {/* Category (not for transfer) */}

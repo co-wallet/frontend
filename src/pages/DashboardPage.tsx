@@ -1,10 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList } from 'lucide-react'
+import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
+import { currenciesApi, type Currency } from '@/api/currencies'
 
 type Period = 'month' | 'quarter' | 'year'
 
@@ -39,8 +40,9 @@ function periodParams(period: Period): AnalyticsParams {
   return { date_from: fmt(from), date_to: today }
 }
 
-function formatAmount(n: number): string {
-  return new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+function formatAmount(n: number, symbol?: string): string {
+  const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+  return symbol ? `${symbol} ${num}` : num
 }
 
 export function DashboardPage() {
@@ -49,7 +51,19 @@ export function DashboardPage() {
   const navigate = useNavigate()
 
   const [period, setPeriod] = useState<Period>('month')
-  const params = periodParams(period)
+  const [displayCurrency, setDisplayCurrency] = useState('RUB')
+  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  const baseParams = periodParams(period)
+  const params: AnalyticsParams = { ...baseParams, currency: displayCurrency }
+
+  const { data: currencies = [] } = useQuery({
+    queryKey: ['currencies'],
+    queryFn: currenciesApi.list,
+    staleTime: 60_000,
+  })
+
+  const selectedCurrency: Currency | undefined = currencies.find((c) => c.code === displayCurrency)
+  const sym = selectedCurrency?.symbol ?? displayCurrency
 
   const { data: summary } = useQuery({
     queryKey: ['analytics', 'summary', params],
@@ -79,12 +93,41 @@ export function DashboardPage() {
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold">co-wallet</h1>
-          <button
-            onClick={handleLogout}
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-          >
-            <LogOut size={16} /> Выйти
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Currency picker */}
+            <div className="relative">
+              <button
+                onClick={() => setShowCurrencyPicker((v) => !v)}
+                className="flex items-center gap-1 text-sm font-medium border rounded-md px-2 py-1 hover:bg-muted"
+              >
+                {selectedCurrency?.symbol ?? ''} {displayCurrency}
+                <ChevronDown size={12} />
+              </button>
+              {showCurrencyPicker && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowCurrencyPicker(false)} />
+                  <div className="absolute right-0 top-full mt-1 z-20 bg-card border rounded-lg shadow-lg w-48 max-h-64 overflow-y-auto">
+                    {currencies.map((c) => (
+                      <button
+                        key={c.code}
+                        onClick={() => { setDisplayCurrency(c.code); setShowCurrencyPicker(false) }}
+                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between ${c.code === displayCurrency ? 'text-primary font-medium' : ''}`}
+                      >
+                        <span>{c.code}</span>
+                        <span className="text-xs text-muted-foreground">{c.symbol}</span>
+                      </button>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+            >
+              <LogOut size={16} /> Выйти
+            </button>
+          </div>
         </div>
 
         {/* Period switcher */}
@@ -109,21 +152,21 @@ export function DashboardPage() {
               <Scale size={14} />
               <span className="text-xs">Баланс</span>
             </div>
-            <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0)}</p>
+            <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0, sym)}</p>
           </div>
           <div className="bg-card rounded-lg border p-3">
             <div className="flex items-center gap-1 text-red-500 mb-1">
               <TrendingDown size={14} />
               <span className="text-xs">Расходы</span>
             </div>
-            <p className="text-sm font-semibold text-red-600 truncate">{formatAmount(summary?.expenses ?? 0)}</p>
+            <p className="text-sm font-semibold text-red-600 truncate">{formatAmount(summary?.expenses ?? 0, sym)}</p>
           </div>
           <div className="bg-card rounded-lg border p-3">
             <div className="flex items-center gap-1 text-green-600 mb-1">
               <TrendingUp size={14} />
               <span className="text-xs">Доходы</span>
             </div>
-            <p className="text-sm font-semibold text-green-700 truncate">{formatAmount(summary?.income ?? 0)}</p>
+            <p className="text-sm font-semibold text-green-700 truncate">{formatAmount(summary?.income ?? 0, sym)}</p>
           </div>
         </div>
 
@@ -147,7 +190,7 @@ export function DashboardPage() {
                   ))}
                 </Pie>
                 <Tooltip
-                  formatter={(value: number) => formatAmount(value)}
+                  formatter={(value: number) => formatAmount(value, sym)}
                   labelFormatter={(label) => String(label)}
                 />
               </PieChart>
@@ -164,7 +207,7 @@ export function DashboardPage() {
                       {s.icon ? `${s.icon} ` : ''}{s.categoryName}
                     </span>
                   </div>
-                  <span className="font-medium">{formatAmount(s.amount)}</span>
+                  <span className="font-medium">{formatAmount(s.amount, sym)}</span>
                 </div>
               ))}
             </div>
@@ -179,7 +222,7 @@ export function DashboardPage() {
               {byTag.slice(0, 6).map((s) => (
                 <div key={s.tagId} className="flex items-center justify-between text-xs">
                   <span className="text-muted-foreground">#{s.tagName}</span>
-                  <span className="font-medium">{formatAmount(s.amount)}</span>
+                  <span className="font-medium">{formatAmount(s.amount, sym)}</span>
                 </div>
               ))}
             </div>
