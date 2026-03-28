@@ -1,0 +1,265 @@
+import { useState } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Plus, Wallet, Users, Trash2, Pencil } from 'lucide-react'
+import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts'
+import { useAuthStore } from '@/store/authStore'
+import { cn } from '@/lib/utils'
+
+const CURRENCIES = ['RUB', 'USD', 'EUR', 'GBP', 'CNY']
+const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
+
+function AccountForm({
+  initial,
+  onSubmit,
+  onCancel,
+  loading,
+}: {
+  initial?: Partial<CreateAccountDto>
+  onSubmit: (dto: CreateAccountDto) => void
+  onCancel: () => void
+  loading: boolean
+}) {
+  const [name, setName] = useState(initial?.name ?? '')
+  const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
+  const [currency, setCurrency] = useState(initial?.currency ?? 'RUB')
+  const [icon, setIcon] = useState(initial?.icon ?? '💳')
+  const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
+  const [initialBalance, setInitialBalance] = useState(initial?.initialBalance ?? 0)
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault()
+        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance })
+      }}
+      className="space-y-4"
+    >
+      <div>
+        <label className="block text-sm font-medium mb-1">Название</label>
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          required
+          placeholder="Например: Карта Сбер"
+          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-2">Иконка</label>
+        <div className="flex gap-2 flex-wrap">
+          {ICONS.map((i) => (
+            <button
+              key={i}
+              type="button"
+              onClick={() => setIcon(i)}
+              className={cn(
+                'w-9 h-9 rounded-md border text-lg flex items-center justify-center',
+                icon === i ? 'border-primary ring-2 ring-primary' : 'border-border',
+              )}
+            >
+              {i}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Тип</label>
+        <div className="flex gap-2">
+          {(['personal', 'shared'] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setType(t)}
+              className={cn(
+                'flex-1 py-2 rounded-md border text-sm font-medium',
+                type === t
+                  ? 'bg-primary text-primary-foreground border-primary'
+                  : 'border-border text-foreground',
+              )}
+            >
+              {t === 'personal' ? 'Личный' : 'Совместный'}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Валюта</label>
+        <select
+          value={currency}
+          onChange={(e) => setCurrency(e.target.value)}
+          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+        >
+          {CURRENCIES.map((c) => (
+            <option key={c} value={c}>{c}</option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label className="block text-sm font-medium mb-1">Начальный баланс</label>
+        <input
+          type="number"
+          value={initialBalance}
+          onChange={(e) => setInitialBalance(Number(e.target.value))}
+          step="0.01"
+          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+        />
+      </div>
+
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={includeInBalance}
+          onChange={(e) => setIncludeInBalance(e.target.checked)}
+          className="rounded"
+        />
+        <span className="text-sm">Учитывать в общем балансе</span>
+      </label>
+
+      <div className="flex gap-2 pt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="flex-1 rounded-md border py-2 text-sm font-medium hover:bg-muted"
+        >
+          Отмена
+        </button>
+        <button
+          type="submit"
+          disabled={loading}
+          className="flex-1 rounded-md bg-primary text-primary-foreground py-2 text-sm font-medium disabled:opacity-50"
+        >
+          {loading ? 'Сохранение...' : 'Сохранить'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+function AccountCard({ account, onDelete }: { account: Account; onDelete: (id: string) => void }) {
+  const user = useAuthStore((s) => s.user)
+  const isOwner = account.ownerId === user?.id
+
+  return (
+    <div className="bg-card rounded-lg border p-4">
+      <div className="flex items-start justify-between">
+        <Link to={`/accounts/${account.id}`} className="flex items-center gap-3 flex-1">
+          <span className="text-2xl">{account.icon ?? '💳'}</span>
+          <div>
+            <p className="font-medium">{account.name}</p>
+            <p className="text-xs text-muted-foreground">
+              {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
+            </p>
+          </div>
+        </Link>
+        <div className="flex items-center gap-1 ml-2">
+          {account.type === 'shared' && (
+            <Link
+              to={`/accounts/${account.id}/members`}
+              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+            >
+              <Users size={16} />
+            </Link>
+          )}
+          <Link
+            to={`/accounts/${account.id}/edit`}
+            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+          >
+            <Pencil size={16} />
+          </Link>
+          {isOwner && (
+            <button
+              onClick={() => onDelete(account.id)}
+              className="p-1.5 rounded-md hover:bg-muted text-destructive"
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
+      </div>
+      {!account.includeInBalance && (
+        <p className="mt-2 text-xs text-muted-foreground">Не учитывается в балансе</p>
+      )}
+    </div>
+  )
+}
+
+export function AccountsPage() {
+  const qc = useQueryClient()
+  const [showForm, setShowForm] = useState(false)
+
+  const { data: accounts = [], isLoading } = useQuery({
+    queryKey: ['accounts'],
+    queryFn: accountsApi.list,
+  })
+
+  const createMutation = useMutation({
+    mutationFn: accountsApi.create,
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      setShowForm(false)
+    },
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: accountsApi.delete,
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+  })
+
+  return (
+    <div className="min-h-screen bg-muted">
+      <div className="max-w-lg mx-auto p-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground text-sm">
+              ← Назад
+            </Link>
+            <h1 className="text-xl font-bold">Счета</h1>
+          </div>
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
+          >
+            <Plus size={16} /> Добавить
+          </button>
+        </div>
+
+        {showForm && (
+          <div className="bg-card rounded-lg border p-4 mb-4">
+            <h2 className="font-semibold mb-4">Новый счёт</h2>
+            <AccountForm
+              onSubmit={(dto) => createMutation.mutate(dto)}
+              onCancel={() => setShowForm(false)}
+              loading={createMutation.isPending}
+            />
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
+        ) : accounts.length === 0 ? (
+          <div className="text-center py-12 text-muted-foreground">
+            <Wallet size={40} className="mx-auto mb-3 opacity-30" />
+            <p className="text-sm">Нет счетов. Создайте первый!</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {accounts.map((a) => (
+              <AccountCard
+                key={a.id}
+                account={a}
+                onDelete={(id) => {
+                  if (confirm('Удалить счёт?')) deleteMutation.mutate(id)
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
