@@ -1,10 +1,11 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserPlus, Trash2 } from 'lucide-react'
 import { accountsApi } from '@/api/accounts'
 import { authApi, type UserSummary } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import { parseDecimal, filterDecimalInput } from '@/lib/utils'
 
 export function AccountMembersPage() {
   const { accountID } = useParams<{ accountID: string }>()
@@ -13,10 +14,11 @@ export function AccountMembersPage() {
 
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null)
   const [search, setSearch] = useState('')
-  const [share, setShare] = useState(0.5)
+  const [share, setShare] = useState('0.5')
   const [showForm, setShowForm] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [error, setError] = useState('')
+  const [shareInputs, setShareInputs] = useState<Record<string, string>>({})
 
   const { data: account } = useQuery({
     queryKey: ['account', accountID],
@@ -34,6 +36,17 @@ export function AccountMembersPage() {
     staleTime: 60_000,
   })
 
+  // Sync server share values into local input state
+  useEffect(() => {
+    setShareInputs((prev) => {
+      const next = { ...prev }
+      members.forEach((m) => {
+        if (!(m.userId in next)) next[m.userId] = String(m.defaultShare)
+      })
+      return next
+    })
+  }, [members])
+
   // Exclude users already in the account
   const memberIds = useMemo(() => new Set(members.map((m) => m.userId)), [members])
   const availableUsers = useMemo(
@@ -50,12 +63,12 @@ export function AccountMembersPage() {
   }, [availableUsers, search])
 
   const addMutation = useMutation({
-    mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, share),
+    mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, parseDecimal(share)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
       setSelectedUser(null)
       setSearch('')
-      setShare(0.5)
+      setShare('0.5')
       setShowForm(false)
       setError('')
     },
@@ -67,7 +80,10 @@ export function AccountMembersPage() {
   const updateShareMutation = useMutation({
     mutationFn: ({ userId, newShare }: { userId: string; newShare: number }) =>
       accountsApi.updateMember(accountID!, userId, newShare),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['account-members', accountID] }),
+    onSuccess: (_, { userId, newShare }) => {
+      setShareInputs((prev) => ({ ...prev, [userId]: String(newShare) }))
+      qc.invalidateQueries({ queryKey: ['account-members', accountID] })
+    },
   })
 
   const removeMutation = useMutation({
@@ -101,15 +117,20 @@ export function AccountMembersPage() {
               </div>
               <div className="flex items-center gap-2">
                 <input
-                  type="number"
-                  value={m.defaultShare}
-                  min={0}
-                  max={1}
-                  step={0.01}
+                  type="text"
+                  inputMode="decimal"
+                  value={shareInputs[m.userId] ?? String(m.defaultShare)}
                   disabled={!isOwner}
                   onChange={(e) =>
-                    updateShareMutation.mutate({ userId: m.userId, newShare: Number(e.target.value) })
+                    setShareInputs((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
                   }
+                  onBlur={() => {
+                    const v = shareInputs[m.userId] ?? String(m.defaultShare)
+                    const newShare = parseDecimal(v)
+                    if (newShare !== m.defaultShare) {
+                      updateShareMutation.mutate({ userId: m.userId, newShare })
+                    }
+                  }}
                   className="w-16 rounded border px-2 py-1 text-sm text-center disabled:opacity-60"
                 />
                 {isOwner && account?.ownerId !== m.userId && (
@@ -195,12 +216,10 @@ export function AccountMembersPage() {
                       Доля по умолчанию (0–1)
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={share}
-                      onChange={(e) => setShare(Number(e.target.value))}
-                      min={0}
-                      max={1}
-                      step={0.01}
+                      onChange={(e) => setShare(filterDecimalInput(e.target.value))}
                       className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>

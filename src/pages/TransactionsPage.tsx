@@ -85,7 +85,7 @@ function TransactionCard({
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         <span className={`text-sm font-semibold ${amountColor}`}>
-          {amountSign}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2 })} {tx.currency}
+          {amountSign}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {tx.currency}
         </span>
         <button
           onClick={() => navigate(`/transactions/${tx.id}/edit`)}

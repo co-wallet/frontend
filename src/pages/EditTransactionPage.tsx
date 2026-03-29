@@ -5,6 +5,7 @@ import { transactionsApi, type UpdateTransactionDto } from '@/api/transactions'
 import { accountsApi, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { TagInput } from '@/components/TagInput'
+import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/utils'
 
 function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
   const result: CategoryNode[] = []
@@ -89,7 +90,7 @@ export function EditTransactionPage() {
   // Auto-recalculate shares when amount changes in auto mode
   useEffect(() => {
     if (!isShared || !members.length || customShares || !initialized) return
-    const total = parseFloat(amount) || 0
+    const total = parseDecimal(amount)
     if (total <= 0) return
     const newAmounts: Record<string, string> = {}
     let distributed = 0
@@ -105,8 +106,9 @@ export function EditTransactionPage() {
     setShareAmounts(newAmounts)
   }, [amount, members, isShared, customShares, initialized])
 
-  const totalAmount = parseFloat(amount) || 0
-  const sharesSum = Object.values(shareAmounts).reduce((s, v) => s + (parseFloat(v) || 0), 0)
+  const totalAmount = parseDecimal(amount)
+  const amountValid = isValidDecimal(amount) && totalAmount > 0
+  const sharesSum = Object.values(shareAmounts).reduce((s, v) => s + parseDecimal(v), 0)
   const sharesValid = !isShared || members.length <= 1 || Math.abs(sharesSum - totalAmount) <= 0.01
 
   const updateMutation = useMutation({
@@ -119,7 +121,7 @@ export function EditTransactionPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!sharesValid) return
+    if (!amountValid || !sharesValid) return
 
     const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
     const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
@@ -138,7 +140,7 @@ export function EditTransactionPage() {
     if (isShared && members.length > 1) {
       dto.shares = members.map((m) => ({
         userId: m.userId,
-        amount: parseFloat(shareAmounts[m.userId] ?? '0') || 0,
+        amount: parseDecimal(shareAmounts[m.userId] ?? '0'),
       }))
     }
 
@@ -178,11 +180,10 @@ export function EditTransactionPage() {
               Сумма {selectedAccount ? `(${selectedAccount.currency})` : `(${tx.currency})`}
             </label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              min="0.01"
-              step="0.01"
+              onChange={(e) => setAmount(filterDecimalInput(e.target.value))}
               required
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
@@ -266,13 +267,12 @@ export function EditTransactionPage() {
                   <span className="text-sm text-muted-foreground flex-1 truncate">{m.username}</span>
                   {customShares ? (
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={shareAmounts[m.userId] ?? ''}
                       onChange={(e) =>
-                        setShareAmounts((prev) => ({ ...prev, [m.userId]: e.target.value }))
+                        setShareAmounts((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
                       }
-                      min="0"
-                      step="0.01"
                       className="w-28 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary text-right"
                     />
                   ) : (
@@ -303,7 +303,7 @@ export function EditTransactionPage() {
             </Link>
             <button
               type="submit"
-              disabled={updateMutation.isPending || !sharesValid}
+              disabled={updateMutation.isPending || !amountValid || !sharesValid}
               className="flex-1 rounded-md bg-primary text-primary-foreground py-2.5 text-sm font-medium disabled:opacity-50"
             >
               {updateMutation.isPending ? 'Сохранение...' : 'Сохранить'}
