@@ -27,6 +27,8 @@ function toggle<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]
 }
 
+const PAGE_SIZE = 5
+
 export function FilterSheet({ value, onChange }: FilterSheetProps) {
   const [open, setOpen] = useState(false)
 
@@ -38,6 +40,11 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
   const [dateFrom, setDateFrom] = useState(value.dateFrom ?? '')
   const [dateTo, setDateTo] = useState(value.dateTo ?? '')
 
+  // Visible counts for collapsible lists
+  const [accountsVisible, setAccountsVisible] = useState(PAGE_SIZE)
+  const [categoriesVisible, setCategoriesVisible] = useState(PAGE_SIZE)
+  const [tagsVisible, setTagsVisible] = useState(PAGE_SIZE)
+
   // Sync draft when sheet opens
   useEffect(() => {
     if (open) {
@@ -47,6 +54,9 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
       setTagMode(value.tagMode ?? 'or')
       setDateFrom(value.dateFrom ?? '')
       setDateTo(value.dateTo ?? '')
+      setAccountsVisible(PAGE_SIZE)
+      setCategoriesVisible(PAGE_SIZE)
+      setTagsVisible(PAGE_SIZE)
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -169,7 +179,7 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             <section>
               <h3 className="text-sm font-medium mb-2">Счета</h3>
               <div className="flex flex-wrap gap-2">
-                {accounts.map((a) => (
+                {accounts.slice(0, accountsVisible).map((a) => (
                   <button
                     key={a.id}
                     type="button"
@@ -184,6 +194,26 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                   </button>
                 ))}
               </div>
+              <div className="mt-2 flex gap-3">
+                {accountsVisible < accounts.length && (
+                  <button
+                    type="button"
+                    onClick={() => setAccountsVisible((n) => n + PAGE_SIZE)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Показать ещё ({accounts.length - accountsVisible})
+                  </button>
+                )}
+                {accountsVisible > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    onClick={() => setAccountsVisible(PAGE_SIZE)}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
+                    Свернуть
+                  </button>
+                )}
+              </div>
             </section>
           )}
 
@@ -192,7 +222,7 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             <section>
               <h3 className="text-sm font-medium mb-2">Категории</h3>
               <div className="flex flex-wrap gap-2">
-                {allCategories.map((c) => (
+                {allCategories.slice(0, categoriesVisible).map((c) => (
                   <button
                     key={c.id}
                     type="button"
@@ -206,6 +236,26 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                     {c.icon ? `${c.icon} ` : ''}{c.name}
                   </button>
                 ))}
+              </div>
+              <div className="mt-2 flex gap-3">
+                {categoriesVisible < allCategories.length && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoriesVisible((n) => n + PAGE_SIZE)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Показать ещё ({allCategories.length - categoriesVisible})
+                  </button>
+                )}
+                {categoriesVisible > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoriesVisible(PAGE_SIZE)}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
+                    Свернуть
+                  </button>
+                )}
               </div>
             </section>
           )}
@@ -231,7 +281,7 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                 </div>
               </div>
               <div className="flex flex-wrap gap-2">
-                {tags.map((t) => (
+                {tags.slice(0, tagsVisible).map((t) => (
                   <button
                     key={t.id}
                     type="button"
@@ -245,6 +295,26 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                     #{t.name}
                   </button>
                 ))}
+              </div>
+              <div className="mt-2 flex gap-3">
+                {tagsVisible < tags.length && (
+                  <button
+                    type="button"
+                    onClick={() => setTagsVisible((n) => n + PAGE_SIZE)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Показать ещё ({tags.length - tagsVisible})
+                  </button>
+                )}
+                {tagsVisible > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    onClick={() => setTagsVisible(PAGE_SIZE)}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
+                    Свернуть
+                  </button>
+                )}
               </div>
             </section>
           )}
