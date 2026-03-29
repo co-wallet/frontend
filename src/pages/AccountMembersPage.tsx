@@ -62,9 +62,47 @@ export function AccountMembersPage() {
       : availableUsers
   }, [availableUsers, search])
 
+  function recalcOtherShares(
+    changedUserId: string,
+    newVal: string,
+    currentInputs: Record<string, string>,
+    allMembers: typeof members,
+  ): Record<string, string> {
+    const newShare = parseDecimal(newVal)
+    const others = allMembers.filter((m) => m.userId !== changedUserId)
+    const othersSum = others.reduce(
+      (s, m) => s + parseDecimal(currentInputs[m.userId] ?? String(m.defaultShare)),
+      0,
+    )
+    const remaining = Math.max(0, 1 - newShare)
+    const next: Record<string, string> = { ...currentInputs, [changedUserId]: newVal }
+    if (others.length === 0) return next
+    if (othersSum > 0.0001) {
+      others.forEach((m) => {
+        const cur = parseDecimal(currentInputs[m.userId] ?? String(m.defaultShare))
+        next[m.userId] = String(Math.round((cur * remaining / othersSum) * 10000) / 10000)
+      })
+    } else {
+      const each = Math.round((remaining / others.length) * 10000) / 10000
+      others.forEach((m) => { next[m.userId] = String(each) })
+    }
+    return next
+  }
+
   const addMutation = useMutation({
     mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, parseDecimal(share)),
-    onSuccess: () => {
+    onSuccess: async () => {
+      const newMemberShare = parseDecimal(share)
+      const remaining = 1 - newMemberShare
+      const existingTotal = members.reduce((s, m) => s + m.defaultShare, 0)
+      if (members.length > 0 && existingTotal > 0.0001) {
+        await Promise.all(
+          members.map((m) => {
+            const updated = Math.round((m.defaultShare * remaining / existingTotal) * 10000) / 10000
+            return accountsApi.updateMember(accountID!, m.userId, updated)
+          }),
+        )
+      }
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
       setSelectedUser(null)
       setSearch('')
@@ -80,8 +118,7 @@ export function AccountMembersPage() {
   const updateShareMutation = useMutation({
     mutationFn: ({ userId, newShare }: { userId: string; newShare: number }) =>
       accountsApi.updateMember(accountID!, userId, newShare),
-    onSuccess: (_, { userId, newShare }) => {
-      setShareInputs((prev) => ({ ...prev, [userId]: String(newShare) }))
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
     },
   })
@@ -121,15 +158,21 @@ export function AccountMembersPage() {
                   inputMode="decimal"
                   value={shareInputs[m.userId] ?? String(m.defaultShare)}
                   disabled={!isOwner}
-                  onChange={(e) =>
-                    setShareInputs((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
-                  }
+                  onChange={(e) => {
+                    const newVal = filterDecimalInput(e.target.value)
+                    setShareInputs((prev) => recalcOtherShares(m.userId, newVal, prev, members))
+                  }}
                   onBlur={() => {
-                    const v = shareInputs[m.userId] ?? String(m.defaultShare)
-                    const newShare = parseDecimal(v)
-                    if (newShare !== m.defaultShare) {
-                      updateShareMutation.mutate({ userId: m.userId, newShare })
-                    }
+                    const changed = members.filter((member) => {
+                      const input = parseDecimal(shareInputs[member.userId] ?? String(member.defaultShare))
+                      return Math.abs(input - member.defaultShare) > 0.0001
+                    })
+                    changed.forEach((member) => {
+                      updateShareMutation.mutate({
+                        userId: member.userId,
+                        newShare: parseDecimal(shareInputs[member.userId] ?? String(member.defaultShare)),
+                      })
+                    })
                   }}
                   className="w-16 rounded border px-2 py-1 text-sm text-center disabled:opacity-60"
                 />
