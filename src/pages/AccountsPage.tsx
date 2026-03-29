@@ -39,6 +39,11 @@ function AccountForm({
   const [icon, setIcon] = useState(initial?.icon ?? '💳')
   const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
   const [initialBalance, setInitialBalance] = useState(initial?.initialBalance ?? 0)
+  const [initialBalanceDate, setInitialBalanceDate] = useState(
+    initial?.initialBalanceDate
+      ? initial.initialBalanceDate.slice(0, 10)
+      : new Date().toISOString().slice(0, 10)
+  )
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
@@ -50,7 +55,7 @@ function AccountForm({
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance })
+        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance, initialBalanceDate })
       }}
       className="space-y-4"
     >
@@ -125,15 +130,26 @@ function AccountForm({
         </select>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Начальный баланс</label>
-        <input
-          type="number"
-          value={initialBalance}
-          onChange={(e) => setInitialBalance(Number(e.target.value))}
-          step="0.01"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Начальный баланс</label>
+          <input
+            type="number"
+            value={initialBalance}
+            onChange={(e) => setInitialBalance(Number(e.target.value))}
+            step="0.01"
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Дата баланса</label>
+          <input
+            type="date"
+            value={initialBalanceDate}
+            onChange={(e) => setInitialBalanceDate(e.target.value)}
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer">
@@ -279,7 +295,13 @@ export function AccountsPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
-      accountsApi.update(id, { name: dto.name, icon: dto.icon, includeInBalance: dto.includeInBalance }),
+      accountsApi.update(id, {
+        name: dto.name,
+        icon: dto.icon,
+        includeInBalance: dto.includeInBalance,
+        initialBalance: dto.initialBalance,
+        initialBalanceDate: dto.initialBalanceDate,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
       setEditingAccount(null)
@@ -325,7 +347,7 @@ export function AccountsPage() {
           <div className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Редактировать счёт</h2>
             <AccountForm
-              initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined, initialBalanceDate: editingAccount.initialBalanceDate ?? undefined }}
+              initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined }}
               defaultCurrency={defaultCurrency}
               onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
               onCancel={() => setEditingAccount(null)}

@@ -24,6 +24,7 @@ export interface AnalyticsParams {
   date_to?: string
   account_ids?: string
   currency?: string
+  type?: string
 }
 
 export const analyticsApi = {

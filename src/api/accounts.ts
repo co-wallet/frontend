@@ -26,7 +26,7 @@ export interface Account {
   icon: string | null
   includeInBalance: boolean
   initialBalance: number
-  initialBalanceDate: string | null
+  initialBalanceDate: string
   members?: AccountMember[]
   balance?: AccountBalance
   createdAt: string
@@ -40,13 +40,15 @@ export interface CreateAccountDto {
   icon?: string
   includeInBalance?: boolean
   initialBalance?: number
-  initialBalanceDate?: string
+  initialBalanceDate: string
 }
 
 export interface UpdateAccountDto {
   name?: string
   icon?: string | null
   includeInBalance?: boolean
+  initialBalance?: number
+  initialBalanceDate?: string
 }
 
 export const accountsApi = {
