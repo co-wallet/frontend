@@ -13,11 +13,10 @@ function fmtCurrency(amount: number, currency: string): string {
     return new Intl.NumberFormat(undefined, {
       style: 'currency',
       currency,
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 8,
+      maximumFractionDigits: 2,
     }).format(amount)
   } catch {
-    return `${amount} ${currency}`
+    return `${amount.toFixed(2)} ${currency}`
   }
 }
 

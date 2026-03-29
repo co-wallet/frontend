@@ -10,13 +10,15 @@ export function parseDecimal(value: string): number {
   return parseFloat(value.replace(',', '.')) || 0
 }
 
-/** Strip any characters that are not digits or a single decimal separator (.,). */
-export function filterDecimalInput(value: string): string {
+/** Strip any characters that are not digits or a single decimal separator (.,).
+ *  Limits the fractional part to maxDecimals digits (default 4). */
+export function filterDecimalInput(value: string, maxDecimals = 4): string {
   let filtered = value.replace(/[^0-9.,]/g, '')
-  // Keep only the first decimal separator
   const sepIdx = filtered.search(/[.,]/)
   if (sepIdx !== -1) {
-    filtered = filtered.slice(0, sepIdx + 1) + filtered.slice(sepIdx + 1).replace(/[.,]/g, '')
+    const intPart = filtered.slice(0, sepIdx + 1)
+    const decPart = filtered.slice(sepIdx + 1).replace(/[.,]/g, '').slice(0, maxDecimals)
+    filtered = intPart + decPart
   }
   return filtered
 }
