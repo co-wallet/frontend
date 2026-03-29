@@ -44,7 +44,7 @@ function periodParams(period: Period): AnalyticsParams {
 }
 
 function formatAmount(n: number, symbol?: string): string {
-  const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
+  const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 8 }).format(n)
   return symbol ? `${symbol} ${num}` : num
 }
 

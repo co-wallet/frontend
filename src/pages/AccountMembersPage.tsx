@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserPlus, Trash2 } from 'lucide-react'
@@ -18,6 +18,7 @@ export function AccountMembersPage() {
   const [showForm, setShowForm] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [error, setError] = useState('')
+  const [shareInputs, setShareInputs] = useState<Record<string, string>>({})
 
   const { data: account } = useQuery({
     queryKey: ['account', accountID],
@@ -34,6 +35,17 @@ export function AccountMembersPage() {
     queryFn: authApi.listUsers,
     staleTime: 60_000,
   })
+
+  // Sync server share values into local input state
+  useEffect(() => {
+    setShareInputs((prev) => {
+      const next = { ...prev }
+      members.forEach((m) => {
+        if (!(m.userId in next)) next[m.userId] = String(m.defaultShare)
+      })
+      return next
+    })
+  }, [members])
 
   // Exclude users already in the account
   const memberIds = useMemo(() => new Set(members.map((m) => m.userId)), [members])
@@ -68,7 +80,10 @@ export function AccountMembersPage() {
   const updateShareMutation = useMutation({
     mutationFn: ({ userId, newShare }: { userId: string; newShare: number }) =>
       accountsApi.updateMember(accountID!, userId, newShare),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['account-members', accountID] }),
+    onSuccess: (_, { userId, newShare }) => {
+      setShareInputs((prev) => ({ ...prev, [userId]: String(newShare) }))
+      qc.invalidateQueries({ queryKey: ['account-members', accountID] })
+    },
   })
 
   const removeMutation = useMutation({
@@ -104,12 +119,17 @@ export function AccountMembersPage() {
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={m.defaultShare}
+                  value={shareInputs[m.userId] ?? String(m.defaultShare)}
                   disabled={!isOwner}
-                  onChange={(e) => {
-                    const v = filterDecimalInput(e.target.value)
-                    if (v !== e.target.value) e.target.value = v
-                    updateShareMutation.mutate({ userId: m.userId, newShare: parseDecimal(v) })
+                  onChange={(e) =>
+                    setShareInputs((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
+                  }
+                  onBlur={() => {
+                    const v = shareInputs[m.userId] ?? String(m.defaultShare)
+                    const newShare = parseDecimal(v)
+                    if (newShare !== m.defaultShare) {
+                      updateShareMutation.mutate({ userId: m.userId, newShare })
+                    }
                   }}
                   className="w-16 rounded border px-2 py-1 text-sm text-center disabled:opacity-60"
                 />
