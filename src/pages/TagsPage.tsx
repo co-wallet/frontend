@@ -95,7 +95,11 @@ export function TagsPage() {
                     </button>
                     <button
                       onClick={() => {
-                        if (confirm('Удалить тег?')) deleteMutation.mutate(tag.id)
+                        const txCount = tag.txCount ?? 0
+                        const warning = txCount > 0
+                          ? `Тег #${tag.name} будет удалён из ${txCount} транзакций. Продолжить?`
+                          : `Удалить тег #${tag.name}?`
+                        if (confirm(warning)) deleteMutation.mutate(tag.id)
                       }}
                       className="p-1 rounded hover:bg-muted text-destructive"
                     >
