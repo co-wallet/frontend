@@ -50,7 +50,7 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { data: accounts = [] } = useQuery({ queryKey: ['accounts'], queryFn: accountsApi.list })
+  const { data: accounts = [] } = useQuery({ queryKey: ['accounts'], queryFn: () => accountsApi.list() })
   const { data: expenseTree = [] } = useQuery({
     queryKey: ['categories', 'expense'],
     queryFn: () => categoriesApi.list('expense'),

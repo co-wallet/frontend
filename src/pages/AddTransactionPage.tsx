@@ -57,7 +57,7 @@ export function AddTransactionPage() {
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: accountsApi.list,
+    queryFn: () => accountsApi.list(),
   })
 
   const { data: currencies = [] } = useQuery({

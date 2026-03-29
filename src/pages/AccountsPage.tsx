@@ -8,6 +8,18 @@ import { useAuthStore } from '@/store/authStore'
 import { cn } from '@/lib/utils'
 const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
+function fmtCurrency(amount: number, currency: string): string {
+  try {
+    return new Intl.NumberFormat(undefined, {
+      style: 'currency',
+      currency,
+      maximumFractionDigits: 2,
+    }).format(amount)
+  } catch {
+    return `${amount.toFixed(2)} ${currency}`
+  }
+}
+
 function AccountForm({
   initial,
   defaultCurrency,
@@ -27,6 +39,11 @@ function AccountForm({
   const [icon, setIcon] = useState(initial?.icon ?? '💳')
   const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
   const [initialBalance, setInitialBalance] = useState(initial?.initialBalance ?? 0)
+  const [initialBalanceDate, setInitialBalanceDate] = useState(
+    initial?.initialBalanceDate
+      ? initial.initialBalanceDate.slice(0, 10)
+      : new Date().toISOString().slice(0, 10)
+  )
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies'],
@@ -38,7 +55,7 @@ function AccountForm({
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance })
+        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance, initialBalanceDate })
       }}
       className="space-y-4"
     >
@@ -113,15 +130,26 @@ function AccountForm({
         </select>
       </div>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Начальный баланс</label>
-        <input
-          type="number"
-          value={initialBalance}
-          onChange={(e) => setInitialBalance(Number(e.target.value))}
-          step="0.01"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium mb-1">Начальный баланс</label>
+          <input
+            type="number"
+            value={initialBalance}
+            onChange={(e) => setInitialBalance(Number(e.target.value))}
+            step="0.01"
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Дата баланса</label>
+          <input
+            type="date"
+            value={initialBalanceDate}
+            onChange={(e) => setInitialBalanceDate(e.target.value)}
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
       </div>
 
       <label className="flex items-center gap-2 cursor-pointer">
@@ -203,6 +231,41 @@ function AccountCard({
           )}
         </div>
       </div>
+      {account.balance && (
+        <div className="mt-3 pt-3 border-t border-border">
+          {account.type === 'shared' ? (
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Мой баланс</p>
+                <p className="font-medium">{fmtCurrency(account.balance.native, account.currency)}</p>
+                {account.balance.displayCurrency !== account.currency && (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                  </p>
+                )}
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-0.5">Всего на счёте</p>
+                <p className="font-medium">{fmtCurrency(account.balance.totalNative, account.currency)}</p>
+                {account.balance.displayCurrency !== account.currency && (
+                  <p className="text-xs text-muted-foreground">
+                    ≈ {fmtCurrency(account.balance.totalDisplay, account.balance.displayCurrency)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-sm">
+              <p className="font-medium">{fmtCurrency(account.balance.native, account.currency)}</p>
+              {account.balance.displayCurrency !== account.currency && (
+                <p className="text-xs text-muted-foreground">
+                  ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
       {!account.includeInBalance && (
         <p className="mt-2 text-xs text-muted-foreground">Не учитывается в балансе</p>
       )}
@@ -218,8 +281,8 @@ export function AccountsPage() {
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
 
   const { data: accounts = [], isLoading } = useQuery({
-    queryKey: ['accounts'],
-    queryFn: accountsApi.list,
+    queryKey: ['accounts', defaultCurrency],
+    queryFn: () => accountsApi.list(defaultCurrency),
   })
 
   const createMutation = useMutation({
@@ -232,7 +295,13 @@ export function AccountsPage() {
 
   const updateMutation = useMutation({
     mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
-      accountsApi.update(id, { name: dto.name, icon: dto.icon, includeInBalance: dto.includeInBalance }),
+      accountsApi.update(id, {
+        name: dto.name,
+        icon: dto.icon,
+        includeInBalance: dto.includeInBalance,
+        initialBalance: dto.initialBalance,
+        initialBalanceDate: dto.initialBalanceDate,
+      }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
       setEditingAccount(null)
@@ -278,7 +347,7 @@ export function AccountsPage() {
           <div className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Редактировать счёт</h2>
             <AccountForm
-              initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined, initialBalanceDate: editingAccount.initialBalanceDate ?? undefined }}
+              initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined }}
               defaultCurrency={defaultCurrency}
               onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
               onCancel={() => setEditingAccount(null)}

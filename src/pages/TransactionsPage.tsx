@@ -110,7 +110,7 @@ export function TransactionsPage() {
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: accountsApi.list,
+    queryFn: () => accountsApi.list(),
   })
 
   const { data: transactions = [], isLoading } = useQuery({

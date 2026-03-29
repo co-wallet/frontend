@@ -46,7 +46,7 @@ export function EditTransactionPage() {
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
-    queryFn: accountsApi.list,
+    queryFn: () => accountsApi.list(),
   })
 
   const selectedAccount = accounts.find((a) => a.id === tx?.accountId)

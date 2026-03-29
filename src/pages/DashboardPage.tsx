@@ -5,10 +5,12 @@ import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, Layou
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
+import { accountsApi } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 
 type Period = 'month' | 'quarter' | 'year'
+type ChartMode = 'balance' | 'expenses' | 'income'
 
 const PERIOD_LABELS: Record<Period, string> = {
   month: 'Месяц',
@@ -46,6 +48,85 @@ function formatAmount(n: number, symbol?: string): string {
   return symbol ? `${symbol} ${num}` : num
 }
 
+interface PieEntry {
+  name: string
+  amount: number
+  icon?: string
+}
+
+function ChartBlock({
+  data,
+  sym,
+  emptyText,
+}: {
+  data: PieEntry[]
+  sym: string
+  emptyText: string
+}) {
+  const positive = data.filter((d) => d.amount > 0)
+  const negative = data.filter((d) => d.amount <= 0)
+
+  if (data.length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground text-center py-6">{emptyText}</p>
+    )
+  }
+  return (
+    <>
+      {positive.length > 0 && (
+        <ResponsiveContainer width="100%" height={200}>
+          <PieChart>
+            <Pie
+              data={positive}
+              dataKey="amount"
+              nameKey="name"
+              cx="50%"
+              cy="50%"
+              outerRadius={80}
+              innerRadius={40}
+            >
+              {positive.map((_, i) => (
+                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+              ))}
+            </Pie>
+            <Tooltip
+              formatter={(value: number) => formatAmount(value, sym)}
+              labelFormatter={(label) => String(label)}
+            />
+          </PieChart>
+        </ResponsiveContainer>
+      )}
+      <div className="mt-2 space-y-1">
+        {positive.map((s, i) => (
+          <div key={i} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span
+                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
+              />
+              <span className="text-muted-foreground truncate max-w-[160px]">
+                {s.icon ? `${s.icon} ` : ''}{s.name}
+              </span>
+            </div>
+            <span className="font-medium">{formatAmount(s.amount, sym)}</span>
+          </div>
+        ))}
+        {negative.map((s, i) => (
+          <div key={i} className="flex items-center justify-between text-xs">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-red-400" />
+              <span className="text-muted-foreground truncate max-w-[160px]">
+                {s.icon ? `${s.icon} ` : ''}{s.name}
+              </span>
+            </div>
+            <span className="font-medium text-red-500">{formatAmount(s.amount, sym)}</span>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
@@ -55,6 +136,7 @@ export function DashboardPage() {
   const [period, setPeriod] = useState<Period>('month')
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
+  const [chartMode, setChartMode] = useState<ChartMode>('balance')
 
   const saveCurrency = useMutation({
     mutationFn: (code: string) => authApi.updateMe(code),
@@ -77,9 +159,14 @@ export function DashboardPage() {
     queryFn: () => analyticsApi.summary(params),
   })
 
-  const { data: byCategory = [] } = useQuery({
-    queryKey: ['analytics', 'by-category', params],
-    queryFn: () => analyticsApi.byCategory(params),
+  const { data: byExpense = [] } = useQuery({
+    queryKey: ['analytics', 'by-category', 'expense', params],
+    queryFn: () => analyticsApi.byCategory({ ...params, type: 'expense' }),
+  })
+
+  const { data: byIncome = [] } = useQuery({
+    queryKey: ['analytics', 'by-category', 'income', params],
+    queryFn: () => analyticsApi.byCategory({ ...params, type: 'income' }),
   })
 
   const { data: byTag = [] } = useQuery({
@@ -87,12 +174,46 @@ export function DashboardPage() {
     queryFn: () => analyticsApi.byTag(params),
   })
 
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts', displayCurrency],
+    queryFn: () => accountsApi.list(displayCurrency),
+  })
+
   const handleLogout = () => {
     logout()
     navigate('/login', { replace: true })
   }
 
-  const pieData = byCategory.filter((s) => s.amount > 0).slice(0, 8)
+  const balancePieData: PieEntry[] = accounts
+    .filter((a) => a.balance != null)
+    .map((a) => ({ name: a.name, icon: a.icon ?? undefined, amount: a.balance!.display }))
+
+  const expensePieData: PieEntry[] = byExpense
+    .filter((s) => s.amount > 0)
+    .slice(0, 8)
+    .map((s) => ({ name: s.categoryName, icon: s.icon ?? undefined, amount: s.amount }))
+
+  const incomePieData: PieEntry[] = byIncome
+    .filter((s) => s.amount > 0)
+    .slice(0, 8)
+    .map((s) => ({ name: s.categoryName, icon: s.icon ?? undefined, amount: s.amount }))
+
+  const chartTitles: Record<ChartMode, string> = {
+    balance: 'Баланс по счетам',
+    expenses: 'Расходы по категориям',
+    income: 'Доходы по категориям',
+  }
+
+  const chartEmptyTexts: Record<ChartMode, string> = {
+    balance: 'Нет данных о балансе',
+    expenses: 'Нет расходов за период',
+    income: 'Нет доходов за период',
+  }
+
+  const activePieData =
+    chartMode === 'balance' ? balancePieData :
+    chartMode === 'expenses' ? expensePieData :
+    incomePieData
 
   return (
     <div className="min-h-screen bg-muted pb-20">
@@ -156,74 +277,55 @@ export function DashboardPage() {
           ))}
         </div>
 
-        {/* Summary cards */}
+        {/* Summary cards — clickable to switch chart */}
         <div className="grid grid-cols-3 gap-2 mb-4">
-          <div className="bg-card rounded-lg border p-3">
+          <button
+            onClick={() => setChartMode('balance')}
+            className={`bg-card rounded-lg border p-3 text-left transition-all ${
+              chartMode === 'balance' ? 'ring-2 ring-primary border-primary' : 'hover:bg-muted'
+            }`}
+          >
             <div className="flex items-center gap-1 text-muted-foreground mb-1">
               <Scale size={14} />
               <span className="text-xs">Баланс</span>
             </div>
             <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0, sym)}</p>
-          </div>
-          <div className="bg-card rounded-lg border p-3">
+          </button>
+          <button
+            onClick={() => setChartMode('expenses')}
+            className={`bg-card rounded-lg border p-3 text-left transition-all ${
+              chartMode === 'expenses' ? 'ring-2 ring-red-500 border-red-400' : 'hover:bg-muted'
+            }`}
+          >
             <div className="flex items-center gap-1 text-red-500 mb-1">
               <TrendingDown size={14} />
               <span className="text-xs">Расходы</span>
             </div>
             <p className="text-sm font-semibold text-red-600 truncate">{formatAmount(summary?.expenses ?? 0, sym)}</p>
-          </div>
-          <div className="bg-card rounded-lg border p-3">
+          </button>
+          <button
+            onClick={() => setChartMode('income')}
+            className={`bg-card rounded-lg border p-3 text-left transition-all ${
+              chartMode === 'income' ? 'ring-2 ring-green-500 border-green-400' : 'hover:bg-muted'
+            }`}
+          >
             <div className="flex items-center gap-1 text-green-600 mb-1">
               <TrendingUp size={14} />
               <span className="text-xs">Доходы</span>
             </div>
             <p className="text-sm font-semibold text-green-700 truncate">{formatAmount(summary?.income ?? 0, sym)}</p>
-          </div>
+          </button>
         </div>
 
-        {/* Pie chart */}
-        {pieData.length > 0 && (
-          <div className="bg-card rounded-lg border p-4 mb-4">
-            <h2 className="text-sm font-semibold mb-3">Расходы по категориям</h2>
-            <ResponsiveContainer width="100%" height={200}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  dataKey="amount"
-                  nameKey="categoryName"
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={80}
-                  innerRadius={40}
-                >
-                  {pieData.map((_, i) => (
-                    <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  formatter={(value: number) => formatAmount(value, sym)}
-                  labelFormatter={(label) => String(label)}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-            <div className="mt-2 space-y-1">
-              {pieData.map((s, i) => (
-                <div key={s.categoryId} className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2">
-                    <span
-                      className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                      style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
-                    />
-                    <span className="text-muted-foreground truncate max-w-[140px]">
-                      {s.icon ? `${s.icon} ` : ''}{s.categoryName}
-                    </span>
-                  </div>
-                  <span className="font-medium">{formatAmount(s.amount, sym)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
+        {/* Pie chart block */}
+        <div className="bg-card rounded-lg border p-4 mb-4">
+          <h2 className="text-sm font-semibold mb-3">{chartTitles[chartMode]}</h2>
+          <ChartBlock
+            data={activePieData}
+            sym={sym}
+            emptyText={chartEmptyTexts[chartMode]}
+          />
+        </div>
 
         {/* Tags breakdown */}
         {byTag.length > 0 && (
