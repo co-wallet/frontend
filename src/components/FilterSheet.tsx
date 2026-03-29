@@ -194,15 +194,26 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                   </button>
                 ))}
               </div>
-              {accountsVisible < accounts.length && (
-                <button
-                  type="button"
-                  onClick={() => setAccountsVisible((n) => n + PAGE_SIZE)}
-                  className="mt-2 text-xs text-primary hover:underline"
-                >
-                  Показать ещё ({accounts.length - accountsVisible})
-                </button>
-              )}
+              <div className="mt-2 flex gap-3">
+                {accountsVisible < accounts.length && (
+                  <button
+                    type="button"
+                    onClick={() => setAccountsVisible((n) => n + PAGE_SIZE)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Показать ещё ({accounts.length - accountsVisible})
+                  </button>
+                )}
+                {accountsVisible > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    onClick={() => setAccountsVisible(PAGE_SIZE)}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
+                    Свернуть
+                  </button>
+                )}
+              </div>
             </section>
           )}
 
@@ -226,15 +237,26 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                   </button>
                 ))}
               </div>
-              {categoriesVisible < allCategories.length && (
-                <button
-                  type="button"
-                  onClick={() => setCategoriesVisible((n) => n + PAGE_SIZE)}
-                  className="mt-2 text-xs text-primary hover:underline"
-                >
-                  Показать ещё ({allCategories.length - categoriesVisible})
-                </button>
-              )}
+              <div className="mt-2 flex gap-3">
+                {categoriesVisible < allCategories.length && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoriesVisible((n) => n + PAGE_SIZE)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Показать ещё ({allCategories.length - categoriesVisible})
+                  </button>
+                )}
+                {categoriesVisible > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    onClick={() => setCategoriesVisible(PAGE_SIZE)}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
+                    Свернуть
+                  </button>
+                )}
+              </div>
             </section>
           )}
 
@@ -274,15 +296,26 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                   </button>
                 ))}
               </div>
-              {tagsVisible < tags.length && (
-                <button
-                  type="button"
-                  onClick={() => setTagsVisible((n) => n + PAGE_SIZE)}
-                  className="mt-2 text-xs text-primary hover:underline"
-                >
-                  Показать ещё ({tags.length - tagsVisible})
-                </button>
-              )}
+              <div className="mt-2 flex gap-3">
+                {tagsVisible < tags.length && (
+                  <button
+                    type="button"
+                    onClick={() => setTagsVisible((n) => n + PAGE_SIZE)}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Показать ещё ({tags.length - tagsVisible})
+                  </button>
+                )}
+                {tagsVisible > PAGE_SIZE && (
+                  <button
+                    type="button"
+                    onClick={() => setTagsVisible(PAGE_SIZE)}
+                    className="text-xs text-muted-foreground hover:underline"
+                  >
+                    Свернуть
+                  </button>
+                )}
+              </div>
             </section>
           )}
         </div>

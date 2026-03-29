@@ -120,15 +120,26 @@ function ChartBlock({
           )
         })}
       </div>
-      {visibleCount < allEntries.length && (
-        <button
-          type="button"
-          onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}
-          className="mt-2 text-xs text-primary hover:underline"
-        >
-          Показать ещё ({allEntries.length - visibleCount})
-        </button>
-      )}
+      <div className="mt-2 flex gap-3">
+        {visibleCount < allEntries.length && (
+          <button
+            type="button"
+            onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}
+            className="text-xs text-primary hover:underline"
+          >
+            Показать ещё ({allEntries.length - visibleCount})
+          </button>
+        )}
+        {visibleCount > LEGEND_PAGE_SIZE && (
+          <button
+            type="button"
+            onClick={() => setVisibleCount(LEGEND_PAGE_SIZE)}
+            className="text-xs text-muted-foreground hover:underline"
+          >
+            Свернуть
+          </button>
+        )}
+      </div>
     </>
   )
 }
