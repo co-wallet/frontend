@@ -38,7 +38,9 @@ function AccountForm({
   const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency)
   const [icon, setIcon] = useState(initial?.icon ?? '💳')
   const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
-  const [initialBalance, setInitialBalance] = useState(initial?.initialBalance ?? 0)
+  const [initialBalance, setInitialBalance] = useState(
+    initial?.initialBalance ? String(initial.initialBalance) : ''
+  )
   const [initialBalanceDate, setInitialBalanceDate] = useState(
     initial?.initialBalanceDate
       ? initial.initialBalanceDate.slice(0, 10)
@@ -55,7 +57,7 @@ function AccountForm({
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance, initialBalanceDate })
+        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance: parseFloat(initialBalance) || 0, initialBalanceDate })
       }}
       className="space-y-4"
     >
@@ -136,8 +138,9 @@ function AccountForm({
           <input
             type="number"
             value={initialBalance}
-            onChange={(e) => setInitialBalance(Number(e.target.value))}
+            onChange={(e) => setInitialBalance(e.target.value)}
             step="0.01"
+            placeholder="0"
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
