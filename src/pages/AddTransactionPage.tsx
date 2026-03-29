@@ -7,7 +7,7 @@ import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
 import { useAuthStore } from '@/store/authStore'
-import { cn, parseDecimal } from '@/lib/utils'
+import { cn, parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/utils'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Расход' },
@@ -115,6 +115,7 @@ export function AddTransactionPage() {
 
   const sharesSum = Object.values(shareAmounts).reduce((s, v) => s + parseDecimal(v), 0)
   const totalAmount = parseDecimal(amount)
+  const amountValid = isValidDecimal(amount) && totalAmount > 0
   const sharesValid = !isShared || members.length <= 1 || Math.abs(sharesSum - totalAmount) <= 0.01
 
   const createMutation = useMutation({
@@ -127,7 +128,7 @@ export function AddTransactionPage() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!sharesValid) return
+    if (!amountValid || !sharesValid) return
 
     const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
     const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
@@ -239,7 +240,7 @@ export function AddTransactionPage() {
               type="text"
               inputMode="decimal"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => setAmount(filterDecimalInput(e.target.value))}
               required
               placeholder="0.00"
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
@@ -338,7 +339,7 @@ export function AddTransactionPage() {
                       inputMode="decimal"
                       value={shareAmounts[m.userId] ?? ''}
                       onChange={(e) =>
-                        setShareAmounts((prev) => ({ ...prev, [m.userId]: e.target.value }))
+                        setShareAmounts((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
                       }
                       className="w-28 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary text-right"
                     />
@@ -370,7 +371,7 @@ export function AddTransactionPage() {
             </Link>
             <button
               type="submit"
-              disabled={createMutation.isPending || !sharesValid}
+              disabled={createMutation.isPending || !amountValid || !sharesValid}
               className="flex-1 rounded-md bg-primary text-primary-foreground py-2.5 text-sm font-medium disabled:opacity-50"
             >
               {createMutation.isPending ? 'Сохранение...' : 'Создать'}

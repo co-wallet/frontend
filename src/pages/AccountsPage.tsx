@@ -5,7 +5,7 @@ import { Plus, Wallet, Users, Trash2, Pencil } from 'lucide-react'
 import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts'
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
-import { cn, parseDecimal } from '@/lib/utils'
+import { cn, parseDecimal, filterDecimalInput } from '@/lib/utils'
 const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
 function fmtCurrency(amount: number, currency: string): string {
@@ -139,7 +139,7 @@ function AccountForm({
             type="text"
             inputMode="decimal"
             value={initialBalance}
-            onChange={(e) => setInitialBalance(e.target.value)}
+            onChange={(e) => setInitialBalance(filterDecimalInput(e.target.value))}
             placeholder="0"
             className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
           />

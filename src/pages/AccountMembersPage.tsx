@@ -5,7 +5,7 @@ import { UserPlus, Trash2 } from 'lucide-react'
 import { accountsApi } from '@/api/accounts'
 import { authApi, type UserSummary } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
-import { parseDecimal } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput } from '@/lib/utils'
 
 export function AccountMembersPage() {
   const { accountID } = useParams<{ accountID: string }>()
@@ -106,9 +106,11 @@ export function AccountMembersPage() {
                   inputMode="decimal"
                   value={m.defaultShare}
                   disabled={!isOwner}
-                  onChange={(e) =>
-                    updateShareMutation.mutate({ userId: m.userId, newShare: parseDecimal(e.target.value) })
-                  }
+                  onChange={(e) => {
+                    const v = filterDecimalInput(e.target.value)
+                    if (v !== e.target.value) e.target.value = v
+                    updateShareMutation.mutate({ userId: m.userId, newShare: parseDecimal(v) })
+                  }}
                   className="w-16 rounded border px-2 py-1 text-sm text-center disabled:opacity-60"
                 />
                 {isOwner && account?.ownerId !== m.userId && (
@@ -197,7 +199,7 @@ export function AccountMembersPage() {
                       type="text"
                       inputMode="decimal"
                       value={share}
-                      onChange={(e) => setShare(e.target.value)}
+                      onChange={(e) => setShare(filterDecimalInput(e.target.value))}
                       className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
