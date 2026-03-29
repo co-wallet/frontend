@@ -5,6 +5,7 @@ import { UserPlus, Trash2 } from 'lucide-react'
 import { accountsApi } from '@/api/accounts'
 import { authApi, type UserSummary } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import { parseDecimal } from '@/lib/utils'
 
 export function AccountMembersPage() {
   const { accountID } = useParams<{ accountID: string }>()
@@ -13,7 +14,7 @@ export function AccountMembersPage() {
 
   const [selectedUser, setSelectedUser] = useState<UserSummary | null>(null)
   const [search, setSearch] = useState('')
-  const [share, setShare] = useState(0.5)
+  const [share, setShare] = useState('0.5')
   const [showForm, setShowForm] = useState(false)
   const [showDropdown, setShowDropdown] = useState(false)
   const [error, setError] = useState('')
@@ -50,12 +51,12 @@ export function AccountMembersPage() {
   }, [availableUsers, search])
 
   const addMutation = useMutation({
-    mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, share),
+    mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, parseDecimal(share)),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
       setSelectedUser(null)
       setSearch('')
-      setShare(0.5)
+      setShare('0.5')
       setShowForm(false)
       setError('')
     },
@@ -101,14 +102,12 @@ export function AccountMembersPage() {
               </div>
               <div className="flex items-center gap-2">
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="decimal"
                   value={m.defaultShare}
-                  min={0}
-                  max={1}
-                  step={0.01}
                   disabled={!isOwner}
                   onChange={(e) =>
-                    updateShareMutation.mutate({ userId: m.userId, newShare: Number(e.target.value) })
+                    updateShareMutation.mutate({ userId: m.userId, newShare: parseDecimal(e.target.value) })
                   }
                   className="w-16 rounded border px-2 py-1 text-sm text-center disabled:opacity-60"
                 />
@@ -195,12 +194,10 @@ export function AccountMembersPage() {
                       Доля по умолчанию (0–1)
                     </label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={share}
-                      onChange={(e) => setShare(Number(e.target.value))}
-                      min={0}
-                      max={1}
-                      step={0.01}
+                      onChange={(e) => setShare(e.target.value)}
                       className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
