@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { UserPlus, Trash2 } from 'lucide-react'
@@ -20,6 +20,9 @@ export function AccountMembersPage() {
   const [error, setError] = useState('')
   const [shareInputs, setShareInputs] = useState<Record<string, string>>({})
 
+  // Saves shareInputs at the moment the add form opens — used for proportional calculation
+  const originalSharesRef = useRef<Record<string, string>>({})
+
   const { data: account } = useQuery({
     queryKey: ['account', accountID],
     queryFn: () => accountsApi.get(accountID!),
@@ -36,7 +39,7 @@ export function AccountMembersPage() {
     staleTime: 60_000,
   })
 
-  // Sync server share values into local input state
+  // Sync server share values into local input state (only adds missing keys)
   useEffect(() => {
     setShareInputs((prev) => {
       const next = { ...prev }
@@ -62,9 +65,90 @@ export function AccountMembersPage() {
       : availableUsers
   }, [availableUsers, search])
 
+  function recalcOtherShares(
+    changedUserId: string,
+    newVal: string,
+    currentInputs: Record<string, string>,
+    allMembers: typeof members,
+  ): Record<string, string> {
+    const newShare = parseDecimal(newVal)
+    const others = allMembers.filter((m) => m.userId !== changedUserId)
+    const othersSum = others.reduce(
+      (s, m) => s + parseDecimal(currentInputs[m.userId] ?? String(m.defaultShare)),
+      0,
+    )
+    const remaining = Math.max(0, 1 - newShare)
+    const next: Record<string, string> = { ...currentInputs, [changedUserId]: newVal }
+    if (others.length === 0) return next
+    if (othersSum > 0.0001) {
+      others.forEach((m) => {
+        const cur = parseDecimal(currentInputs[m.userId] ?? String(m.defaultShare))
+        next[m.userId] = String(Math.round((cur * remaining / othersSum) * 10000) / 10000)
+      })
+    } else {
+      const each = Math.round((remaining / others.length) * 10000) / 10000
+      others.forEach((m) => { next[m.userId] = String(each) })
+    }
+    return next
+  }
+
+  // Recalculate preview of existing members' shares given a new member with newShareVal
+  function previewWithNewMember(newShareVal: string, origShares: Record<string, string>) {
+    const newShare = parseDecimal(newShareVal)
+    const remaining = Math.max(0, 1 - newShare)
+    const existingTotal = members.reduce(
+      (s, m) => s + parseDecimal(origShares[m.userId] ?? String(m.defaultShare)),
+      0,
+    )
+    if (members.length === 0) return
+    const preview: Record<string, string> = {}
+    if (existingTotal > 0.0001) {
+      members.forEach((m) => {
+        const orig = parseDecimal(origShares[m.userId] ?? String(m.defaultShare))
+        preview[m.userId] = String(Math.round((orig * remaining / existingTotal) * 10000) / 10000)
+      })
+    } else {
+      const each = Math.round((remaining / members.length) * 10000) / 10000
+      members.forEach((m) => { preview[m.userId] = String(each) })
+    }
+    setShareInputs((prev) => ({ ...prev, ...preview }))
+  }
+
+  function openAddForm() {
+    const orig = { ...shareInputs }
+    originalSharesRef.current = orig
+    previewWithNewMember('0.5', orig)
+    setShowForm(true)
+  }
+
+  function closeAddForm() {
+    setShareInputs(originalSharesRef.current)
+    setShowForm(false)
+    setError('')
+    setSelectedUser(null)
+    setSearch('')
+    setShare('0.5')
+  }
+
   const addMutation = useMutation({
     mutationFn: () => accountsApi.addMember(accountID!, selectedUser!.username, parseDecimal(share)),
-    onSuccess: () => {
+    onSuccess: async () => {
+      const newMemberShare = parseDecimal(share)
+      const remaining = 1 - newMemberShare
+      const orig = originalSharesRef.current
+      const existingTotal = members.reduce(
+        (s, m) => s + parseDecimal(orig[m.userId] ?? String(m.defaultShare)),
+        0,
+      )
+      if (members.length > 0 && existingTotal > 0.0001) {
+        await Promise.all(
+          members.map((m) => {
+            const origShare = parseDecimal(orig[m.userId] ?? String(m.defaultShare))
+            const updated = Math.round((origShare * remaining / existingTotal) * 10000) / 10000
+            return accountsApi.updateMember(accountID!, m.userId, updated)
+          }),
+        )
+      }
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
       setSelectedUser(null)
       setSearch('')
@@ -80,15 +164,26 @@ export function AccountMembersPage() {
   const updateShareMutation = useMutation({
     mutationFn: ({ userId, newShare }: { userId: string; newShare: number }) =>
       accountsApi.updateMember(accountID!, userId, newShare),
-    onSuccess: (_, { userId, newShare }) => {
-      setShareInputs((prev) => ({ ...prev, [userId]: String(newShare) }))
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
     },
   })
 
   const removeMutation = useMutation({
-    mutationFn: (userId: string) => accountsApi.removeMember(accountID!, userId),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['account-members', accountID] }),
+    mutationFn: ({ userId }: { userId: string; newOwnerShare: number }) =>
+      accountsApi.removeMember(accountID!, userId),
+    onSuccess: async (_, { userId, newOwnerShare }) => {
+      const ownerId = account?.ownerId
+      if (ownerId) {
+        await accountsApi.updateMember(accountID!, ownerId, newOwnerShare)
+      }
+      setShareInputs((prev) => {
+        const next = { ...prev, ...(ownerId ? { [ownerId]: String(newOwnerShare) } : {}) }
+        delete next[userId]
+        return next
+      })
+      qc.invalidateQueries({ queryKey: ['account-members', accountID] })
+    },
   })
 
   const isOwner = account?.ownerId === currentUser?.id
@@ -120,23 +215,42 @@ export function AccountMembersPage() {
                   type="text"
                   inputMode="decimal"
                   value={shareInputs[m.userId] ?? String(m.defaultShare)}
-                  disabled={!isOwner}
-                  onChange={(e) =>
-                    setShareInputs((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
-                  }
+                  disabled={!isOwner || showForm}
+                  onChange={(e) => {
+                    const newVal = filterDecimalInput(e.target.value)
+                    setShareInputs((prev) => recalcOtherShares(m.userId, newVal, prev, members))
+                  }}
                   onBlur={() => {
-                    const v = shareInputs[m.userId] ?? String(m.defaultShare)
-                    const newShare = parseDecimal(v)
-                    if (newShare !== m.defaultShare) {
-                      updateShareMutation.mutate({ userId: m.userId, newShare })
-                    }
+                    const changed = members.filter((member) => {
+                      const input = parseDecimal(shareInputs[member.userId] ?? String(member.defaultShare))
+                      return Math.abs(input - member.defaultShare) > 0.0001
+                    })
+                    changed.forEach((member) => {
+                      updateShareMutation.mutate({
+                        userId: member.userId,
+                        newShare: parseDecimal(shareInputs[member.userId] ?? String(member.defaultShare)),
+                      })
+                    })
                   }}
                   className="w-16 rounded border px-2 py-1 text-sm text-center disabled:opacity-60"
                 />
                 {isOwner && account?.ownerId !== m.userId && (
                   <button
                     onClick={() => {
-                      if (confirm(`Удалить ${m.username}?`)) removeMutation.mutate(m.userId)
+                      const removedShare = parseDecimal(shareInputs[m.userId] ?? String(m.defaultShare))
+                      const ownerMember = members.find((mem) => mem.userId === account?.ownerId)
+                      const ownerCurrentShare = parseDecimal(
+                        shareInputs[ownerMember?.userId ?? ''] ?? String(ownerMember?.defaultShare ?? 0),
+                      )
+                      const newOwnerShare = Math.round((ownerCurrentShare + removedShare) * 10000) / 10000
+                      const ownerName = ownerMember?.username ?? 'владелец'
+                      if (
+                        confirm(
+                          `Удалить ${m.username}?\n\nДоля ${removedShare} будет передана владельцу (${ownerName}).`,
+                        )
+                      ) {
+                        removeMutation.mutate({ userId: m.userId, newOwnerShare })
+                      }
                     }}
                     className="p-1.5 rounded text-destructive hover:bg-muted"
                   >
@@ -152,7 +266,7 @@ export function AccountMembersPage() {
           <>
             {!showForm ? (
               <button
-                onClick={() => setShowForm(true)}
+                onClick={openAddForm}
                 className="w-full flex items-center justify-center gap-2 rounded-lg border border-dashed py-3 text-sm text-muted-foreground hover:text-foreground hover:border-foreground"
               >
                 <UserPlus size={16} /> Добавить участника
@@ -219,14 +333,18 @@ export function AccountMembersPage() {
                       type="text"
                       inputMode="decimal"
                       value={share}
-                      onChange={(e) => setShare(filterDecimalInput(e.target.value))}
+                      onChange={(e) => {
+                        const newVal = filterDecimalInput(e.target.value)
+                        setShare(newVal)
+                        previewWithNewMember(newVal, originalSharesRef.current)
+                      }}
                       className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
                     />
                   </div>
 
                   <div className="flex gap-2">
                     <button
-                      onClick={() => { setShowForm(false); setError(''); setSelectedUser(null); setSearch('') }}
+                      onClick={closeAddForm}
                       className="flex-1 rounded border py-2 text-sm hover:bg-muted"
                     >
                       Отмена

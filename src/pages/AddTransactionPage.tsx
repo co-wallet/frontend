@@ -338,9 +338,41 @@ export function AddTransactionPage() {
                       type="text"
                       inputMode="decimal"
                       value={shareAmounts[m.userId] ?? ''}
-                      onChange={(e) =>
-                        setShareAmounts((prev) => ({ ...prev, [m.userId]: filterDecimalInput(e.target.value) }))
-                      }
+                      onChange={(e) => {
+                        const newVal = filterDecimalInput(e.target.value)
+                        const newAmt = parseDecimal(newVal)
+                        setShareAmounts((prev) => {
+                          const others = members.filter((om) => om.userId !== m.userId)
+                          const otherSum = others.reduce((s, om) => s + parseDecimal(prev[om.userId] ?? '0'), 0)
+                          const remaining = Math.max(0, totalAmount - newAmt)
+                          const next: Record<string, string> = { ...prev, [m.userId]: newVal }
+                          if (others.length === 0) return next
+                          if (otherSum > 0.01) {
+                            let distributed = 0
+                            others.forEach((om, i) => {
+                              if (i < others.length - 1) {
+                                const part = roundCents(parseDecimal(prev[om.userId] ?? '0') * remaining / otherSum)
+                                next[om.userId] = String(part)
+                                distributed += part
+                              } else {
+                                next[om.userId] = String(roundCents(remaining - distributed))
+                              }
+                            })
+                          } else {
+                            let distributed = 0
+                            others.forEach((om, i) => {
+                              if (i < others.length - 1) {
+                                const part = roundCents(remaining / others.length)
+                                next[om.userId] = String(part)
+                                distributed += part
+                              } else {
+                                next[om.userId] = String(roundCents(remaining - distributed))
+                              }
+                            })
+                          }
+                          return next
+                        })
+                      }}
                       className="w-28 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary text-right"
                     />
                   ) : (
