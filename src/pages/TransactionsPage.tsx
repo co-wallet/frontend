@@ -5,6 +5,7 @@ import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil } fro
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
 import { accountsApi, type Account } from '@/api/accounts'
 import { FilterSheet } from '@/components/FilterSheet'
+import { useAuthStore } from '@/store/authStore'
 
 const TYPE_LABELS: Record<string, string> = {
   expense: 'Расход',
@@ -46,10 +47,12 @@ function TypeIcon({ type }: { type: string }) {
 function TransactionCard({
   tx,
   accounts,
+  currentUserId,
   onDelete,
 }: {
   tx: Transaction
   accounts: Account[]
+  currentUserId: string | undefined
   onDelete: (id: string) => void
 }) {
   const navigate = useNavigate()
@@ -59,6 +62,15 @@ function TransactionCard({
   const amountColor =
     tx.type === 'income' ? 'text-green-600' : tx.type === 'transfer' ? 'text-blue-600' : 'text-red-500'
   const amountSign = tx.type === 'income' ? '+' : tx.type === 'transfer' ? '' : '−'
+
+  const isShared = account?.type === 'shared'
+  const userShare = isShared && currentUserId
+    ? tx.shares?.find((s) => s.userId === currentUserId)
+    : null
+  const showShare = isShared && userShare != null && userShare.amount !== tx.amount
+
+  const formatAmt = (n: number) =>
+    n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
 
   return (
     <div className="bg-card rounded-lg border p-3 flex items-center gap-3">
@@ -84,9 +96,16 @@ function TransactionCard({
         )}
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
-        <span className={`text-sm font-semibold ${amountColor}`}>
-          {amountSign}{tx.amount.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 })} {tx.currency}
-        </span>
+        <div className="flex flex-col items-end">
+          <span className={`text-sm font-semibold ${amountColor}`}>
+            {amountSign}{formatAmt(showShare ? userShare!.amount : tx.amount)} {tx.currency}
+          </span>
+          {showShare && (
+            <span className="text-xs text-muted-foreground/60">
+              {amountSign}{formatAmt(tx.amount)} {tx.currency}
+            </span>
+          )}
+        </div>
         <button
           onClick={() => navigate(`/transactions/${tx.id}/edit`)}
           className="p-1 rounded hover:bg-muted text-muted-foreground ml-1"
@@ -107,6 +126,7 @@ function TransactionCard({
 export function TransactionsPage() {
   const qc = useQueryClient()
   const [filter, setFilter] = useState<TransactionFilter>({})
+  const currentUserId = useAuthStore((s) => s.user?.id)
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
@@ -168,6 +188,7 @@ export function TransactionsPage() {
                       key={tx.id}
                       tx={tx}
                       accounts={accounts}
+                      currentUserId={currentUserId}
                       onDelete={(id) => {
                         if (confirm('Удалить транзакцию?')) deleteMutation.mutate(id)
                       }}
