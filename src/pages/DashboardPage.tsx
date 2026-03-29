@@ -54,6 +54,8 @@ interface PieEntry {
   icon?: string
 }
 
+const LEGEND_PAGE_SIZE = 5
+
 function ChartBlock({
   data,
   sym,
@@ -63,8 +65,11 @@ function ChartBlock({
   sym: string
   emptyText: string
 }) {
+  const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const positive = data.filter((d) => d.amount > 0)
   const negative = data.filter((d) => d.amount <= 0)
+  const allEntries = [...positive, ...negative]
+  const visibleEntries = allEntries.slice(0, visibleCount)
 
   if (data.length === 0) {
     return (
@@ -97,32 +102,33 @@ function ChartBlock({
         </ResponsiveContainer>
       )}
       <div className="mt-2 space-y-1">
-        {positive.map((s, i) => (
-          <div key={i} className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span
-                className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
-              />
-              <span className="text-muted-foreground truncate max-w-[160px]">
-                {s.icon ? `${s.icon} ` : ''}{s.name}
-              </span>
+        {visibleEntries.map((s, i) => {
+          const isNegative = s.amount <= 0
+          return (
+            <div key={i} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <span
+                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                  style={{ background: isNegative ? '#f87171' : CHART_COLORS[i % CHART_COLORS.length] }}
+                />
+                <span className="text-muted-foreground truncate max-w-[160px]">
+                  {s.icon ? `${s.icon} ` : ''}{s.name}
+                </span>
+              </div>
+              <span className={`font-medium ${isNegative ? 'text-red-500' : ''}`}>{formatAmount(s.amount, sym)}</span>
             </div>
-            <span className="font-medium">{formatAmount(s.amount, sym)}</span>
-          </div>
-        ))}
-        {negative.map((s, i) => (
-          <div key={i} className="flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full flex-shrink-0 bg-red-400" />
-              <span className="text-muted-foreground truncate max-w-[160px]">
-                {s.icon ? `${s.icon} ` : ''}{s.name}
-              </span>
-            </div>
-            <span className="font-medium text-red-500">{formatAmount(s.amount, sym)}</span>
-          </div>
-        ))}
+          )
+        })}
       </div>
+      {visibleCount < allEntries.length && (
+        <button
+          type="button"
+          onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}
+          className="mt-2 text-xs text-primary hover:underline"
+        >
+          Показать ещё ({allEntries.length - visibleCount})
+        </button>
+      )}
     </>
   )
 }
