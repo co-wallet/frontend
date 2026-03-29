@@ -172,12 +172,16 @@ export function AccountMembersPage() {
   const removeMutation = useMutation({
     mutationFn: ({ userId }: { userId: string; newOwnerShare: number }) =>
       accountsApi.removeMember(accountID!, userId),
-    onSuccess: async (_, { newOwnerShare }) => {
+    onSuccess: async (_, { userId, newOwnerShare }) => {
       const ownerId = account?.ownerId
       if (ownerId) {
         await accountsApi.updateMember(accountID!, ownerId, newOwnerShare)
-        setShareInputs((prev) => ({ ...prev, [ownerId]: String(newOwnerShare) }))
       }
+      setShareInputs((prev) => {
+        const next = { ...prev, ...(ownerId ? { [ownerId]: String(newOwnerShare) } : {}) }
+        delete next[userId]
+        return next
+      })
       qc.invalidateQueries({ queryKey: ['account-members', accountID] })
     },
   })
