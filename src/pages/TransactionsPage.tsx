@@ -181,8 +181,7 @@ export function TransactionsPage() {
   }, [setSearchParams])
   const currentUserId = useAuthStore((s) => s.user?.id)
   const defaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
-  const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
-  const [periodOffset, setPeriodOffset] = useState(0)
+  const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
 
@@ -257,7 +256,7 @@ export function TransactionsPage() {
             <h1 className="text-xl font-bold">Транзакции</h1>
           </div>
           <Link
-            to="/transactions/add"
+            to={`/transactions/add${periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''}`}
             className="flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
           >
             <Plus size={16} /> Добавить
@@ -269,7 +268,7 @@ export function TransactionsPage() {
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
               key={p}
-              onClick={() => { setPeriod(p); setPeriodOffset(0) }}
+              onClick={() => setPeriod(p)}
               className={`rounded py-1.5 text-sm font-medium transition-colors ${
                 period === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}

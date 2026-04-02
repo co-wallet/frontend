@@ -17,6 +17,7 @@ export interface Transaction {
   id: string
   accountId: string
   toAccountId: string | null
+  toAmount: number | null
   type: TransactionType
   amount: number
   currency: string
@@ -36,6 +37,7 @@ export interface Transaction {
 export interface CreateTransactionDto {
   accountId: string
   toAccountId?: string
+  toAmount?: number
   type: TransactionType
   amount: number
   currency: string
@@ -51,6 +53,8 @@ export interface CreateTransactionDto {
 
 export interface UpdateTransactionDto {
   amount?: number
+  toAmount?: number | null
+  defaultCurrency?: string
   defaultCurrencyAmount?: number | null
   categoryId?: string | null
   description?: string | null
