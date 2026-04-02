@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { useCallback } from 'react'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil } from 'lucide-react'
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
@@ -128,9 +128,35 @@ function TransactionCard({
   )
 }
 
+function filterFromParams(sp: URLSearchParams): TransactionFilter {
+  const f: TransactionFilter = {}
+  if (sp.get('account_ids')) f.accountIds = sp.get('account_ids')!.split(',')
+  if (sp.get('category_ids')) f.categoryIds = sp.get('category_ids')!.split(',')
+  if (sp.get('tag_ids')) f.tagIds = sp.get('tag_ids')!.split(',')
+  if (sp.get('tag_mode') === 'and') f.tagMode = 'and'
+  if (sp.get('date_from')) f.dateFrom = sp.get('date_from')!
+  if (sp.get('date_to')) f.dateTo = sp.get('date_to')!
+  return f
+}
+
+function filterToParams(f: TransactionFilter): URLSearchParams {
+  const sp = new URLSearchParams()
+  if (f.accountIds?.length) sp.set('account_ids', f.accountIds.join(','))
+  if (f.categoryIds?.length) sp.set('category_ids', f.categoryIds.join(','))
+  if (f.tagIds?.length) sp.set('tag_ids', f.tagIds.join(','))
+  if (f.tagMode === 'and') sp.set('tag_mode', 'and')
+  if (f.dateFrom) sp.set('date_from', f.dateFrom)
+  if (f.dateTo) sp.set('date_to', f.dateTo)
+  return sp
+}
+
 export function TransactionsPage() {
   const qc = useQueryClient()
-  const [filter, setFilter] = useState<TransactionFilter>({})
+  const [searchParams, setSearchParams] = useSearchParams()
+  const filter = filterFromParams(searchParams)
+  const setFilter = useCallback((f: TransactionFilter) => {
+    setSearchParams(filterToParams(f), { replace: true })
+  }, [setSearchParams])
   const currentUserId = useAuthStore((s) => s.user?.id)
 
   const { data: accounts = [] } = useQuery({
@@ -145,7 +171,11 @@ export function TransactionsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+    },
   })
 
   const grouped = groupByDate(transactions)

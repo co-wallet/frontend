@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type UpdateTransactionDto } from '@/api/transactions'
 import { accountsApi, type AccountMember } from '@/api/accounts'
@@ -121,7 +121,9 @@ export function EditTransactionPage() {
     mutationFn: (dto: UpdateTransactionDto) => transactionsApi.update(txID!, dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
-      navigate('/transactions')
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+      navigate(-1)
     },
   })
 
@@ -175,9 +177,9 @@ export function EditTransactionPage() {
     <div className="min-h-screen bg-muted">
       <div className="max-w-lg mx-auto p-4">
         <div className="flex items-center gap-2 mb-6">
-          <Link to="/transactions" className="text-muted-foreground hover:text-foreground text-sm">
+          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground text-sm">
             ← Назад
-          </Link>
+          </button>
           <h1 className="text-xl font-bold">Редактировать</h1>
         </div>
 
@@ -355,12 +357,13 @@ export function EditTransactionPage() {
           )}
 
           <div className="flex gap-2 pt-2">
-            <Link
-              to="/transactions"
+            <button
+              type="button"
+              onClick={() => navigate(-1)}
               className="flex-1 rounded-md border py-2.5 text-sm font-medium text-center hover:bg-muted"
             >
               Отмена
-            </Link>
+            </button>
             <button
               type="submit"
               disabled={updateMutation.isPending || !amountValid || !sharesValid}
