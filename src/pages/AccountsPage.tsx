@@ -50,8 +50,8 @@ function AccountForm({
   )
 
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: currenciesApi.list,
+    queryKey: ['currencies', currency],
+    queryFn: () => currenciesApi.list([currency]),
     staleTime: 60_000,
   })
 

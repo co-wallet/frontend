@@ -164,8 +164,8 @@ export function DashboardPage() {
   const params: AnalyticsParams = { ...baseParams, currency: displayCurrency }
 
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: currenciesApi.list,
+    queryKey: ['currencies', displayCurrency],
+    queryFn: () => currenciesApi.list([displayCurrency]),
     staleTime: 60_000,
   })
 

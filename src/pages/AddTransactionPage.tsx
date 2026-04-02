@@ -61,9 +61,11 @@ export function AddTransactionPage() {
     queryFn: () => accountsApi.list(),
   })
 
+  const accountCurrencyCodes = accounts.map((a) => a.currency)
+  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes])]
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies'],
-    queryFn: currenciesApi.list,
+    queryKey: ['currencies', extraCodes.sort().join(',')],
+    queryFn: () => currenciesApi.list(extraCodes),
     staleTime: 60_000,
   })
 
