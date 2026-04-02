@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil } from 'lucide-react'
+import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users } from 'lucide-react'
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
 import { accountsApi, type Account } from '@/api/accounts'
 import { FilterSheet } from '@/components/FilterSheet'
@@ -69,6 +69,15 @@ function TransactionCard({
     : null
   const showShare = isShared && userShare != null && userShare.amount !== tx.amount
 
+  const displayAmount = showShare ? userShare!.amount : tx.amount
+
+  // For shared cross-currency transactions, compute user's share in default currency
+  const defaultCurrencyDisplay = tx.defaultCurrencyAmount != null && tx.defaultCurrency != null
+    ? (showShare
+        ? Math.round(userShare!.amount / tx.amount * tx.defaultCurrencyAmount * 100) / 100
+        : tx.defaultCurrencyAmount)
+    : null
+
   const formatAmt = (n: number) =>
     n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
 
@@ -97,17 +106,16 @@ function TransactionCard({
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         <div className="flex flex-col items-end">
-          <span className={`text-sm font-semibold ${amountColor}`}>
-            {amountSign}{formatAmt(showShare ? userShare!.amount : tx.amount)} {tx.currency}
+          <span
+            className={`text-sm font-semibold ${amountColor} inline-flex items-center gap-1`}
+            title={showShare ? `Всего: ${amountSign}${formatAmt(tx.amount)} ${tx.currency}` : undefined}
+          >
+            {showShare && <Users size={12} className="text-muted-foreground" />}
+            {amountSign}{formatAmt(displayAmount)} {tx.currency}
           </span>
-          {showShare && (
+          {defaultCurrencyDisplay != null && tx.defaultCurrency != null && (
             <span className="text-xs text-muted-foreground/60">
-              {amountSign}{formatAmt(tx.amount)} {tx.currency}
-            </span>
-          )}
-          {tx.defaultCurrencyAmount != null && tx.defaultCurrency != null && (
-            <span className="text-xs text-muted-foreground/60">
-              ≈ {formatAmt(tx.defaultCurrencyAmount)} {tx.defaultCurrency}
+              ≈ {formatAmt(defaultCurrencyDisplay)} {tx.defaultCurrency}
             </span>
           )}
         </div>
