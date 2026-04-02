@@ -256,7 +256,7 @@ export function TransactionsPage() {
             <h1 className="text-xl font-bold">Транзакции</h1>
           </div>
           <Link
-            to={`/transactions/add${periodOffset !== 0 || period !== 'day' ? `?date=${dateFrom}` : ''}`}
+            to={`/transactions/add${periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''}`}
             className="flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
           >
             <Plus size={16} /> Добавить
