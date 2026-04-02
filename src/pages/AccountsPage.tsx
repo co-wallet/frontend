@@ -364,7 +364,7 @@ export function AccountsPage() {
         )}
 
         {editingAccount && (
-          <div ref={formRef} className="bg-card rounded-lg border p-4 mb-4">
+          <div key={editingAccount.id} ref={formRef} className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Редактировать счёт</h2>
             <AccountForm
               initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined }}
