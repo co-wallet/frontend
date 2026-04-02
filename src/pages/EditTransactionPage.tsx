@@ -33,6 +33,7 @@ export function EditTransactionPage() {
 
   const [amount, setAmount] = useState('')
   const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
+  const [toAmountStr, setToAmountStr] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
@@ -88,6 +89,9 @@ export function EditTransactionPage() {
     setDate(tx.date.slice(0, 10))
     setIncludeInBalance(tx.includeInBalance)
     setTags(tx.tags?.map((t) => t.name) ?? [])
+    if (tx.toAmount != null) {
+      setToAmountStr(String(tx.toAmount))
+    }
     if (tx.defaultCurrencyAmount != null) {
       setDefaultCurrencyAmountStr(String(tx.defaultCurrencyAmount))
     }
@@ -127,7 +131,10 @@ export function EditTransactionPage() {
   const sharesValid = !isShared || members.length <= 1 || Math.abs(sharesSum - totalAmount) <= 0.01
 
   const accountCurrency = selectedAccount?.currency ?? tx?.currency ?? ''
-  const needsDefaultCurrency = !!accountCurrency && accountCurrency !== userDefaultCurrency
+  const toAccount = accounts.find((a) => a.id === tx?.toAccountId)
+  const toAccountCurrency = toAccount?.currency ?? ''
+  const isCrossCurrencyTransfer = tx?.type === 'transfer' && !!toAccountCurrency && toAccountCurrency !== accountCurrency
+  const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
 
   const updateMutation = useMutation({
     mutationFn: (dto: UpdateTransactionDto) => transactionsApi.update(txID!, dto),
@@ -149,8 +156,10 @@ export function EditTransactionPage() {
       : tags
 
     const dcaValue = parseDecimal(defaultCurrencyAmountStr)
+    const toAmountValue = parseDecimal(toAmountStr)
     const dto: UpdateTransactionDto = {
       amount: totalAmount,
+      ...(isCrossCurrencyTransfer ? { toAmount: toAmountValue > 0 ? toAmountValue : null } : {}),
       categoryId: categoryId || null,
       description: description.trim() || null,
       date: date + 'T00:00:00Z',
@@ -212,6 +221,19 @@ export function EditTransactionPage() {
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
             {(() => {
+              if (isCrossCurrencyTransfer) {
+                const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+                if (fromRate <= 0 || toRate <= 0) return null
+                const rate = toRate / fromRate
+                return (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {rate >= 1
+                      ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
+                      : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
+                  </p>
+                )
+              }
               if (accountCurrency === userDefaultCurrency) return null
               const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
               const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
@@ -226,6 +248,43 @@ export function EditTransactionPage() {
               )
             })()}
           </div>
+
+          {/* To-amount for cross-currency transfers */}
+          {isCrossCurrencyTransfer && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Сумма на счёт ({toAccountCurrency})
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={toAmountStr}
+                  onChange={(e) => setToAmountStr(filterDecimalInput(e.target.value))}
+                  placeholder="0.00"
+                  className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const total = parseDecimal(amount)
+                    if (total <= 0) return
+                    const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                    const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+                    if (fromRate <= 0 || toRate <= 0) return
+                    setToAmountStr(String(roundCents(total * toRate / fromRate)))
+                  }}
+                  className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Пересчитать по текущему курсу"
+                >
+                  ↻
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Сумма, которая поступит на целевой счёт. Можно скорректировать вручную.
+              </p>
+            </div>
+          )}
 
           {/* Default currency amount */}
           {needsDefaultCurrency && (

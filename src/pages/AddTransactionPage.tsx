@@ -46,6 +46,7 @@ export function AddTransactionPage() {
   const [toAccountId, setToAccountId] = useState('')
   const [amount, setAmount] = useState('')
   const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
+  const [toAmountStr, setToAmountStr] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(searchParams.get('date') || todayISO())
@@ -123,6 +124,24 @@ export function AddTransactionPage() {
   const toAccountCurrency = toAccount?.currency ?? ''
   const isCrossCurrencyTransfer = type === 'transfer' && !!toAccountCurrency && toAccountCurrency !== accountCurrency
   const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
+
+  // Auto-compute toAmount for cross-currency transfers
+  useEffect(() => {
+    if (!isCrossCurrencyTransfer) {
+      setToAmountStr('')
+      return
+    }
+    const total = parseDecimal(amount)
+    if (total <= 0) {
+      setToAmountStr('')
+      return
+    }
+    const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+    const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+    if (fromRate <= 0 || toRate <= 0) return
+    setToAmountStr(String(roundCents(total * toRate / fromRate)))
+  }, [amount, accountCurrency, toAccountCurrency, isCrossCurrencyTransfer, currencies])
+
   useEffect(() => {
     if (!needsDefaultCurrency) {
       setDefaultCurrencyAmountStr('')
@@ -180,7 +199,7 @@ export function AddTransactionPage() {
       includeInBalance,
       ...(categoryId ? { categoryId } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
-      ...(type === 'transfer' && toAccountId ? { toAccountId } : {}),
+      ...(type === 'transfer' && toAccountId ? { toAccountId, ...(isCrossCurrencyTransfer && parseDecimal(toAmountStr) > 0 ? { toAmount: parseDecimal(toAmountStr) } : {}) } : {}),
       ...(allTags.length > 0 ? { tags: allTags } : {}),
       ...(needsDefaultCurrency && dcaValue > 0
         ? { defaultCurrency: userDefaultCurrency, defaultCurrencyAmount: dcaValue }
@@ -314,6 +333,43 @@ export function AddTransactionPage() {
               )
             })()}
           </div>
+
+          {/* To-amount for cross-currency transfers */}
+          {isCrossCurrencyTransfer && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Сумма на счёт ({toAccountCurrency})
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={toAmountStr}
+                  onChange={(e) => setToAmountStr(filterDecimalInput(e.target.value))}
+                  placeholder="0.00"
+                  className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const total = parseDecimal(amount)
+                    if (total <= 0) return
+                    const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                    const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+                    if (fromRate <= 0 || toRate <= 0) return
+                    setToAmountStr(String(roundCents(total * toRate / fromRate)))
+                  }}
+                  className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Пересчитать по текущему курсу"
+                >
+                  ↻
+                </button>
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                Сумма, которая поступит на целевой счёт. Можно скорректировать вручную.
+              </p>
+            </div>
+          )}
 
           {/* Default currency amount (only when account currency differs from user default) */}
           {needsDefaultCurrency && (
