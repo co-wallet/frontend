@@ -119,7 +119,10 @@ export function AddTransactionPage() {
 
   // Auto-compute default currency amount when amount or account changes
   const accountCurrency = selectedAccount?.currency ?? ''
-  const needsDefaultCurrency = !!accountCurrency && accountCurrency !== userDefaultCurrency
+  const toAccount = accounts.find((a) => a.id === toAccountId)
+  const toAccountCurrency = toAccount?.currency ?? ''
+  const isCrossCurrencyTransfer = type === 'transfer' && !!toAccountCurrency && toAccountCurrency !== accountCurrency
+  const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
   useEffect(() => {
     if (!needsDefaultCurrency) {
       setDefaultCurrencyAmountStr('')
@@ -130,12 +133,17 @@ export function AddTransactionPage() {
       setDefaultCurrencyAmountStr('')
       return
     }
+    // If source account is already in default currency, amount = defaultCurrencyAmount
+    if (accountCurrency === userDefaultCurrency) {
+      setDefaultCurrencyAmountStr(String(total))
+      return
+    }
     const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
     const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
     if (acctRate <= 0 || defRate <= 0) return
     const converted = roundCents(total * defRate / acctRate)
     setDefaultCurrencyAmountStr(String(converted))
-  }, [amount, accountCurrency, userDefaultCurrency, currencies, needsDefaultCurrency])
+  }, [amount, accountCurrency, toAccountCurrency, userDefaultCurrency, currencies, needsDefaultCurrency])
 
   const sharesSum = Object.values(shareAmounts).reduce((s, v) => s + parseDecimal(v), 0)
   const totalAmount = parseDecimal(amount)
@@ -277,6 +285,21 @@ export function AddTransactionPage() {
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
             {selectedAccount && (() => {
+              // For cross-currency transfers, show rate between the two accounts
+              if (isCrossCurrencyTransfer) {
+                const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+                if (fromRate <= 0 || toRate <= 0) return null
+                const rate = toRate / fromRate
+                return (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {rate >= 1
+                      ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
+                      : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
+                  </p>
+                )
+              }
+              // For non-transfer: show rate to user's default currency
               if (selectedAccount.currency === userDefaultCurrency) return null
               const acctRate = currencies.find((c) => c.code === selectedAccount.currency)?.rateToUsd ?? 0
               const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
@@ -312,6 +335,10 @@ export function AddTransactionPage() {
                   onClick={() => {
                     const total = parseDecimal(amount)
                     if (total <= 0) return
+                    if (accountCurrency === userDefaultCurrency) {
+                      setDefaultCurrencyAmountStr(String(total))
+                      return
+                    }
                     const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
                     const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
                     if (acctRate <= 0 || defRate <= 0) return
