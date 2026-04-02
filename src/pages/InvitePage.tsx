@@ -23,7 +23,7 @@ export function InvitePage() {
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies-public'],
-    queryFn: currenciesApi.list,
+    queryFn: () => currenciesApi.list(),
     staleTime: 60_000,
   })
 

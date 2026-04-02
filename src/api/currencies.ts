@@ -9,7 +9,8 @@ export interface Currency {
 }
 
 export const currenciesApi = {
-  list(): Promise<Currency[]> {
-    return apiClient.get<Currency[]>('/currencies').then((r) => r.data)
+  list(codes?: string[]): Promise<Currency[]> {
+    const params = codes?.length ? { codes: codes.join(',') } : undefined
+    return apiClient.get<Currency[]>('/currencies', { params }).then((r) => r.data)
   },
 }
