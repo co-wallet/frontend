@@ -122,6 +122,7 @@ export function EditTransactionPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['accounts'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
       navigate('/transactions')
     },
   })

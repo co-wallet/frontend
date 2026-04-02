@@ -171,7 +171,11 @@ export function TransactionsPage() {
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['transactions'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+      qc.invalidateQueries({ queryKey: ['analytics'] })
+    },
   })
 
   const grouped = groupByDate(transactions)
