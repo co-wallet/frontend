@@ -121,6 +121,7 @@ export function EditTransactionPage() {
     mutationFn: (dto: UpdateTransactionDto) => transactionsApi.update(txID!, dto),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['accounts'] })
       navigate('/transactions')
     },
   })

@@ -143,6 +143,7 @@ export function AddTransactionPage() {
     mutationFn: transactionsApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
+      qc.invalidateQueries({ queryKey: ['accounts'] })
       navigate('/transactions')
     },
   })
