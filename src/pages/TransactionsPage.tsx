@@ -1,11 +1,16 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users } from 'lucide-react'
+import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, TrendingDown, TrendingUp } from 'lucide-react'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
 import { accountsApi, type Account } from '@/api/accounts'
+import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { FilterSheet } from '@/components/FilterSheet'
 import { useAuthStore } from '@/store/authStore'
+import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange, periodLabel } from '@/store/periodStore'
+
+import { EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 
 const TYPE_LABELS: Record<string, string> = {
   expense: 'Расход',
@@ -175,6 +180,41 @@ export function TransactionsPage() {
     setSearchParams(filterToParams(f), { replace: true })
   }, [setSearchParams])
   const currentUserId = useAuthStore((s) => s.user?.id)
+  const defaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
+  const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
+  const [periodOffset, setPeriodOffset] = useState(0)
+  const [showChart, setShowChart] = useState(false)
+  const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
+
+  const isCustom = period === 'custom'
+  const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
+
+  // Merge period dates into filter (period dates override manual filter dates)
+  const effectiveFilter: TransactionFilter = {
+    ...filter,
+    dateFrom,
+    dateTo,
+  }
+
+  // Analytics for pie chart
+  const analyticsParams: AnalyticsParams = {
+    date_from: dateFrom,
+    date_to: dateTo,
+    currency: defaultCurrency,
+    ...(filter.accountIds?.length ? { account_ids: filter.accountIds.join(',') } : {}),
+  }
+
+  const { data: byExpense = [] } = useQuery({
+    queryKey: ['analytics', 'by-category', 'expense', analyticsParams],
+    queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'expense' }),
+    enabled: showChart,
+  })
+
+  const { data: byIncome = [] } = useQuery({
+    queryKey: ['analytics', 'by-category', 'income', analyticsParams],
+    queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'income' }),
+    enabled: showChart,
+  })
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
@@ -182,8 +222,8 @@ export function TransactionsPage() {
   })
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['transactions', filter],
-    queryFn: () => transactionsApi.list(filter),
+    queryKey: ['transactions', effectiveFilter],
+    queryFn: () => transactionsApi.list(effectiveFilter),
   })
 
   const deleteMutation = useMutation({
@@ -197,10 +237,19 @@ export function TransactionsPage() {
 
   const grouped = groupByDate(transactions)
 
+  const chartColors = chartMode === 'expenses' ? EXPENSE_COLORS : INCOME_COLORS
+  const pieData = (chartMode === 'expenses' ? byExpense : byIncome)
+    .filter((s) => s.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10)
+
+  const formatAmt = (n: number) =>
+    n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+
   return (
     <div className="min-h-screen bg-muted">
       <div className="max-w-lg mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
               ← Назад
@@ -213,6 +262,143 @@ export function TransactionsPage() {
           >
             <Plus size={16} /> Добавить
           </Link>
+        </div>
+
+        {/* Period switcher */}
+        <div className="grid grid-cols-3 gap-1 bg-card rounded-lg border p-1 mb-2">
+          {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+            <button
+              key={p}
+              onClick={() => { setPeriod(p); setPeriodOffset(0) }}
+              className={`rounded py-1.5 text-sm font-medium transition-colors ${
+                period === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              {PERIOD_LABELS[p]}
+            </button>
+          ))}
+        </div>
+
+        {/* Custom date range */}
+        {period === 'custom' && (
+          <div className="grid grid-cols-2 gap-3 mb-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">С</label>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">По</label>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Period navigation */}
+        <div className="flex items-center justify-between bg-card rounded-lg border px-3 py-2 mb-3">
+          <button
+            onClick={() => setPeriodOffset((o) => o - 1)}
+            disabled={isCustom}
+            className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-sm font-medium">
+            {periodLabel(period, periodOffset, customFrom, customTo)}
+          </span>
+          <button
+            onClick={() => setPeriodOffset((o) => o + 1)}
+            disabled={isCustom || periodOffset >= 0}
+            className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+
+        {/* Collapsible pie chart */}
+        <div className="bg-card rounded-lg border mb-3">
+          <button
+            onClick={() => setShowChart((v) => !v)}
+            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium"
+          >
+            <span>Аналитика за период</span>
+            {showChart ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          {showChart && (
+            <div className="px-4 pb-4 space-y-3">
+              {/* Mode toggle */}
+              <div className="flex gap-1 bg-muted rounded-md p-0.5">
+                <button
+                  onClick={() => setChartMode('expenses')}
+                  className={`flex-1 flex items-center justify-center gap-1 rounded py-1 text-xs font-medium transition-colors ${
+                    chartMode === 'expenses' ? 'bg-background shadow text-red-500' : 'text-muted-foreground'
+                  }`}
+                >
+                  <TrendingDown size={12} /> Расходы
+                </button>
+                <button
+                  onClick={() => setChartMode('income')}
+                  className={`flex-1 flex items-center justify-center gap-1 rounded py-1 text-xs font-medium transition-colors ${
+                    chartMode === 'income' ? 'bg-background shadow text-green-600' : 'text-muted-foreground'
+                  }`}
+                >
+                  <TrendingUp size={12} /> Доходы
+                </button>
+              </div>
+
+              {pieData.length === 0 ? (
+                <p className="text-sm text-muted-foreground text-center py-4">
+                  {chartMode === 'expenses' ? 'Нет расходов за период' : 'Нет доходов за период'}
+                </p>
+              ) : (
+                <>
+                  <ResponsiveContainer width="100%" height={180}>
+                    <PieChart>
+                      <Pie
+                        data={pieData}
+                        dataKey="amount"
+                        nameKey="categoryName"
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        innerRadius={35}
+                      >
+                        {pieData.map((_, i) => (
+                          <Cell key={i} fill={chartColors[i % chartColors.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip formatter={(value: number) => formatAmt(value)} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-1">
+                    {pieData.map((s, i) => (
+                      <div key={i} className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                            style={{ background: chartColors[i % chartColors.length] }}
+                          />
+                          <span className="text-muted-foreground truncate max-w-[160px]">
+                            {s.icon ? `${s.icon} ` : ''}{s.categoryName}
+                          </span>
+                        </div>
+                        <span className="font-medium">{formatAmt(s.amount)} {defaultCurrency}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Filter */}

@@ -4,60 +4,16 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ChevronUp, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
+import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 
-type Period = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
 type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'balance' | 'all' | 'custom'
 
-const PERIOD_LABELS: Record<Period, string> = {
-  day: 'День',
-  week: 'Неделя',
-  month: 'Месяц',
-  quarter: 'Квартал',
-  year: 'Год',
-  custom: 'Период',
-}
-
-const CHART_COLORS = [
-  '#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6',
-  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
-]
-
-function fmtDate(d: Date): string {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
-}
-
-function periodParams(period: Period, customFrom: string, customTo: string): AnalyticsParams {
-  if (period === 'custom') {
-    return { date_from: customFrom || fmtDate(new Date()), date_to: customTo || fmtDate(new Date()) }
-  }
-
-  const now = new Date()
-  const today = fmtDate(now)
-  let from: Date
-
-  if (period === 'day') {
-    from = now
-  } else if (period === 'week') {
-    const dayOfWeek = now.getDay()
-    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Monday = start
-    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff)
-  } else if (period === 'month') {
-    from = new Date(now.getFullYear(), now.getMonth(), 1)
-  } else if (period === 'quarter') {
-    const qStart = Math.floor(now.getMonth() / 3) * 3
-    from = new Date(now.getFullYear(), qStart, 1)
-  } else {
-    from = new Date(now.getFullYear(), 0, 1)
-  }
-
-  return { date_from: fmtDate(from), date_to: today }
-}
+import { BALANCE_COLORS, EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 
 function formatAmount(n: number, symbol?: string): string {
   const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
@@ -76,10 +32,12 @@ function ChartBlock({
   data,
   sym,
   emptyText,
+  colors,
 }: {
   data: PieEntry[]
   sym: string
   emptyText: string
+  colors: string[]
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const positive = data.filter((d) => d.amount > 0).sort((a, b) => b.amount - a.amount)
@@ -108,7 +66,7 @@ function ChartBlock({
               innerRadius={40}
             >
               {positive.map((_, i) => (
-                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                <Cell key={i} fill={colors[i % colors.length]} />
               ))}
             </Pie>
             <Tooltip
@@ -126,7 +84,7 @@ function ChartBlock({
               <div className="flex items-center gap-2">
                 <span
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ background: isNegative ? '#f87171' : CHART_COLORS[i % CHART_COLORS.length] }}
+                  style={{ background: isNegative ? '#f87171' : colors[i % colors.length] }}
                 />
                 <span className="text-muted-foreground truncate max-w-[160px]">
                   {s.icon ? `${s.icon} ` : ''}{s.name}
@@ -167,9 +125,7 @@ export function DashboardPage() {
   const updateUser = useAuthStore((s) => s.updateUser)
   const navigate = useNavigate()
 
-  const [period, setPeriod] = useState<Period>('month')
-  const [customFrom, setCustomFrom] = useState(fmtDate(new Date()))
-  const [customTo, setCustomTo] = useState(fmtDate(new Date()))
+  const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
@@ -197,8 +153,8 @@ export function DashboardPage() {
     return ids.length > 0 ? ids.join(',') : undefined
   })()
 
-  const baseParams = periodParams(period, customFrom, customTo)
-  const params: AnalyticsParams = { ...baseParams, currency: displayCurrency, account_ids: filteredAccountIds }
+  const { dateFrom, dateTo } = computeDateRange(period, 0, customFrom, customTo)
+  const params: AnalyticsParams = { date_from: dateFrom, date_to: dateTo, currency: displayCurrency, account_ids: filteredAccountIds }
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', displayCurrency],
@@ -462,6 +418,7 @@ export function DashboardPage() {
             data={activePieData}
             sym={sym}
             emptyText={chartEmptyTexts[chartMode]}
+            colors={chartMode === 'expenses' ? EXPENSE_COLORS : chartMode === 'income' ? INCOME_COLORS : BALANCE_COLORS}
           />
         </div>
 
