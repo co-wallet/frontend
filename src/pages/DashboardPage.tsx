@@ -66,9 +66,10 @@ function ChartBlock({
   emptyText: string
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
-  const positive = data.filter((d) => d.amount > 0)
-  const negative = data.filter((d) => d.amount <= 0)
-  const allEntries = [...positive, ...negative]
+  const positive = data.filter((d) => d.amount > 0).sort((a, b) => b.amount - a.amount)
+  const negative = data.filter((d) => d.amount < 0).sort((a, b) => a.amount - b.amount)
+  const zero = data.filter((d) => d.amount === 0)
+  const allEntries = [...positive, ...negative, ...zero]
   const visibleEntries = allEntries.slice(0, visibleCount)
 
   if (data.length === 0) {
@@ -103,7 +104,7 @@ function ChartBlock({
       )}
       <div className="mt-2 space-y-1">
         {visibleEntries.map((s, i) => {
-          const isNegative = s.amount <= 0
+          const isNegative = s.amount < 0
           return (
             <div key={i} className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
