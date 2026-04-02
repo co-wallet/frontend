@@ -10,14 +10,7 @@ import { FilterSheet } from '@/components/FilterSheet'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange, periodLabel } from '@/store/periodStore'
 
-const EXPENSE_COLORS = [
-  '#ef4444', '#3b82f6', '#eab308', '#10b981', '#06b6d4',
-  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
-]
-const INCOME_COLORS = [
-  '#10b981', '#3b82f6', '#eab308', '#ef4444', '#06b6d4',
-  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
-]
+import { EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 
 const TYPE_LABELS: Record<string, string> = {
   expense: 'Расход',

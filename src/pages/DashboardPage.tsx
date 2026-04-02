@@ -13,18 +13,7 @@ import { authApi } from '@/api/auth'
 type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'balance' | 'all' | 'custom'
 
-const BALANCE_COLORS = [
-  '#3b82f6', '#eab308', '#10b981', '#ef4444', '#06b6d4',
-  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
-]
-const EXPENSE_COLORS = [
-  '#ef4444', '#3b82f6', '#eab308', '#10b981', '#06b6d4',
-  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
-]
-const INCOME_COLORS = [
-  '#10b981', '#3b82f6', '#eab308', '#ef4444', '#06b6d4',
-  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
-]
+import { BALANCE_COLORS, EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 
 function formatAmount(n: number, symbol?: string): string {
   const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
