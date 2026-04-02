@@ -44,6 +44,7 @@ export function AddTransactionPage() {
   const [accountId, setAccountId] = useState('')
   const [toAccountId, setToAccountId] = useState('')
   const [amount, setAmount] = useState('')
+  const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(todayISO())
@@ -113,6 +114,26 @@ export function AddTransactionPage() {
     setCategoryId('')
   }, [type])
 
+  // Auto-compute default currency amount when amount or account changes
+  const accountCurrency = selectedAccount?.currency ?? ''
+  const needsDefaultCurrency = !!accountCurrency && accountCurrency !== userDefaultCurrency
+  useEffect(() => {
+    if (!needsDefaultCurrency) {
+      setDefaultCurrencyAmountStr('')
+      return
+    }
+    const total = parseDecimal(amount)
+    if (total <= 0) {
+      setDefaultCurrencyAmountStr('')
+      return
+    }
+    const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+    const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
+    if (acctRate <= 0 || defRate <= 0) return
+    const converted = roundCents(total * defRate / acctRate)
+    setDefaultCurrencyAmountStr(String(converted))
+  }, [amount, accountCurrency, userDefaultCurrency, currencies, needsDefaultCurrency])
+
   const sharesSum = Object.values(shareAmounts).reduce((s, v) => s + parseDecimal(v), 0)
   const totalAmount = parseDecimal(amount)
   const amountValid = isValidDecimal(amount) && totalAmount > 0
@@ -135,17 +156,22 @@ export function AddTransactionPage() {
       ? [...tags, pendingTrimmed]
       : tags
 
+    const txCurrency = selectedAccount?.currency ?? userDefaultCurrency
+    const dcaValue = parseDecimal(defaultCurrencyAmountStr)
     const dto: CreateTransactionDto = {
       accountId,
       type,
       amount: totalAmount,
-      currency: selectedAccount?.currency ?? userDefaultCurrency,
+      currency: txCurrency,
       date: date + 'T00:00:00Z',
       includeInBalance,
       ...(categoryId ? { categoryId } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
       ...(type === 'transfer' && toAccountId ? { toAccountId } : {}),
       ...(allTags.length > 0 ? { tags: allTags } : {}),
+      ...(needsDefaultCurrency && dcaValue > 0
+        ? { defaultCurrency: userDefaultCurrency, defaultCurrencyAmount: dcaValue }
+        : {}),
     }
 
     if (isShared && members.length > 1) {
@@ -255,6 +281,26 @@ export function AddTransactionPage() {
               )
             })()}
           </div>
+
+          {/* Default currency amount (only when account currency differs from user default) */}
+          {needsDefaultCurrency && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Сумма в {userDefaultCurrency}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={defaultCurrencyAmountStr}
+                onChange={(e) => setDefaultCurrencyAmountStr(filterDecimalInput(e.target.value))}
+                placeholder="0.00"
+                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Автоматически рассчитано по текущему курсу. Можно скорректировать вручную.
+              </p>
+            </div>
+          )}
 
           {/* Category (not for transfer) */}
           {type !== 'transfer' && (

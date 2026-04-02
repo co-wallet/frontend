@@ -105,6 +105,11 @@ function TransactionCard({
               {amountSign}{formatAmt(tx.amount)} {tx.currency}
             </span>
           )}
+          {tx.defaultCurrencyAmount != null && tx.defaultCurrency != null && (
+            <span className="text-xs text-muted-foreground/60">
+              ≈ {formatAmt(tx.defaultCurrencyAmount)} {tx.defaultCurrency}
+            </span>
+          )}
         </div>
         <button
           onClick={() => navigate(`/transactions/${tx.id}/edit`)}

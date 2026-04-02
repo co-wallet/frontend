@@ -29,6 +29,7 @@ export function EditTransactionPage() {
   const qc = useQueryClient()
 
   const [amount, setAmount] = useState('')
+  const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
@@ -76,6 +77,9 @@ export function EditTransactionPage() {
     setDate(tx.date.slice(0, 10))
     setIncludeInBalance(tx.includeInBalance)
     setTags(tx.tags?.map((t) => t.name) ?? [])
+    if (tx.defaultCurrencyAmount != null) {
+      setDefaultCurrencyAmountStr(String(tx.defaultCurrencyAmount))
+    }
 
     if (tx.shares.length > 0) {
       const hasCustom = tx.shares.some((s) => s.isCustom)
@@ -111,6 +115,8 @@ export function EditTransactionPage() {
   const sharesSum = Object.values(shareAmounts).reduce((s, v) => s + parseDecimal(v), 0)
   const sharesValid = !isShared || members.length <= 1 || Math.abs(sharesSum - totalAmount) <= 0.01
 
+  const needsDefaultCurrency = tx != null && tx.defaultCurrency != null
+
   const updateMutation = useMutation({
     mutationFn: (dto: UpdateTransactionDto) => transactionsApi.update(txID!, dto),
     onSuccess: () => {
@@ -128,6 +134,7 @@ export function EditTransactionPage() {
       ? [...tags, pendingTrimmed]
       : tags
 
+    const dcaValue = parseDecimal(defaultCurrencyAmountStr)
     const dto: UpdateTransactionDto = {
       amount: totalAmount,
       categoryId: categoryId || null,
@@ -135,6 +142,7 @@ export function EditTransactionPage() {
       date: date + 'T00:00:00Z',
       includeInBalance,
       tags: allTags,
+      ...(needsDefaultCurrency ? { defaultCurrencyAmount: dcaValue > 0 ? dcaValue : null } : {}),
     }
 
     if (isShared && members.length > 1) {
@@ -188,6 +196,26 @@ export function EditTransactionPage() {
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
           </div>
+
+          {/* Default currency amount */}
+          {needsDefaultCurrency && (
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Сумма в {tx.defaultCurrency}
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={defaultCurrencyAmountStr}
+                onChange={(e) => setDefaultCurrencyAmountStr(filterDecimalInput(e.target.value))}
+                placeholder="0.00"
+                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Сумма в валюте пользователя на момент создания транзакции.
+              </p>
+            </div>
+          )}
 
           {/* Category (not for transfer) */}
           {tx.type !== 'transfer' && (

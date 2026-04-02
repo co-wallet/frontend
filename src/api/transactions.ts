@@ -21,6 +21,8 @@ export interface Transaction {
   amount: number
   currency: string
   exchangeRate: number | null
+  defaultCurrency: string | null
+  defaultCurrencyAmount: number | null
   categoryId: string | null
   description: string | null
   date: string
@@ -37,6 +39,8 @@ export interface CreateTransactionDto {
   type: TransactionType
   amount: number
   currency: string
+  defaultCurrency?: string
+  defaultCurrencyAmount?: number
   categoryId?: string | null
   description?: string | null
   date: string
@@ -47,6 +51,7 @@ export interface CreateTransactionDto {
 
 export interface UpdateTransactionDto {
   amount?: number
+  defaultCurrencyAmount?: number | null
   categoryId?: string | null
   description?: string | null
   date?: string
