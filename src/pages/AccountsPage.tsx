@@ -26,12 +26,14 @@ function AccountForm({
   onSubmit,
   onCancel,
   loading,
+  isEditing = false,
 }: {
   initial?: Partial<CreateAccountDto>
   defaultCurrency: string
   onSubmit: (dto: CreateAccountDto) => void
   onCancel: () => void
   loading: boolean
+  isEditing?: boolean
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
@@ -93,43 +95,51 @@ function AccountForm({
 
       <div>
         <label className="block text-sm font-medium mb-1">Тип</label>
-        <div className="flex gap-2">
-          {(['personal', 'shared'] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setType(t)}
-              className={cn(
-                'flex-1 py-2 rounded-md border text-sm font-medium',
-                type === t
-                  ? 'bg-primary text-primary-foreground border-primary'
-                  : 'border-border text-foreground',
-              )}
-            >
-              {t === 'personal' ? 'Личный' : 'Совместный'}
-            </button>
-          ))}
-        </div>
+        {isEditing ? (
+          <p className="text-sm text-muted-foreground">{type === 'personal' ? 'Личный' : 'Совместный'}</p>
+        ) : (
+          <div className="flex gap-2">
+            {(['personal', 'shared'] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => setType(t)}
+                className={cn(
+                  'flex-1 py-2 rounded-md border text-sm font-medium',
+                  type === t
+                    ? 'bg-primary text-primary-foreground border-primary'
+                    : 'border-border text-foreground',
+                )}
+              >
+                {t === 'personal' ? 'Личный' : 'Совместный'}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div>
         <label className="block text-sm font-medium mb-1">Валюта</label>
-        <select
-          value={currency}
-          onChange={(e) => setCurrency(e.target.value)}
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-        >
-          {currencies.length > 0
-            ? currencies.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
-                </option>
-              ))
-            : ['RUB', 'USD', 'EUR', 'GBP', 'CNY'].map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))
-          }
-        </select>
+        {isEditing ? (
+          <p className="text-sm text-muted-foreground">{currency}</p>
+        ) : (
+          <select
+            value={currency}
+            onChange={(e) => setCurrency(e.target.value)}
+            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+          >
+            {currencies.length > 0
+              ? currencies.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
+                  </option>
+                ))
+              : ['RUB', 'USD', 'EUR', 'GBP', 'CNY'].map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))
+            }
+          </select>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
@@ -355,6 +365,7 @@ export function AccountsPage() {
               onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
               onCancel={() => setEditingAccount(null)}
               loading={updateMutation.isPending}
+              isEditing
             />
           </div>
         )}
