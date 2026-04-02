@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
 import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
@@ -37,6 +37,7 @@ function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
 
 export function AddTransactionPage() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
@@ -47,7 +48,7 @@ export function AddTransactionPage() {
   const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
-  const [date, setDate] = useState(todayISO())
+  const [date, setDate] = useState(searchParams.get('date') || todayISO())
   const [includeInBalance, setIncludeInBalance] = useState(true)
   const [tags, setTags] = useState<string[]>([])
   const pendingTagRef = useRef('')
@@ -276,11 +277,14 @@ export function AddTransactionPage() {
               className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
             {selectedAccount && (() => {
-              const cur = currencies.find((c) => c.code === selectedAccount.currency)
-              if (!cur || cur.rateToUsd === 0 || selectedAccount.currency === 'USD') return null
+              if (selectedAccount.currency === userDefaultCurrency) return null
+              const acctRate = currencies.find((c) => c.code === selectedAccount.currency)?.rateToUsd ?? 0
+              const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
+              if (acctRate <= 0 || defRate <= 0) return null
+              const rate = (acctRate / defRate).toFixed(4)
               return (
                 <p className="text-xs text-muted-foreground mt-1">
-                  1 USD = {cur.rateToUsd.toFixed(2)} {selectedAccount.currency}
+                  1 {userDefaultCurrency} = {rate} {selectedAccount.currency}
                 </p>
               )
             })()}
@@ -292,14 +296,31 @@ export function AddTransactionPage() {
               <label className="block text-sm font-medium mb-1">
                 Сумма в {userDefaultCurrency}
               </label>
-              <input
-                type="text"
-                inputMode="decimal"
-                value={defaultCurrencyAmountStr}
-                onChange={(e) => setDefaultCurrencyAmountStr(filterDecimalInput(e.target.value))}
-                placeholder="0.00"
-                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-              />
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={defaultCurrencyAmountStr}
+                  onChange={(e) => setDefaultCurrencyAmountStr(filterDecimalInput(e.target.value))}
+                  placeholder="0.00"
+                  className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                />
+                <button
+                  type="button"
+                  onClick={() => {
+                    const total = parseDecimal(amount)
+                    if (total <= 0) return
+                    const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                    const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
+                    if (acctRate <= 0 || defRate <= 0) return
+                    setDefaultCurrencyAmountStr(String(roundCents(total * defRate / acctRate)))
+                  }}
+                  className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
+                  title="Пересчитать по текущему курсу"
+                >
+                  ↻
+                </button>
+              </div>
               <p className="text-xs text-muted-foreground mt-1">
                 Автоматически рассчитано по текущему курсу. Можно скорректировать вручную.
               </p>

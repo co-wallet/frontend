@@ -51,6 +51,7 @@ export interface CreateTransactionDto {
 
 export interface UpdateTransactionDto {
   amount?: number
+  defaultCurrency?: string
   defaultCurrencyAmount?: number | null
   categoryId?: string | null
   description?: string | null

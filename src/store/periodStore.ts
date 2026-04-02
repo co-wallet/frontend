@@ -14,9 +14,11 @@ export const PERIOD_LABELS: Record<Period, string> = {
 
 interface PeriodState {
   period: Period
+  periodOffset: number
   customFrom: string
   customTo: string
   setPeriod: (p: Period) => void
+  setPeriodOffset: (o: number | ((prev: number) => number)) => void
   setCustomFrom: (d: string) => void
   setCustomTo: (d: string) => void
 }
@@ -30,9 +32,11 @@ export const usePeriodStore = create<PeriodState>()(
   persist(
     (set) => ({
       period: 'month',
+      periodOffset: 0,
       customFrom: fmtDate(new Date()),
       customTo: fmtDate(new Date()),
-      setPeriod: (period) => set({ period }),
+      setPeriod: (period) => set({ period, periodOffset: 0 }),
+      setPeriodOffset: (o) => set((s) => ({ periodOffset: typeof o === 'function' ? o(s.periodOffset) : o })),
       setCustomFrom: (customFrom) => set({ customFrom }),
       setCustomTo: (customTo) => set({ customTo }),
     }),
