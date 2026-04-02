@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, Wallet, Users, Trash2, Pencil } from 'lucide-react'
@@ -292,6 +292,13 @@ export function AccountsPage() {
   const defaultCurrency = user?.defaultCurrency ?? 'USD'
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
+  const formRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (showCreateForm || editingAccount) {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }
+  }, [showCreateForm, editingAccount])
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts', defaultCurrency],
@@ -345,7 +352,7 @@ export function AccountsPage() {
         </div>
 
         {showCreateForm && (
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div ref={formRef} className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Новый счёт</h2>
             <AccountForm
               defaultCurrency={defaultCurrency}
@@ -357,7 +364,7 @@ export function AccountsPage() {
         )}
 
         {editingAccount && (
-          <div className="bg-card rounded-lg border p-4 mb-4">
+          <div key={editingAccount.id} ref={formRef} className="bg-card rounded-lg border p-4 mb-4">
             <h2 className="font-semibold mb-4">Редактировать счёт</h2>
             <AccountForm
               initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined }}

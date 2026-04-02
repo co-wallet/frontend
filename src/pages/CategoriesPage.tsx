@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
@@ -28,6 +28,13 @@ export default function CategoriesPage() {
     parentId: '',
     icon: '',
   });
+  const formRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (showForm) {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [showForm]);
 
   const queryClient = useQueryClient();
 
@@ -131,7 +138,7 @@ export default function CategoriesPage() {
 
         {/* Form */}
         {showForm && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
+          <div ref={formRef} className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
             <h2 className="font-semibold text-gray-900 mb-3">
               {editingId ? 'Изменить категорию' : 'Новая категория'}
             </h2>
