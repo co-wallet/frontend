@@ -13,9 +13,17 @@ import { authApi } from '@/api/auth'
 type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'balance' | 'all' | 'custom'
 
-const CHART_COLORS = [
-  '#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6',
-  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+const BALANCE_COLORS = [
+  '#3b82f6', '#eab308', '#10b981', '#ef4444', '#06b6d4',
+  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+]
+const EXPENSE_COLORS = [
+  '#ef4444', '#3b82f6', '#eab308', '#10b981', '#06b6d4',
+  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+]
+const INCOME_COLORS = [
+  '#10b981', '#3b82f6', '#eab308', '#ef4444', '#06b6d4',
+  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
 ]
 
 function formatAmount(n: number, symbol?: string): string {
@@ -35,10 +43,12 @@ function ChartBlock({
   data,
   sym,
   emptyText,
+  colors,
 }: {
   data: PieEntry[]
   sym: string
   emptyText: string
+  colors: string[]
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const positive = data.filter((d) => d.amount > 0).sort((a, b) => b.amount - a.amount)
@@ -67,7 +77,7 @@ function ChartBlock({
               innerRadius={40}
             >
               {positive.map((_, i) => (
-                <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                <Cell key={i} fill={colors[i % colors.length]} />
               ))}
             </Pie>
             <Tooltip
@@ -85,7 +95,7 @@ function ChartBlock({
               <div className="flex items-center gap-2">
                 <span
                   className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ background: isNegative ? '#f87171' : CHART_COLORS[i % CHART_COLORS.length] }}
+                  style={{ background: isNegative ? '#f87171' : colors[i % colors.length] }}
                 />
                 <span className="text-muted-foreground truncate max-w-[160px]">
                   {s.icon ? `${s.icon} ` : ''}{s.name}
@@ -419,6 +429,7 @@ export function DashboardPage() {
             data={activePieData}
             sym={sym}
             emptyText={chartEmptyTexts[chartMode]}
+            colors={chartMode === 'expenses' ? EXPENSE_COLORS : chartMode === 'income' ? INCOME_COLORS : BALANCE_COLORS}
           />
         </div>
 

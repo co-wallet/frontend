@@ -10,9 +10,13 @@ import { FilterSheet } from '@/components/FilterSheet'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange, periodLabel } from '@/store/periodStore'
 
-const CHART_COLORS = [
-  '#6366f1', '#f59e0b', '#10b981', '#ef4444', '#3b82f6',
-  '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+const EXPENSE_COLORS = [
+  '#ef4444', '#3b82f6', '#eab308', '#10b981', '#06b6d4',
+  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
+]
+const INCOME_COLORS = [
+  '#10b981', '#3b82f6', '#eab308', '#ef4444', '#06b6d4',
+  '#0ea5e9', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
 ]
 
 const TYPE_LABELS: Record<string, string> = {
@@ -240,6 +244,7 @@ export function TransactionsPage() {
 
   const grouped = groupByDate(transactions)
 
+  const chartColors = chartMode === 'expenses' ? EXPENSE_COLORS : INCOME_COLORS
   const pieData = (chartMode === 'expenses' ? byExpense : byIncome)
     .filter((s) => s.amount > 0)
     .sort((a, b) => b.amount - a.amount)
@@ -375,7 +380,7 @@ export function TransactionsPage() {
                         innerRadius={35}
                       >
                         {pieData.map((_, i) => (
-                          <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                          <Cell key={i} fill={chartColors[i % chartColors.length]} />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value: number) => formatAmt(value)} />
@@ -387,7 +392,7 @@ export function TransactionsPage() {
                         <div className="flex items-center gap-2">
                           <span
                             className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
+                            style={{ background: chartColors[i % chartColors.length] }}
                           />
                           <span className="text-muted-foreground truncate max-w-[160px]">
                             {s.icon ? `${s.icon} ` : ''}{s.categoryName}
