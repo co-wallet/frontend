@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ShieldCheck } from 'lucide-react'
+import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ChevronUp, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import { useAuthStore } from '@/store/authStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
@@ -9,13 +9,17 @@ import { accountsApi } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 
-type Period = 'month' | 'quarter' | 'year'
+type Period = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
 type ChartMode = 'balance' | 'expenses' | 'income'
+type AccountFilter = 'balance' | 'all' | 'custom'
 
 const PERIOD_LABELS: Record<Period, string> = {
+  day: 'День',
+  week: 'Неделя',
   month: 'Месяц',
   quarter: 'Квартал',
   year: 'Год',
+  custom: 'Период',
 }
 
 const CHART_COLORS = [
@@ -23,15 +27,27 @@ const CHART_COLORS = [
   '#8b5cf6', '#ec4899', '#14b8a6', '#f97316', '#84cc16',
 ]
 
-function periodParams(period: Period): AnalyticsParams {
-  const now = new Date()
+function fmtDate(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0')
-  const fmt = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
 
-  const today = fmt(now)
+function periodParams(period: Period, customFrom: string, customTo: string): AnalyticsParams {
+  if (period === 'custom') {
+    return { date_from: customFrom || fmtDate(new Date()), date_to: customTo || fmtDate(new Date()) }
+  }
+
+  const now = new Date()
+  const today = fmtDate(now)
   let from: Date
 
-  if (period === 'month') {
+  if (period === 'day') {
+    from = now
+  } else if (period === 'week') {
+    const dayOfWeek = now.getDay()
+    const diff = dayOfWeek === 0 ? 6 : dayOfWeek - 1 // Monday = start
+    from = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff)
+  } else if (period === 'month') {
     from = new Date(now.getFullYear(), now.getMonth(), 1)
   } else if (period === 'quarter') {
     const qStart = Math.floor(now.getMonth() / 3) * 3
@@ -40,7 +56,7 @@ function periodParams(period: Period): AnalyticsParams {
     from = new Date(now.getFullYear(), 0, 1)
   }
 
-  return { date_from: fmt(from), date_to: today }
+  return { date_from: fmtDate(from), date_to: today }
 }
 
 function formatAmount(n: number, symbol?: string): string {
@@ -152,16 +168,37 @@ export function DashboardPage() {
   const navigate = useNavigate()
 
   const [period, setPeriod] = useState<Period>('month')
+  const [customFrom, setCustomFrom] = useState(fmtDate(new Date()))
+  const [customTo, setCustomTo] = useState(fmtDate(new Date()))
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>('balance')
+  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
+  const [showAccountFilter, setShowAccountFilter] = useState(false)
 
   const saveCurrency = useMutation({
     mutationFn: (code: string) => authApi.updateMe(code),
     onSuccess: (updatedUser) => updateUser(updatedUser),
   })
-  const baseParams = periodParams(period)
-  const params: AnalyticsParams = { ...baseParams, currency: displayCurrency }
+  const { data: accounts = [] } = useQuery({
+    queryKey: ['accounts', displayCurrency],
+    queryFn: () => accountsApi.list(displayCurrency),
+  })
+
+  // Build account_ids for analytics filter
+  const filteredAccountIds: string | undefined = (() => {
+    if (accountFilter === 'all') return undefined
+    if (accountFilter === 'custom') {
+      return selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined
+    }
+    // 'balance' — only accounts included in balance
+    const ids = accounts.filter((a) => a.includeInBalance).map((a) => a.id)
+    return ids.length > 0 ? ids.join(',') : undefined
+  })()
+
+  const baseParams = periodParams(period, customFrom, customTo)
+  const params: AnalyticsParams = { ...baseParams, currency: displayCurrency, account_ids: filteredAccountIds }
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', displayCurrency],
@@ -192,17 +229,18 @@ export function DashboardPage() {
     queryFn: () => analyticsApi.byTag(params),
   })
 
-  const { data: accounts = [] } = useQuery({
-    queryKey: ['accounts', displayCurrency],
-    queryFn: () => accountsApi.list(displayCurrency),
-  })
-
   const handleLogout = () => {
     logout()
     navigate('/login', { replace: true })
   }
 
-  const balancePieData: PieEntry[] = accounts
+  const filteredAccounts = accountFilter === 'all'
+    ? accounts
+    : accountFilter === 'custom'
+      ? accounts.filter((a) => selectedAccountIds.includes(a.id))
+      : accounts.filter((a) => a.includeInBalance)
+
+  const balancePieData: PieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
     .map((a) => ({ name: a.name, icon: a.icon ?? undefined, amount: a.balance!.display }))
 
@@ -281,18 +319,100 @@ export function DashboardPage() {
         </div>
 
         {/* Period switcher */}
-        <div className="flex gap-1 bg-card rounded-lg border p-1 mb-4">
+        <div className="grid grid-cols-3 gap-1 bg-card rounded-lg border p-1 mb-2">
           {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
             <button
               key={p}
               onClick={() => setPeriod(p)}
-              className={`flex-1 rounded py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded py-1.5 text-sm font-medium transition-colors ${
                 period === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {PERIOD_LABELS[p]}
             </button>
           ))}
+        </div>
+
+        {/* Custom date range */}
+        {period === 'custom' && (
+          <div className="grid grid-cols-2 gap-3 mb-2">
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">С</label>
+              <input
+                type="date"
+                value={customFrom}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground mb-1 block">По</label>
+              <input
+                type="date"
+                value={customTo}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Account filter */}
+        <div className="mb-4">
+          <div className="relative">
+            <button
+              onClick={() => setShowAccountFilter((v) => !v)}
+              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border bg-card hover:bg-muted w-full justify-between"
+            >
+              <span className="flex items-center gap-1.5">
+                <SlidersHorizontal size={14} />
+                {accountFilter === 'balance' && 'Счета в балансе'}
+                {accountFilter === 'all' && 'Все счета'}
+                {accountFilter === 'custom' && (selectedAccountIds.length > 0
+                  ? `Выбрано: ${selectedAccountIds.length}`
+                  : 'Выбрать счета'
+                )}
+              </span>
+              {showAccountFilter ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            </button>
+            {showAccountFilter && (
+              <div className="mt-1 bg-card border rounded-lg shadow-lg p-3 space-y-2 z-20 relative">
+                <div className="flex gap-1">
+                  {(['balance', 'all', 'custom'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      onClick={() => setAccountFilter(mode)}
+                      className={`flex-1 rounded py-1.5 text-xs font-medium transition-colors ${
+                        accountFilter === mode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
+                      }`}
+                    >
+                      {mode === 'balance' ? 'В балансе' : mode === 'all' ? 'Все' : 'Выбрать'}
+                    </button>
+                  ))}
+                </div>
+                {accountFilter === 'custom' && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {accounts.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => setSelectedAccountIds((prev) =>
+                          prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]
+                        )}
+                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                          selectedAccountIds.includes(a.id)
+                            ? 'bg-primary text-primary-foreground border-primary'
+                            : 'border-border text-foreground hover:bg-muted'
+                        }`}
+                      >
+                        {a.icon ? `${a.icon} ` : ''}{a.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Summary cards — clickable to switch chart */}
