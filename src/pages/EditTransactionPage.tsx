@@ -216,10 +216,12 @@ export function EditTransactionPage() {
               const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
               const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
               if (acctRate <= 0 || defRate <= 0) return null
-              const rate = (acctRate / defRate).toFixed(4)
+              const rate = acctRate / defRate
               return (
                 <p className="text-xs text-muted-foreground mt-1">
-                  1 {userDefaultCurrency} = {rate} {accountCurrency}
+                  {rate >= 1
+                    ? `1 ${userDefaultCurrency} = ${rate.toFixed(4)} ${accountCurrency}`
+                    : `1 ${accountCurrency} = ${(1 / rate).toFixed(4)} ${userDefaultCurrency}`}
                 </p>
               )
             })()}
