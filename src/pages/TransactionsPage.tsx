@@ -1,11 +1,12 @@
 import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users } from 'lucide-react'
+import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users, ChevronLeft, ChevronRight } from 'lucide-react'
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
 import { accountsApi, type Account } from '@/api/accounts'
 import { FilterSheet } from '@/components/FilterSheet'
 import { useAuthStore } from '@/store/authStore'
+import { usePeriodStore, computeDateRange, periodLabel } from '@/store/periodStore'
 
 const TYPE_LABELS: Record<string, string> = {
   expense: 'Расход',
@@ -175,6 +176,18 @@ export function TransactionsPage() {
     setSearchParams(filterToParams(f), { replace: true })
   }, [setSearchParams])
   const currentUserId = useAuthStore((s) => s.user?.id)
+  const { period, customFrom, customTo } = usePeriodStore()
+  const [periodOffset, setPeriodOffset] = useState(0)
+
+  const isCustom = period === 'custom'
+  const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
+
+  // Merge period dates into filter (period dates override manual filter dates)
+  const effectiveFilter: TransactionFilter = {
+    ...filter,
+    dateFrom,
+    dateTo,
+  }
 
   const { data: accounts = [] } = useQuery({
     queryKey: ['accounts'],
@@ -182,8 +195,8 @@ export function TransactionsPage() {
   })
 
   const { data: transactions = [], isLoading } = useQuery({
-    queryKey: ['transactions', filter],
-    queryFn: () => transactionsApi.list(filter),
+    queryKey: ['transactions', effectiveFilter],
+    queryFn: () => transactionsApi.list(effectiveFilter),
   })
 
   const deleteMutation = useMutation({
@@ -213,6 +226,27 @@ export function TransactionsPage() {
           >
             <Plus size={16} /> Добавить
           </Link>
+        </div>
+
+        {/* Period navigation */}
+        <div className="flex items-center justify-between bg-card rounded-lg border px-3 py-2 mb-3">
+          <button
+            onClick={() => setPeriodOffset((o) => o - 1)}
+            disabled={isCustom}
+            className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-sm font-medium">
+            {periodLabel(period, periodOffset, customFrom, customTo)}
+          </span>
+          <button
+            onClick={() => setPeriodOffset((o) => o + 1)}
+            disabled={isCustom || periodOffset >= 0}
+            className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={18} />
+          </button>
         </div>
 
         {/* Filter */}
