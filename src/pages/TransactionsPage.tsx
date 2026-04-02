@@ -1,4 +1,4 @@
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users } from 'lucide-react'
@@ -63,17 +63,20 @@ function TransactionCard({
     tx.type === 'income' ? 'text-green-600' : tx.type === 'transfer' ? 'text-blue-600' : 'text-red-500'
   const amountSign = tx.type === 'income' ? '+' : tx.type === 'transfer' ? '' : '−'
 
+  const [showTotal, setShowTotal] = useState(false)
+
   const isShared = account?.type === 'shared'
   const userShare = isShared && currentUserId
     ? tx.shares?.find((s) => s.userId === currentUserId)
     : null
-  const showShare = isShared && userShare != null && userShare.amount !== tx.amount
+  const isSharedTx = isShared && userShare != null
 
-  const displayAmount = showShare ? userShare!.amount : tx.amount
+  const displayAmount = isSharedTx ? userShare!.amount : tx.amount
 
-  // For shared cross-currency transactions, compute user's share in default currency
+  // For cross-currency transactions, compute default currency amount
+  // For shared: proportional to user's share
   const defaultCurrencyDisplay = tx.defaultCurrencyAmount != null && tx.defaultCurrency != null
-    ? (showShare
+    ? (isSharedTx && tx.amount > 0
         ? Math.round(userShare!.amount / tx.amount * tx.defaultCurrencyAmount * 100) / 100
         : tx.defaultCurrencyAmount)
     : null
@@ -106,13 +109,19 @@ function TransactionCard({
       </div>
       <div className="flex items-center gap-1 flex-shrink-0">
         <div className="flex flex-col items-end">
-          <span
-            className={`text-sm font-semibold ${amountColor} inline-flex items-center gap-1`}
-            title={showShare ? `Всего: ${amountSign}${formatAmt(tx.amount)} ${tx.currency}` : undefined}
+          <button
+            type="button"
+            onClick={isSharedTx ? () => setShowTotal((v) => !v) : undefined}
+            className={`text-sm font-semibold ${amountColor} inline-flex items-center gap-1 ${isSharedTx ? 'cursor-pointer' : ''}`}
           >
-            {showShare && <Users size={12} className="text-muted-foreground" />}
+            {isSharedTx && <Users size={12} className="text-muted-foreground" />}
             {amountSign}{formatAmt(displayAmount)} {tx.currency}
-          </span>
+          </button>
+          {isSharedTx && showTotal && (
+            <span className="text-xs text-muted-foreground/60">
+              всего {amountSign}{formatAmt(tx.amount)} {tx.currency}
+            </span>
+          )}
           {defaultCurrencyDisplay != null && tx.defaultCurrency != null && (
             <span className="text-xs text-muted-foreground/60">
               ≈ {formatAmt(defaultCurrencyDisplay)} {tx.defaultCurrency}
