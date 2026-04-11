@@ -175,6 +175,8 @@ export function DashboardPage() {
     return ids.length > 0 ? ids.join(',') : undefined
   })()
 
+  const isEmptyCustom = accountFilter === 'custom' && selectedAccountIds.length === 0
+
   const { dateFrom, dateTo } = computeDateRange(period, 0, customFrom, customTo)
   const params: AnalyticsParams = { date_from: dateFrom, date_to: dateTo, currency: displayCurrency, account_ids: filteredAccountIds }
 
@@ -187,25 +189,34 @@ export function DashboardPage() {
   const selectedCurrency: Currency | undefined = currencies.find((c) => c.code === displayCurrency)
   const sym = selectedCurrency?.symbol ?? displayCurrency
 
-  const { data: summary } = useQuery({
+  const { data: summaryRaw } = useQuery({
     queryKey: ['analytics', 'summary', params],
     queryFn: () => analyticsApi.summary(params),
+    enabled: !isEmptyCustom,
   })
 
-  const { data: byExpense = [] } = useQuery({
+  const { data: byExpenseRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-category', 'expense', params],
     queryFn: () => analyticsApi.byCategory({ ...params, type: 'expense' }),
+    enabled: !isEmptyCustom,
   })
 
-  const { data: byIncome = [] } = useQuery({
+  const { data: byIncomeRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-category', 'income', params],
     queryFn: () => analyticsApi.byCategory({ ...params, type: 'income' }),
+    enabled: !isEmptyCustom,
   })
 
-  const { data: byTag = [] } = useQuery({
+  const { data: byTagRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-tag', params],
     queryFn: () => analyticsApi.byTag(params),
+    enabled: !isEmptyCustom,
   })
+
+  const summary = isEmptyCustom ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
+  const byExpense = isEmptyCustom ? [] : byExpenseRaw
+  const byIncome = isEmptyCustom ? [] : byIncomeRaw
+  const byTag = isEmptyCustom ? [] : byTagRaw
 
   const handleLogout = () => {
     logout()
@@ -283,18 +294,23 @@ export function DashboardPage() {
 
       <IonContent fullscreen className="ion-padding">
         <div className="max-w-lg mx-auto">
-          {/* Period switcher */}
-          <IonSegment
-            value={period}
-            onIonChange={(e) => setPeriod(e.detail.value as Period)}
-            className="mb-2"
-          >
-            {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-              <IonSegmentButton key={p} value={p}>
-                <IonLabel>{PERIOD_LABELS[p]}</IonLabel>
-              </IonSegmentButton>
-            ))}
-          </IonSegment>
+          {/* Period switcher — dropdown (6 labels не помещаются в сегмент) */}
+          <div className="mb-2 rounded-md border bg-card">
+            <IonSelect
+              aria-label="Период"
+              interface="popover"
+              value={period}
+              onIonChange={(e) => setPeriod(e.detail.value as Period)}
+              label="Период"
+              labelPlacement="start"
+            >
+              {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                <IonSelectOption key={p} value={p}>
+                  {PERIOD_LABELS[p]}
+                </IonSelectOption>
+              ))}
+            </IonSelect>
+          </div>
 
           {/* Custom date range */}
           {period === 'custom' && (
