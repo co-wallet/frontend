@@ -1,8 +1,31 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Wallet, LogOut, List, Tag, Plus, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ChevronUp, ShieldCheck, SlidersHorizontal } from 'lucide-react'
+import { Wallet, List, Tag, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ChevronUp, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButtons,
+  IonButton,
+  IonIcon,
+  IonSegment,
+  IonSegmentButton,
+  IonLabel,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonFab,
+  IonFabButton,
+  IonSelect,
+  IonSelectOption,
+  IonChip,
+} from '@ionic/react'
+import { logOutOutline, addOutline } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
@@ -127,7 +150,6 @@ export function DashboardPage() {
 
   const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
-  const [showCurrencyPicker, setShowCurrencyPicker] = useState(false)
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('balance')
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
@@ -228,94 +250,78 @@ export function DashboardPage() {
     incomePieData
 
   return (
-    <div className="min-h-screen bg-muted pb-20">
-      <div className="max-w-lg mx-auto p-4">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold">co-wallet</h1>
-          <div className="flex items-center gap-3">
-            {/* Currency picker */}
-            <div className="relative">
-              <button
-                onClick={() => setShowCurrencyPicker((v) => !v)}
-                className="flex items-center gap-1 text-sm font-medium border rounded-md px-2 py-1 hover:bg-muted"
-              >
-                {selectedCurrency?.symbol ?? ''} {displayCurrency}
-                <ChevronDown size={12} />
-              </button>
-              {showCurrencyPicker && (
-                <>
-                  <div className="fixed inset-0 z-10" onClick={() => setShowCurrencyPicker(false)} />
-                  <div className="absolute right-0 top-full mt-1 z-20 bg-card border rounded-lg shadow-lg w-48 max-h-64 overflow-y-auto">
-                    {currencies.map((c) => (
-                      <button
-                        key={c.code}
-                        onClick={() => {
-                          setDisplayCurrency(c.code)
-                          setShowCurrencyPicker(false)
-                          saveCurrency.mutate(c.code)
-                        }}
-                        className={`w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between ${c.code === displayCurrency ? 'text-primary font-medium' : ''}`}
-                      >
-                        <span>{c.code}</span>
-                        <span className="text-xs text-muted-foreground">{c.symbol}</span>
-                      </button>
-                    ))}
-                  </div>
-                </>
-              )}
-            </div>
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>co-wallet</IonTitle>
+          <IonButtons slot="end">
+            <IonSelect
+              aria-label="Валюта"
+              interface="popover"
+              value={displayCurrency}
+              onIonChange={(e) => {
+                const code = e.detail.value as string
+                if (code && code !== displayCurrency) {
+                  setDisplayCurrency(code)
+                  saveCurrency.mutate(code)
+                }
+              }}
+              style={{ maxWidth: 110 }}
             >
-              <LogOut size={16} /> Выйти
-            </button>
-          </div>
-        </div>
+              {currencies.map((c) => (
+                <IonSelectOption key={c.code} value={c.code}>
+                  {c.symbol} {c.code}
+                </IonSelectOption>
+              ))}
+            </IonSelect>
+            <IonButton onClick={handleLogout} aria-label="Выйти">
+              <IonIcon slot="icon-only" icon={logOutOutline} />
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
 
-        {/* Period switcher */}
-        <div className="grid grid-cols-3 gap-1 bg-card rounded-lg border p-1 mb-2">
-          {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded py-1.5 text-sm font-medium transition-colors ${
-                period === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
-        </div>
+      <IonContent fullscreen className="ion-padding">
+        <div className="max-w-lg mx-auto">
+          {/* Period switcher */}
+          <IonSegment
+            value={period}
+            onIonChange={(e) => setPeriod(e.detail.value as Period)}
+            className="mb-2"
+          >
+            {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+              <IonSegmentButton key={p} value={p}>
+                <IonLabel>{PERIOD_LABELS[p]}</IonLabel>
+              </IonSegmentButton>
+            ))}
+          </IonSegment>
 
-        {/* Custom date range */}
-        {period === 'custom' && (
-          <div className="grid grid-cols-2 gap-3 mb-2">
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">С</label>
-              <input
-                type="date"
-                value={customFrom}
-                onChange={(e) => setCustomFrom(e.target.value)}
-                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
-              />
+          {/* Custom date range */}
+          {period === 'custom' && (
+            <div className="grid grid-cols-2 gap-3 mb-2">
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">С</label>
+                <input
+                  type="date"
+                  value={customFrom}
+                  onChange={(e) => setCustomFrom(e.target.value)}
+                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+                />
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground mb-1 block">По</label>
+                <input
+                  type="date"
+                  value={customTo}
+                  onChange={(e) => setCustomTo(e.target.value)}
+                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+                />
+              </div>
             </div>
-            <div>
-              <label className="text-xs text-muted-foreground mb-1 block">По</label>
-              <input
-                type="date"
-                value={customTo}
-                onChange={(e) => setCustomTo(e.target.value)}
-                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
-              />
-            </div>
-          </div>
-        )}
+          )}
 
-        {/* Account filter */}
-        <div className="mb-4">
-          <div className="relative">
+          {/* Account filter */}
+          <div className="mb-4 mt-3">
             <button
               onClick={() => setShowAccountFilter((v) => !v)}
               className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border bg-card hover:bg-muted w-full justify-between"
@@ -332,167 +338,179 @@ export function DashboardPage() {
               {showAccountFilter ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             </button>
             {showAccountFilter && (
-              <div className="mt-1 bg-card border rounded-lg shadow-lg p-3 space-y-2 z-20 relative">
-                <div className="flex gap-1">
-                  {(['balance', 'all', 'custom'] as const).map((mode) => (
-                    <button
-                      key={mode}
-                      onClick={() => setAccountFilter(mode)}
-                      className={`flex-1 rounded py-1.5 text-xs font-medium transition-colors ${
-                        accountFilter === mode ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      {mode === 'balance' ? 'В балансе' : mode === 'all' ? 'Все' : 'Выбрать'}
-                    </button>
-                  ))}
-                </div>
+              <div className="mt-2 space-y-2">
+                <IonSegment
+                  value={accountFilter}
+                  onIonChange={(e) => setAccountFilter(e.detail.value as AccountFilter)}
+                >
+                  <IonSegmentButton value="balance"><IonLabel>В балансе</IonLabel></IonSegmentButton>
+                  <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
+                  <IonSegmentButton value="custom"><IonLabel>Выбрать</IonLabel></IonSegmentButton>
+                </IonSegment>
                 {accountFilter === 'custom' && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
-                    {accounts.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => setSelectedAccountIds((prev) =>
-                          prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]
-                        )}
-                        className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
-                          selectedAccountIds.includes(a.id)
-                            ? 'bg-primary text-primary-foreground border-primary'
-                            : 'border-border text-foreground hover:bg-muted'
-                        }`}
-                      >
-                        {a.icon ? `${a.icon} ` : ''}{a.name}
-                      </button>
-                    ))}
+                    {accounts.map((a) => {
+                      const active = selectedAccountIds.includes(a.id)
+                      return (
+                        <IonChip
+                          key={a.id}
+                          color={active ? 'primary' : 'medium'}
+                          outline={!active}
+                          onClick={() => setSelectedAccountIds((prev) =>
+                            prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]
+                          )}
+                        >
+                          <IonLabel>{a.icon ? `${a.icon} ` : ''}{a.name}</IonLabel>
+                        </IonChip>
+                      )
+                    })}
                   </div>
                 )}
               </div>
             )}
           </div>
-        </div>
 
-        {/* Summary cards — clickable to switch chart */}
-        <div className="grid grid-cols-3 gap-2 mb-4">
-          <button
-            onClick={() => setChartMode('balance')}
-            className={`bg-card rounded-lg border p-3 text-left transition-all ${
-              chartMode === 'balance' ? 'ring-2 ring-primary border-primary' : 'hover:bg-muted'
-            }`}
-          >
-            <div className="flex items-center gap-1 text-muted-foreground mb-1">
-              <Scale size={14} />
-              <span className="text-xs">Баланс</span>
-            </div>
-            <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0, sym)}</p>
-          </button>
-          <button
-            onClick={() => setChartMode('expenses')}
-            className={`bg-card rounded-lg border p-3 text-left transition-all ${
-              chartMode === 'expenses' ? 'ring-2 ring-red-500 border-red-400' : 'hover:bg-muted'
-            }`}
-          >
-            <div className="flex items-center gap-1 text-red-500 mb-1">
-              <TrendingDown size={14} />
-              <span className="text-xs">Расходы</span>
-            </div>
-            <p className="text-sm font-semibold text-red-600 truncate">{formatAmount(summary?.expenses ?? 0, sym)}</p>
-          </button>
-          <button
-            onClick={() => setChartMode('income')}
-            className={`bg-card rounded-lg border p-3 text-left transition-all ${
-              chartMode === 'income' ? 'ring-2 ring-green-500 border-green-400' : 'hover:bg-muted'
-            }`}
-          >
-            <div className="flex items-center gap-1 text-green-600 mb-1">
-              <TrendingUp size={14} />
-              <span className="text-xs">Доходы</span>
-            </div>
-            <p className="text-sm font-semibold text-green-700 truncate">{formatAmount(summary?.income ?? 0, sym)}</p>
-          </button>
-        </div>
-
-        {/* Pie chart block */}
-        <div className="bg-card rounded-lg border p-4 mb-4">
-          <h2 className="text-sm font-semibold mb-3">{chartTitles[chartMode]}</h2>
-          <ChartBlock
-            data={activePieData}
-            sym={sym}
-            emptyText={chartEmptyTexts[chartMode]}
-            colors={chartMode === 'expenses' ? EXPENSE_COLORS : chartMode === 'income' ? INCOME_COLORS : BALANCE_COLORS}
-          />
-        </div>
-
-        {/* Tags breakdown */}
-        {byTag.length > 0 && (
-          <div className="bg-card rounded-lg border p-4 mb-4">
-            <h2 className="text-sm font-semibold mb-3">Расходы по тегам</h2>
-            <div className="space-y-2">
-              {byTag.slice(0, 6).map((s) => (
-                <div key={s.tagId} className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">#{s.tagName}</span>
-                  <span className="font-medium">{formatAmount(s.amount, sym)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Navigation tiles */}
-        <div className="grid grid-cols-2 gap-3">
-          <Link
-            to="/accounts"
-            className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted"
-          >
-            <Wallet size={24} className="text-primary" />
-            <span className="text-sm font-medium">Счета</span>
-          </Link>
-          <Link
-            to="/transactions"
-            className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted"
-          >
-            <List size={24} className="text-primary" />
-            <span className="text-sm font-medium">Транзакции</span>
-          </Link>
-          <Link
-            to="/tags"
-            className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted"
-          >
-            <Tag size={24} className="text-primary" />
-            <span className="text-sm font-medium">Теги</span>
-          </Link>
-          <Link
-            to="/categories"
-            className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted"
-          >
-            <LayoutList size={24} className="text-primary" />
-            <span className="text-sm font-medium">Категории</span>
-          </Link>
-          {user?.isAdmin && (
-            <Link
-              to="/admin"
-              className="bg-card rounded-lg border p-4 flex flex-col items-center gap-2 hover:bg-muted col-span-2"
+          {/* Summary cards — clickable to switch chart */}
+          <div className="grid grid-cols-3 gap-2 mb-4">
+            <IonCard
+              button
+              onClick={() => setChartMode('balance')}
+              color={chartMode === 'balance' ? 'primary' : undefined}
+              className="m-0"
             >
-              <ShieldCheck size={24} className="text-primary" />
-              <span className="text-sm font-medium">Администрирование</span>
-            </Link>
+              <IonCardContent className="ion-padding">
+                <div className="flex items-center gap-1 mb-1">
+                  <Scale size={14} />
+                  <span className="text-xs">Баланс</span>
+                </div>
+                <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0, sym)}</p>
+              </IonCardContent>
+            </IonCard>
+            <IonCard
+              button
+              onClick={() => setChartMode('expenses')}
+              color={chartMode === 'expenses' ? 'danger' : undefined}
+              className="m-0"
+            >
+              <IonCardContent className="ion-padding">
+                <div className="flex items-center gap-1 mb-1">
+                  <TrendingDown size={14} />
+                  <span className="text-xs">Расходы</span>
+                </div>
+                <p className="text-sm font-semibold truncate">{formatAmount(summary?.expenses ?? 0, sym)}</p>
+              </IonCardContent>
+            </IonCard>
+            <IonCard
+              button
+              onClick={() => setChartMode('income')}
+              color={chartMode === 'income' ? 'success' : undefined}
+              className="m-0"
+            >
+              <IonCardContent className="ion-padding">
+                <div className="flex items-center gap-1 mb-1">
+                  <TrendingUp size={14} />
+                  <span className="text-xs">Доходы</span>
+                </div>
+                <p className="text-sm font-semibold truncate">{formatAmount(summary?.income ?? 0, sym)}</p>
+              </IonCardContent>
+            </IonCard>
+          </div>
+
+          {/* Pie chart block */}
+          <IonCard className="m-0 mb-4">
+            <IonCardHeader>
+              <IonCardTitle className="text-sm">{chartTitles[chartMode]}</IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <ChartBlock
+                data={activePieData}
+                sym={sym}
+                emptyText={chartEmptyTexts[chartMode]}
+                colors={chartMode === 'expenses' ? EXPENSE_COLORS : chartMode === 'income' ? INCOME_COLORS : BALANCE_COLORS}
+              />
+            </IonCardContent>
+          </IonCard>
+
+          {/* Tags breakdown */}
+          {byTag.length > 0 && (
+            <IonCard className="m-0 mb-4">
+              <IonCardHeader>
+                <IonCardTitle className="text-sm">Расходы по тегам</IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <div className="space-y-2">
+                  {byTag.slice(0, 6).map((s) => (
+                    <div key={s.tagId} className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground">#{s.tagName}</span>
+                      <span className="font-medium">{formatAmount(s.amount, sym)}</span>
+                    </div>
+                  ))}
+                </div>
+              </IonCardContent>
+            </IonCard>
           )}
+
+          {/* Navigation tiles */}
+          <div className="grid grid-cols-2 gap-3">
+            <Link to="/accounts" className="contents">
+              <IonCard button className="m-0">
+                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
+                  <Wallet size={24} />
+                  <span className="text-sm font-medium">Счета</span>
+                </IonCardContent>
+              </IonCard>
+            </Link>
+            <Link to="/transactions" className="contents">
+              <IonCard button className="m-0">
+                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
+                  <List size={24} />
+                  <span className="text-sm font-medium">Транзакции</span>
+                </IonCardContent>
+              </IonCard>
+            </Link>
+            <Link to="/tags" className="contents">
+              <IonCard button className="m-0">
+                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
+                  <Tag size={24} />
+                  <span className="text-sm font-medium">Теги</span>
+                </IonCardContent>
+              </IonCard>
+            </Link>
+            <Link to="/categories" className="contents">
+              <IonCard button className="m-0">
+                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
+                  <LayoutList size={24} />
+                  <span className="text-sm font-medium">Категории</span>
+                </IonCardContent>
+              </IonCard>
+            </Link>
+            {user?.isAdmin && (
+              <Link to="/admin" className="contents col-span-2">
+                <IonCard button className="m-0 col-span-2">
+                  <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
+                    <ShieldCheck size={24} />
+                    <span className="text-sm font-medium">Администрирование</span>
+                  </IonCardContent>
+                </IonCard>
+              </Link>
+            )}
+          </div>
+
+          {/* Greeting */}
+          <IonCard className="m-0 mt-3">
+            <IonCardContent className="text-xs text-muted-foreground">
+              {user?.username}  ·  {user?.email}
+            </IonCardContent>
+          </IonCard>
         </div>
 
-        {/* Greeting */}
-        <div className="bg-card rounded-lg border p-3 mt-3 text-xs text-muted-foreground">
-          {user?.username}  ·  {user?.email}
-        </div>
-      </div>
-
-      {/* FAB */}
-      <div className="fixed bottom-6 right-6">
-        <Link
-          to="/transactions/add"
-          className="w-14 h-14 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-lg hover:opacity-90"
-        >
-          <Plus size={24} />
-        </Link>
-      </div>
-    </div>
+        {/* FAB */}
+        <IonFab slot="fixed" vertical="bottom" horizontal="end">
+          <IonFabButton onClick={() => navigate('/transactions/add')}>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+      </IonContent>
+    </IonPage>
   )
 }
