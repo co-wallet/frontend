@@ -142,6 +142,7 @@ export function EditTransactionPage() {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['accounts'] })
       qc.invalidateQueries({ queryKey: ['analytics'] })
+      qc.invalidateQueries({ queryKey: ['tags'] })
       navigate(-1)
     },
   })
