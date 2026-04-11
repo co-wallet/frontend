@@ -8,6 +8,7 @@ export function TagsPage() {
   const qc = useQueryClient()
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [editError, setEditError] = useState<string | null>(null)
 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ['tags'],
@@ -25,6 +26,10 @@ export function TagsPage() {
     onSuccess: () => {
       invalidateTagConsumers()
       setEditingId(null)
+      setEditError(null)
+    },
+    onError: (err: any) => {
+      setEditError(err?.response?.data?.error ?? 'Не удалось сохранить тег')
     },
   })
 
@@ -36,11 +41,13 @@ export function TagsPage() {
   function startEdit(id: string, name: string) {
     setEditingId(id)
     setEditName(name)
+    setEditError(null)
   }
 
   function cancelEdit() {
     setEditingId(null)
     setEditName('')
+    setEditError(null)
   }
 
   return (
@@ -65,28 +72,34 @@ export function TagsPage() {
             {tags.map((tag) => (
               <div key={tag.id} className="bg-card rounded-lg border px-4 py-3 flex items-center gap-3">
                 {editingId === tag.id ? (
-                  <>
-                    <input
-                      autoFocus
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') renameMutation.mutate({ id: tag.id, name: editName })
-                        if (e.key === 'Escape') cancelEdit()
-                      }}
-                      className="flex-1 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary"
-                    />
-                    <button
-                      onClick={() => renameMutation.mutate({ id: tag.id, name: editName })}
-                      disabled={renameMutation.isPending || !editName.trim()}
-                      className="p-1 rounded hover:bg-muted text-green-600 disabled:opacity-50"
-                    >
-                      <Check size={16} />
-                    </button>
-                    <button onClick={cancelEdit} className="p-1 rounded hover:bg-muted text-muted-foreground">
-                      <X size={16} />
-                    </button>
-                  </>
+                  <div className="flex-1 flex flex-col gap-1">
+                    <div className="flex items-center gap-3">
+                      <input
+                        autoFocus
+                        value={editName}
+                        onChange={(e) => {
+                          setEditName(e.target.value)
+                          if (editError) setEditError(null)
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') renameMutation.mutate({ id: tag.id, name: editName })
+                          if (e.key === 'Escape') cancelEdit()
+                        }}
+                        className="flex-1 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary"
+                      />
+                      <button
+                        onClick={() => renameMutation.mutate({ id: tag.id, name: editName })}
+                        disabled={renameMutation.isPending || !editName.trim()}
+                        className="p-1 rounded hover:bg-muted text-green-600 disabled:opacity-50"
+                      >
+                        <Check size={16} />
+                      </button>
+                      <button onClick={cancelEdit} className="p-1 rounded hover:bg-muted text-muted-foreground">
+                        <X size={16} />
+                      </button>
+                    </div>
+                    {editError && <p className="text-xs text-destructive">{editError}</p>}
+                  </div>
                 ) : (
                   <>
                     <span className="flex-1 text-sm font-medium">#{tag.name}</span>
