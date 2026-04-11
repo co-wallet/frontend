@@ -14,17 +14,23 @@ export function TagsPage() {
     queryFn: () => tagsApi.list(),
   })
 
+  function invalidateTagConsumers() {
+    qc.invalidateQueries({ queryKey: ['tags'] })
+    qc.invalidateQueries({ queryKey: ['analytics'] })
+    qc.invalidateQueries({ queryKey: ['transactions'] })
+  }
+
   const renameMutation = useMutation({
     mutationFn: ({ id, name }: { id: string; name: string }) => tagsApi.rename(id, name),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['tags'] })
+      invalidateTagConsumers()
       setEditingId(null)
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: tagsApi.delete,
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['tags'] }),
+    onSuccess: invalidateTagConsumers,
   })
 
   function startEdit(id: string, name: string) {
