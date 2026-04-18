@@ -27,6 +27,7 @@ import { FilterSheet } from '@/components/FilterSheet'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange, periodLabel } from '@/store/periodStore'
 import { EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
+import { useChartTheme } from '@/lib/useChartTheme'
 
 const TYPE_LABELS: Record<string, string> = {
   expense: 'Расход',
@@ -197,6 +198,7 @@ export function TransactionsPage() {
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
+  const chartTheme = useChartTheme()
 
   const isCustom = period === 'custom'
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
@@ -386,7 +388,7 @@ export function TransactionsPage() {
                           <Cell key={i} fill={chartColors[i % chartColors.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value: number) => formatAmt(value)} />
+                      <Tooltip formatter={(value: number) => formatAmt(value)} contentStyle={chartTheme.tooltipStyle} />
                     </PieChart>
                   </ResponsiveContainer>
                   <div style={{ marginTop: '8px' }}>
@@ -399,7 +401,7 @@ export function TransactionsPage() {
                               background: chartColors[i % chartColors.length],
                             }}
                           />
-                          <span style={{ color: 'var(--ion-color-medium)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                          <span style={{ color: chartTheme.legendColor, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {s.icon ? `${s.icon} ` : ''}{s.categoryName}
                           </span>
                         </div>

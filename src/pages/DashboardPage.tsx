@@ -55,6 +55,7 @@ type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'balance' | 'all' | 'custom'
 
 import { BALANCE_COLORS, EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
+import { useChartTheme } from '@/lib/useChartTheme'
 
 function formatAmount(n: number, symbol?: string): string {
   const num = new Intl.NumberFormat('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n)
@@ -74,11 +75,15 @@ function ChartBlock({
   sym,
   emptyText,
   colors,
+  tooltipStyle,
+  legendColor,
 }: {
   data: PieEntry[]
   sym: string
   emptyText: string
   colors: string[]
+  tooltipStyle: React.CSSProperties
+  legendColor: string
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const positive = data.filter((d) => d.amount > 0).sort((a, b) => b.amount - a.amount)
@@ -115,6 +120,7 @@ function ChartBlock({
             <Tooltip
               formatter={(value: number) => formatAmount(value, sym)}
               labelFormatter={(label) => String(label)}
+              contentStyle={tooltipStyle}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -134,7 +140,7 @@ function ChartBlock({
                     background: isNegative ? '#f87171' : colors[i % colors.length],
                   }}
                 />
-                <span style={{ color: 'var(--ion-color-medium)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
                   {s.icon ? `${s.icon} ` : ''}{s.name}
                 </span>
               </div>
@@ -276,6 +282,8 @@ export function DashboardPage() {
     chartMode === 'balance' ? balancePieData :
     chartMode === 'expenses' ? expensePieData :
     incomePieData
+
+  const chartTheme = useChartTheme()
 
   const navItems: { icon: string; label: string; href: string }[] = [
     { icon: walletOutline, label: 'Счета', href: '/accounts' },
@@ -466,6 +474,8 @@ export function DashboardPage() {
                 sym={sym}
                 emptyText={chartEmptyTexts[chartMode]}
                 colors={chartMode === 'expenses' ? EXPENSE_COLORS : chartMode === 'income' ? INCOME_COLORS : BALANCE_COLORS}
+                tooltipStyle={chartTheme.tooltipStyle}
+                legendColor={chartTheme.legendColor}
               />
             </IonCardContent>
           </IonCard>
