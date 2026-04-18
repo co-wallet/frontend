@@ -1,19 +1,30 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { X } from 'lucide-react'
+import {
+  IonChip,
+  IonIcon,
+  IonItem,
+  IonLabel,
+  IonList,
+  IonNote,
+  IonSearchbar,
+  IonText,
+} from '@ionic/react'
+import { closeCircle } from 'ionicons/icons'
 import { tagsApi } from '@/api/tags'
 
 interface TagInputProps {
   value: string[]
   onChange: (tags: string[]) => void
-  /** Called on every keystroke so the parent can read pending text at submit time */
   onPendingChange?: (pending: string) => void
 }
+
+const MAX_TAGS = 10
 
 export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
   const [input, setInput] = useState('')
   const [showSuggestions, setShowSuggestions] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
+  const wrapperRef = useRef<HTMLDivElement>(null)
 
   const { data: suggestions = [] } = useQuery({
     queryKey: ['tags', 'autocomplete', input],
@@ -28,7 +39,7 @@ export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
 
   function addTag(name: string) {
     const trimmed = name.trim().toLowerCase()
-    if (!trimmed || value.includes(trimmed)) return
+    if (!trimmed || value.includes(trimmed) || value.length >= MAX_TAGS) return
     onChange([...value, trimmed])
     setInput('')
     setShowSuggestions(false)
@@ -49,10 +60,9 @@ export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
     }
   }
 
-  // Close suggestions on outside click
   useEffect(() => {
     function handler(e: MouseEvent) {
-      if (inputRef.current && !inputRef.current.closest('.tag-input-wrapper')?.contains(e.target as Node)) {
+      if (wrapperRef.current && !wrapperRef.current.contains(e.target as Node)) {
         setShowSuggestions(false)
       }
     }
@@ -61,54 +71,70 @@ export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
   }, [])
 
   return (
-    <div className="tag-input-wrapper relative">
-      <div
-        className="min-h-[38px] w-full rounded-md border px-2 py-1.5 flex flex-wrap gap-1.5 cursor-text focus-within:ring-2 focus-within:ring-primary"
-        onClick={() => inputRef.current?.focus()}
-      >
+    <div ref={wrapperRef} style={{ position: 'relative' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
         {value.map((tag) => (
-          <span
-            key={tag}
-            className="inline-flex items-center gap-1 bg-primary/10 text-primary rounded px-2 py-0.5 text-xs font-medium"
-          >
-            #{tag}
-            <button
-              type="button"
-              onClick={(e) => { e.stopPropagation(); removeTag(tag) }}
-              className="hover:text-destructive"
-            >
-              <X size={10} />
-            </button>
-          </span>
+          <IonChip key={tag} color="primary" onClick={() => removeTag(tag)}>
+            <IonLabel>#{tag}</IonLabel>
+            <IonIcon icon={closeCircle} />
+          </IonChip>
         ))}
-        <input
-          ref={inputRef}
-          value={input}
-          onChange={(e) => { setInput(e.target.value); setShowSuggestions(true); onPendingChange?.(e.target.value) }}
-          onKeyDown={handleKeyDown}
-          onFocus={() => input && setShowSuggestions(true)}
-          placeholder={value.length === 0 ? 'Добавить тег...' : ''}
-          className="flex-1 min-w-[80px] text-sm outline-none bg-transparent"
-        />
       </div>
-      {showSuggestions && filteredSuggestions.length > 0 && (
-        <div className="absolute z-10 top-full mt-1 w-full bg-card border rounded-md shadow-md overflow-hidden">
-          {filteredSuggestions.map((s) => (
-            <button
-              key={s.id}
-              type="button"
-              onMouseDown={(e) => { e.preventDefault(); addTag(s.name) }}
-              className="w-full text-left px-3 py-2 text-sm hover:bg-muted flex items-center justify-between"
-            >
-              <span>#{s.name}</span>
-              {s.txCount !== undefined && (
-                <span className="text-xs text-muted-foreground">{s.txCount}</span>
-              )}
-            </button>
-          ))}
-        </div>
+
+      {value.length >= MAX_TAGS ? (
+        <IonText color="medium">
+          <p style={{ fontSize: '0.75rem', margin: '4px 0' }}>Максимум {MAX_TAGS} тегов</p>
+        </IonText>
+      ) : (
+        <IonSearchbar
+          value={input}
+          debounce={300}
+          placeholder="Добавить тег..."
+          onIonInput={(e) => {
+            const val = e.detail.value ?? ''
+            setInput(val)
+            setShowSuggestions(val.length > 0)
+            onPendingChange?.(val)
+          }}
+          onKeyDown={handleKeyDown}
+          onIonFocus={() => input && setShowSuggestions(true)}
+          style={{ '--border-radius': '8px', padding: '0' } as React.CSSProperties}
+        />
       )}
-      <p className="text-xs text-muted-foreground mt-1">Enter или запятая — добавить тег</p>
+
+      {showSuggestions && filteredSuggestions.length > 0 && (
+        <IonList
+          style={{
+            position: 'absolute',
+            zIndex: 10,
+            width: '100%',
+            background: 'var(--ion-background-color)',
+            border: '1px solid var(--ion-border-color, #e0e0e0)',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            maxHeight: '200px',
+            overflow: 'auto',
+          }}
+        >
+          {filteredSuggestions.map((s) => (
+            <IonItem
+              key={s.id}
+              button
+              detail={false}
+              onMouseDown={(e) => { e.preventDefault(); addTag(s.name) }}
+            >
+              <IonLabel>#{s.name}</IonLabel>
+              {s.txCount !== undefined && (
+                <IonNote slot="end">{s.txCount}</IonNote>
+              )}
+            </IonItem>
+          ))}
+        </IonList>
+      )}
+
+      <IonText color="medium">
+        <p style={{ fontSize: '0.75rem', margin: '4px 0 0' }}>Enter или запятая — добавить тег</p>
+      </IonText>
     </div>
   )
 }
