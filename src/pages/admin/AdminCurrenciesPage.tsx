@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { RefreshCw, Plus, Coins } from 'lucide-react'
 import { adminApi, type AdminCurrency } from '@/api/admin'
-import { cn } from '@/lib/utils'
 
 function AddCurrencyForm({ onClose }: { onClose: () => void }) {
   const qc = useQueryClient()
@@ -106,7 +105,7 @@ function CurrencyRow({ currency }: { currency: AdminCurrency }) {
   return (
     <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
       <div className="flex items-center gap-3">
-        <div className={cn('w-2 h-2 rounded-full', currency.isActive ? 'bg-green-500' : 'bg-muted-foreground')} />
+        <div className={`w-2 h-2 rounded-full ${currency.isActive ? 'bg-green-500' : 'bg-muted-foreground'}`} />
         <div>
           <span className="font-medium text-sm">{currency.code}</span>
           {currency.symbol && (
@@ -124,12 +123,7 @@ function CurrencyRow({ currency }: { currency: AdminCurrency }) {
         <button
           onClick={() => toggle.mutate()}
           disabled={toggle.isPending}
-          className={cn(
-            'text-xs px-2 py-1 rounded-md border font-medium transition-colors',
-            currency.isActive
-              ? 'text-muted-foreground hover:text-destructive hover:border-destructive'
-              : 'text-green-600 hover:bg-green-50 border-green-300',
-          )}
+          className={`text-xs px-2 py-1 rounded-md border font-medium transition-colors ${currency.isActive ? 'text-muted-foreground hover:text-destructive hover:border-destructive' : 'text-green-600 hover:bg-green-50 border-green-300'}`}
         >
           {currency.isActive ? 'Отключить' : 'Включить'}
         </button>

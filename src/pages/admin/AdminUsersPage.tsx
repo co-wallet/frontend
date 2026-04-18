@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Shield, ShieldOff, KeyRound, Users } from 'lucide-react'
 import { adminApi, type AdminUser } from '@/api/admin'
-import { cn } from '@/lib/utils'
 
 function ResetPasswordModal({
   user,
@@ -113,20 +112,14 @@ export function AdminUsersPage() {
                     <button
                       title={u.isActive ? 'Заблокировать' : 'Разблокировать'}
                       onClick={() => toggleActive.mutate({ id: u.id, isActive: !u.isActive })}
-                      className={cn(
-                        'p-1.5 rounded-md hover:bg-muted',
-                        u.isActive ? 'text-muted-foreground' : 'text-destructive',
-                      )}
+                      className={`p-1.5 rounded-md hover:bg-muted ${u.isActive ? 'text-muted-foreground' : 'text-destructive'}`}
                     >
                       {u.isActive ? <ShieldOff size={16} /> : <Shield size={16} />}
                     </button>
                     <button
                       title={u.isAdmin ? 'Снять права админа' : 'Назначить админом'}
                       onClick={() => toggleAdmin.mutate({ id: u.id, isAdmin: !u.isAdmin })}
-                      className={cn(
-                        'p-1.5 rounded-md hover:bg-muted',
-                        u.isAdmin ? 'text-primary' : 'text-muted-foreground',
-                      )}
+                      className={`p-1.5 rounded-md hover:bg-muted ${u.isAdmin ? 'text-primary' : 'text-muted-foreground'}`}
                     >
                       <Shield size={16} />
                     </button>

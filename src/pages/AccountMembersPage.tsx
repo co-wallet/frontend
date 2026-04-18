@@ -5,7 +5,7 @@ import { UserPlus, Trash2 } from 'lucide-react'
 import { accountsApi } from '@/api/accounts'
 import { authApi, type UserSummary } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
-import { parseDecimal, filterDecimalInput } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
 
 export function AccountMembersPage() {
   const { accountID } = useParams<{ accountID: string }>()

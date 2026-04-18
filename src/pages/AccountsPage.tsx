@@ -5,7 +5,7 @@ import { Plus, Wallet, Users, Trash2, Pencil } from 'lucide-react'
 import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts'
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
-import { cn, parseDecimal, filterDecimalInput } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
 const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
 function fmtCurrency(amount: number, currency: string): string {
@@ -82,10 +82,7 @@ function AccountForm({
               key={i}
               type="button"
               onClick={() => setIcon(i)}
-              className={cn(
-                'w-9 h-9 rounded-md border text-lg flex items-center justify-center',
-                icon === i ? 'border-primary ring-2 ring-primary' : 'border-border',
-              )}
+              className={`w-9 h-9 rounded-md border text-lg flex items-center justify-center ${icon === i ? 'border-primary ring-2 ring-primary' : 'border-border'}`}
             >
               {i}
             </button>
@@ -104,12 +101,7 @@ function AccountForm({
                 key={t}
                 type="button"
                 onClick={() => setType(t)}
-                className={cn(
-                  'flex-1 py-2 rounded-md border text-sm font-medium',
-                  type === t
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border text-foreground',
-                )}
+                className={`flex-1 py-2 rounded-md border text-sm font-medium ${type === t ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-foreground'}`}
               >
                 {t === 'personal' ? 'Личный' : 'Совместный'}
               </button>

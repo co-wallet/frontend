@@ -7,7 +7,7 @@ import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
 import { useAuthStore } from '@/store/authStore'
-import { cn, parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Расход' },
@@ -239,12 +239,7 @@ export function AddTransactionPage() {
                   key={opt.value}
                   type="button"
                   onClick={() => setType(opt.value)}
-                  className={cn(
-                    'flex-1 py-2 rounded-md border text-sm font-medium',
-                    type === opt.value
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border text-foreground',
-                  )}
+                  className={`flex-1 py-2 rounded-md border text-sm font-medium ${type === opt.value ? 'bg-primary text-primary-foreground border-primary' : 'border-border text-foreground'}`}
                 >
                   {opt.label}
                 </button>

@@ -7,7 +7,7 @@ import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
 import { useAuthStore } from '@/store/authStore'
-import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 
 function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
   const result: CategoryNode[] = []
