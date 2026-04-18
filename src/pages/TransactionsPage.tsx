@@ -1,15 +1,31 @@
 import { useCallback, useState } from 'react'
-import { Link, useHistory, useLocation } from 'react-router-dom'
+import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, TrendingDown, TrendingUp } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonButtons, IonMenuButton, IonButton, IonIcon,
+  IonList, IonItem, IonLabel, IonNote, IonChip,
+  IonItemSliding, IonItemOptions, IonItemOption,
+  IonItemGroup, IonItemDivider,
+  IonFab, IonFabButton,
+  IonSpinner, IonText, IonAlert,
+  IonCard, IonCardContent,
+  IonSegment, IonSegmentButton,
+  IonSelect, IonSelectOption,
+} from '@ionic/react'
+import {
+  addOutline, createOutline, trashOutline,
+  arrowDownOutline, arrowUpOutline, swapHorizontalOutline,
+  peopleOutline, chevronDownOutline, chevronUpOutline,
+  trendingDownOutline, trendingUpOutline,
+} from 'ionicons/icons'
 import { transactionsApi, type Transaction, type TransactionFilter } from '@/api/transactions'
 import { accountsApi, type Account } from '@/api/accounts'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { FilterSheet } from '@/components/FilterSheet'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange, periodLabel } from '@/store/periodStore'
-
 import { EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 
 const TYPE_LABELS: Record<string, string> = {
@@ -43,111 +59,16 @@ function groupByDate(txs: Transaction[]): { dateKey: string; label: string; item
   }))
 }
 
-function TypeIcon({ type }: { type: string }) {
-  if (type === 'income') return <ArrowUpRight size={16} className="text-green-600" />
-  if (type === 'transfer') return <ArrowLeftRight size={16} className="text-blue-500" />
-  return <ArrowDownLeft size={16} className="text-red-500" />
+function typeIcon(type: string): string {
+  if (type === 'income') return arrowUpOutline
+  if (type === 'transfer') return swapHorizontalOutline
+  return arrowDownOutline
 }
 
-function TransactionCard({
-  tx,
-  accounts,
-  currentUserId,
-  onDelete,
-}: {
-  tx: Transaction
-  accounts: Account[]
-  currentUserId: string | undefined
-  onDelete: (id: string) => void
-}) {
-  const history = useHistory()
-  const account = accounts.find((a) => a.id === tx.accountId)
-  const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null
-
-  const amountColor =
-    tx.type === 'income' ? 'text-green-600' : tx.type === 'transfer' ? 'text-blue-600' : 'text-red-500'
-  const amountSign = tx.type === 'income' ? '+' : tx.type === 'transfer' ? '' : '−'
-
-  const [showTotal, setShowTotal] = useState(false)
-
-  const isShared = account?.type === 'shared'
-  const userShare = isShared && currentUserId
-    ? tx.shares?.find((s) => s.userId === currentUserId)
-    : null
-  const isSharedTx = isShared && userShare != null
-
-  const displayAmount = isSharedTx ? userShare!.amount : tx.amount
-
-  // For cross-currency transactions, compute default currency amount
-  // For shared: proportional to user's share
-  const defaultCurrencyDisplay = tx.defaultCurrencyAmount != null && tx.defaultCurrency != null
-    ? (isSharedTx && tx.amount > 0
-        ? Math.round(userShare!.amount / tx.amount * tx.defaultCurrencyAmount * 100) / 100
-        : tx.defaultCurrencyAmount)
-    : null
-
-  const formatAmt = (n: number) =>
-    n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
-
-  return (
-    <div className="bg-card rounded-lg border p-3 flex items-center gap-3">
-      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-muted flex items-center justify-center">
-        <TypeIcon type={tx.type} />
-      </div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate">
-          {tx.description || TYPE_LABELS[tx.type]}
-        </p>
-        <p className="text-xs text-muted-foreground truncate">
-          {account?.name ?? tx.accountId}
-          {toAccount ? ` → ${toAccount.name}` : ''}
-        </p>
-        {tx.tags?.length > 0 && (
-          <div className="flex gap-1 mt-1 flex-wrap">
-            {tx.tags.map((t) => (
-              <span key={t.id} className="text-xs bg-primary/10 text-primary rounded px-1.5 py-0.5">
-                #{t.name}
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-      <div className="flex items-center gap-1 flex-shrink-0">
-        <div className="flex flex-col items-end">
-          <button
-            type="button"
-            onClick={isSharedTx ? () => setShowTotal((v) => !v) : undefined}
-            className={`text-sm font-semibold ${amountColor} inline-flex items-center gap-1 ${isSharedTx ? 'cursor-pointer' : ''}`}
-          >
-            {isSharedTx && <Users size={12} className="text-muted-foreground" />}
-            {amountSign}{formatAmt(displayAmount)} {tx.currency}
-          </button>
-          {isSharedTx && showTotal && (
-            <span className="text-xs text-muted-foreground/60">
-              всего {amountSign}{formatAmt(tx.amount)} {tx.currency}
-            </span>
-          )}
-          {defaultCurrencyDisplay != null && tx.defaultCurrency != null && (
-            <span className="text-xs text-muted-foreground/60">
-              ≈ {formatAmt(defaultCurrencyDisplay)} {tx.defaultCurrency}
-            </span>
-          )}
-        </div>
-        <button
-          onClick={() => history.push(`/transactions/${tx.id}/edit`)}
-          className="p-1 rounded hover:bg-muted text-muted-foreground ml-1"
-        >
-          <Pencil size={14} />
-        </button>
-        <button
-          onClick={() => onDelete(tx.id)}
-          className="p-1 rounded hover:bg-muted text-destructive"
-        >
-          <Trash2 size={14} />
-        </button>
-      </div>
-    </div>
-  )
+function typeColor(type: string): string {
+  if (type === 'income') return 'success'
+  if (type === 'transfer') return 'primary'
+  return 'danger'
 }
 
 function filterFromParams(sp: URLSearchParams): TransactionFilter {
@@ -172,6 +93,95 @@ function filterToParams(f: TransactionFilter): URLSearchParams {
   return sp
 }
 
+function TransactionItem({
+  tx,
+  accounts,
+  currentUserId,
+  onEdit,
+  onDelete,
+}: {
+  tx: Transaction
+  accounts: Account[]
+  currentUserId: string | undefined
+  onEdit: (id: string) => void
+  onDelete: (id: string) => void
+}) {
+  const account = accounts.find((a) => a.id === tx.accountId)
+  const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null
+
+  const amountSign = tx.type === 'income' ? '+' : tx.type === 'transfer' ? '' : '−'
+
+  const isShared = account?.type === 'shared'
+  const userShare = isShared && currentUserId
+    ? tx.shares?.find((s) => s.userId === currentUserId)
+    : null
+  const isSharedTx = isShared && userShare != null
+
+  const displayAmount = isSharedTx ? userShare!.amount : tx.amount
+
+  const defaultCurrencyDisplay = tx.defaultCurrencyAmount != null && tx.defaultCurrency != null
+    ? (isSharedTx && tx.amount > 0
+        ? Math.round(userShare!.amount / tx.amount * tx.defaultCurrencyAmount * 100) / 100
+        : tx.defaultCurrencyAmount)
+    : null
+
+  const formatAmt = (n: number) =>
+    n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 4 })
+
+  return (
+    <IonItemSliding>
+      <IonItem lines="full">
+        <IonIcon
+          icon={typeIcon(tx.type)}
+          color={typeColor(tx.type)}
+          slot="start"
+          style={{ fontSize: '20px' }}
+        />
+        <IonLabel>
+          <h3>{tx.description || TYPE_LABELS[tx.type]}</h3>
+          <p>
+            {account?.name ?? tx.accountId}
+            {toAccount ? ` → ${toAccount.name}` : ''}
+          </p>
+          {tx.tags?.length > 0 && (
+            <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginTop: '4px' }}>
+              {tx.tags.map((t) => (
+                <IonChip key={t.id} style={{ height: '22px', fontSize: '11px', margin: 0 }}>
+                  #{t.name}
+                </IonChip>
+              ))}
+            </div>
+          )}
+        </IonLabel>
+        <IonNote slot="end" color={typeColor(tx.type)} style={{ textAlign: 'right' }}>
+          <div style={{ fontWeight: 600 }}>
+            {isSharedTx && <IonIcon icon={peopleOutline} style={{ fontSize: '12px', marginRight: '2px', verticalAlign: 'middle' }} />}
+            {amountSign}{formatAmt(displayAmount)} {tx.currency}
+          </div>
+          {isSharedTx && (
+            <div style={{ fontSize: '10px', opacity: 0.6 }}>
+              всего {amountSign}{formatAmt(tx.amount)} {tx.currency}
+            </div>
+          )}
+          {defaultCurrencyDisplay != null && tx.defaultCurrency != null && (
+            <div style={{ fontSize: '10px', opacity: 0.6 }}>
+              ≈ {formatAmt(defaultCurrencyDisplay)} {tx.defaultCurrency}
+            </div>
+          )}
+        </IonNote>
+      </IonItem>
+      <IonItemOptions side="end">
+        <IonItemOption color="primary" onClick={() => onEdit(tx.id)}>
+          <IonIcon slot="icon-only" icon={createOutline} />
+        </IonItemOption>
+        <IonItemOption color="danger" onClick={() => onDelete(tx.id)}>
+          <IonIcon slot="icon-only" icon={trashOutline} />
+        </IonItemOption>
+      </IonItemOptions>
+    </IonItemSliding>
+  )
+}
+
 export function TransactionsPage() {
   const qc = useQueryClient()
   const location = useLocation()
@@ -186,18 +196,17 @@ export function TransactionsPage() {
   const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
+  const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
 
   const isCustom = period === 'custom'
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
 
-  // Merge period dates into filter (period dates override manual filter dates)
   const effectiveFilter: TransactionFilter = {
     ...filter,
     dateFrom,
     dateTo,
   }
 
-  // Analytics for pie chart
   const analyticsParams: AnalyticsParams = {
     date_from: dateFrom,
     date_to: dateTo,
@@ -249,118 +258,117 @@ export function TransactionsPage() {
     n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="max-w-lg mx-auto p-4">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
-              ← Назад
-            </Link>
-            <h1 className="text-xl font-bold">Транзакции</h1>
-          </div>
-          <Link
-            to={`/transactions/add${periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''}`}
-            className="flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
-          >
-            <Plus size={16} /> Добавить
-          </Link>
-        </div>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
+          <IonTitle>Транзакции</IonTitle>
+        </IonToolbar>
 
         {/* Period switcher */}
-        <div className="grid grid-cols-3 gap-1 bg-card rounded-lg border p-1 mb-2">
-          {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-            <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`rounded py-1.5 text-sm font-medium transition-colors ${
-                period === p ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              {PERIOD_LABELS[p]}
-            </button>
-          ))}
-        </div>
+        <IonToolbar>
+          <IonSelect
+            aria-label="Период"
+            interface="popover"
+            value={period}
+            onIonChange={(e) => setPeriod(e.detail.value as Period)}
+            label="Период"
+            labelPlacement="start"
+          >
+            {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+              <IonSelectOption key={p} value={p}>
+                {PERIOD_LABELS[p]}
+              </IonSelectOption>
+            ))}
+          </IonSelect>
+        </IonToolbar>
+      </IonHeader>
 
+      <IonContent fullscreen className="ion-padding">
         {/* Custom date range */}
         {period === 'custom' && (
-          <div className="grid grid-cols-2 gap-3 mb-2">
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '8px' }}>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">С</label>
+              <IonNote style={{ fontSize: '12px' }}>С</IonNote>
               <input
                 type="date"
                 value={customFrom}
                 onChange={(e) => setCustomFrom(e.target.value)}
-                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+                style={{
+                  width: '100%', borderRadius: '8px', border: '1px solid var(--ion-color-medium)',
+                  padding: '8px', fontSize: '14px', background: 'var(--ion-card-background)',
+                  color: 'var(--ion-text-color)',
+                }}
               />
             </div>
             <div>
-              <label className="text-xs text-muted-foreground mb-1 block">По</label>
+              <IonNote style={{ fontSize: '12px' }}>По</IonNote>
               <input
                 type="date"
                 value={customTo}
                 onChange={(e) => setCustomTo(e.target.value)}
-                className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+                style={{
+                  width: '100%', borderRadius: '8px', border: '1px solid var(--ion-color-medium)',
+                  padding: '8px', fontSize: '14px', background: 'var(--ion-card-background)',
+                  color: 'var(--ion-text-color)',
+                }}
               />
             </div>
           </div>
         )}
 
         {/* Period navigation */}
-        <div className="flex items-center justify-between bg-card rounded-lg border px-3 py-2 mb-3">
-          <button
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+          <IonButton
+            fill="clear"
+            size="small"
             onClick={() => setPeriodOffset((o) => o - 1)}
             disabled={isCustom}
-            className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronLeft size={18} />
-          </button>
-          <span className="text-sm font-medium">
+            ‹
+          </IonButton>
+          <IonText style={{ fontSize: '14px', fontWeight: 500 }}>
             {periodLabel(period, periodOffset, customFrom, customTo)}
-          </span>
-          <button
+          </IonText>
+          <IonButton
+            fill="clear"
+            size="small"
             onClick={() => setPeriodOffset((o) => o + 1)}
             disabled={isCustom || periodOffset >= 0}
-            className="p-1 rounded hover:bg-muted disabled:opacity-30 disabled:cursor-not-allowed"
           >
-            <ChevronRight size={18} />
-          </button>
+            ›
+          </IonButton>
         </div>
 
         {/* Collapsible pie chart */}
-        <div className="bg-card rounded-lg border mb-3">
-          <button
-            onClick={() => setShowChart((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-2.5 text-sm font-medium"
-          >
-            <span>Аналитика за период</span>
-            {showChart ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
+        <IonCard style={{ margin: '0 0 12px 0' }}>
+          <IonItem button detail={false} onClick={() => setShowChart((v) => !v)}>
+            <IonLabel>Аналитика за период</IonLabel>
+            <IonIcon slot="end" icon={showChart ? chevronUpOutline : chevronDownOutline} />
+          </IonItem>
           {showChart && (
-            <div className="px-4 pb-4 space-y-3">
-              {/* Mode toggle */}
-              <div className="flex gap-1 bg-muted rounded-md p-0.5">
-                <button
-                  onClick={() => setChartMode('expenses')}
-                  className={`flex-1 flex items-center justify-center gap-1 rounded py-1 text-xs font-medium transition-colors ${
-                    chartMode === 'expenses' ? 'bg-background shadow text-red-500' : 'text-muted-foreground'
-                  }`}
-                >
-                  <TrendingDown size={12} /> Расходы
-                </button>
-                <button
-                  onClick={() => setChartMode('income')}
-                  className={`flex-1 flex items-center justify-center gap-1 rounded py-1 text-xs font-medium transition-colors ${
-                    chartMode === 'income' ? 'bg-background shadow text-green-600' : 'text-muted-foreground'
-                  }`}
-                >
-                  <TrendingUp size={12} /> Доходы
-                </button>
-              </div>
+            <IonCardContent>
+              <IonSegment
+                value={chartMode}
+                onIonChange={(e) => setChartMode(e.detail.value as 'expenses' | 'income')}
+                style={{ marginBottom: '12px' }}
+              >
+                <IonSegmentButton value="expenses">
+                  <IonIcon icon={trendingDownOutline} />
+                  <IonLabel>Расходы</IonLabel>
+                </IonSegmentButton>
+                <IonSegmentButton value="income">
+                  <IonIcon icon={trendingUpOutline} />
+                  <IonLabel>Доходы</IonLabel>
+                </IonSegmentButton>
+              </IonSegment>
 
               {pieData.length === 0 ? (
-                <p className="text-sm text-muted-foreground text-center py-4">
+                <IonText color="medium" style={{ display: 'block', textAlign: 'center', padding: '16px 0', fontSize: '14px' }}>
                   {chartMode === 'expenses' ? 'Нет расходов за период' : 'Нет доходов за период'}
-                </p>
+                </IonText>
               ) : (
                 <>
                   <ResponsiveContainer width="100%" height={180}>
@@ -381,65 +389,96 @@ export function TransactionsPage() {
                       <Tooltip formatter={(value: number) => formatAmt(value)} />
                     </PieChart>
                   </ResponsiveContainer>
-                  <div className="space-y-1">
+                  <div style={{ marginTop: '8px' }}>
                     {pieData.map((s, i) => (
-                      <div key={i} className="flex items-center justify-between text-xs">
-                        <div className="flex items-center gap-2">
+                      <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '12px', padding: '2px 0' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                           <span
-                            className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                            style={{ background: chartColors[i % chartColors.length] }}
+                            style={{
+                              width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0,
+                              background: chartColors[i % chartColors.length],
+                            }}
                           />
-                          <span className="text-muted-foreground truncate max-w-[160px]">
+                          <span style={{ color: 'var(--ion-color-medium)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                             {s.icon ? `${s.icon} ` : ''}{s.categoryName}
                           </span>
                         </div>
-                        <span className="font-medium">{formatAmt(s.amount)} {defaultCurrency}</span>
+                        <span style={{ fontWeight: 500 }}>{formatAmt(s.amount)} {defaultCurrency}</span>
                       </div>
                     ))}
                   </div>
                 </>
               )}
-            </div>
+            </IonCardContent>
           )}
-        </div>
+        </IonCard>
 
         {/* Filter */}
-        <div className="mb-4">
+        <div style={{ marginBottom: '12px' }}>
           <FilterSheet value={filter} onChange={setFilter} />
         </div>
 
+        {/* Transaction list */}
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <IonSpinner />
+          </div>
         ) : grouped.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <p className="text-sm">Транзакций нет.</p>
-            <Link to="/transactions/add" className="text-primary text-sm mt-2 block">
+          <div style={{ textAlign: 'center', padding: '48px 0' }}>
+            <IonText color="medium">
+              <p>Транзакций нет</p>
+            </IonText>
+            <IonButton fill="clear" onClick={() => history.push('/transactions/add')}>
               Добавить первую
-            </Link>
+            </IonButton>
           </div>
         ) : (
-          <div className="space-y-4">
+          <IonList>
             {grouped.map(({ dateKey, label, items }) => (
-              <div key={dateKey}>
-                <p className="text-xs font-medium text-muted-foreground mb-2 px-1">{label}</p>
-                <div className="space-y-2">
-                  {items.map((tx) => (
-                    <TransactionCard
-                      key={tx.id}
-                      tx={tx}
-                      accounts={accounts}
-                      currentUserId={currentUserId}
-                      onDelete={(id) => {
-                        if (confirm('Удалить транзакцию?')) deleteMutation.mutate(id)
-                      }}
-                    />
-                  ))}
-                </div>
-              </div>
+              <IonItemGroup key={dateKey}>
+                <IonItemDivider sticky>
+                  <IonLabel>{label}</IonLabel>
+                </IonItemDivider>
+                {items.map((tx) => (
+                  <TransactionItem
+                    key={tx.id}
+                    tx={tx}
+                    accounts={accounts}
+                    currentUserId={currentUserId}
+                    onEdit={(id) => history.push(`/transactions/${id}/edit`)}
+                    onDelete={(id) => setDeleteAlertTxId(id)}
+                  />
+                ))}
+              </IonItemGroup>
             ))}
-          </div>
+          </IonList>
         )}
-      </div>
-    </div>
+
+        {/* FAB */}
+        <IonFab slot="fixed" vertical="bottom" horizontal="end">
+          <IonFabButton onClick={() => history.push(`/transactions/add${periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''}`)}>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+
+        {/* Delete confirmation */}
+        <IonAlert
+          isOpen={deleteAlertTxId !== null}
+          onDidDismiss={() => setDeleteAlertTxId(null)}
+          header="Удалить транзакцию?"
+          message="Это действие нельзя отменить."
+          buttons={[
+            { text: 'Отмена', role: 'cancel' },
+            {
+              text: 'Удалить',
+              role: 'destructive',
+              handler: () => {
+                if (deleteAlertTxId) deleteMutation.mutate(deleteAlertTxId)
+              },
+            },
+          ]}
+        />
+      </IonContent>
+    </IonPage>
   )
 }
