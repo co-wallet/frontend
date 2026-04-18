@@ -1,6 +1,18 @@
 import { useState, useRef, useEffect } from 'react';
-import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonList, IonItem, IonLabel, IonIcon,
+  IonItemSliding, IonItemOptions, IonItemOption,
+  IonMenuButton, IonButtons, IonSpinner, IonText,
+  IonAlert, IonModal, IonInput, IonButton,
+  IonSegment, IonSegmentButton, IonFab, IonFabButton,
+  IonSelect, IonSelectOption,
+} from '@ionic/react';
+import {
+  folderOutline, addOutline, createOutline, trashOutline,
+  chevronForwardOutline, chevronDownOutline,
+} from 'ionicons/icons';
 import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
 
 const EXPENSE_ICONS = [
@@ -11,13 +23,13 @@ const EXPENSE_ICONS = [
   '💊', '🏥', '💉', '🧴', '🦷', '👓',
   '🎬', '🎮', '🎵', '📚', '🏋️', '⚽',
   '🐾', '🌿', '🎁', '✂️', '🧺', '📦',
-]
+];
 
 const INCOME_ICONS = [
   '💼', '💰', '💵', '💳', '📈', '🏦',
   '🤝', '🎓', '👔', '🏢', '💹', '🪙',
   '🏡', '🚀', '🎯', '🎪', '🎁', '🏆',
-]
+];
 
 export default function CategoriesPage() {
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
@@ -28,13 +40,9 @@ export default function CategoriesPage() {
     parentId: '',
     icon: '',
   });
-  const formRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (showForm) {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, [showForm]);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const slidingRef = useRef<HTMLIonItemSlidingElement | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -42,6 +50,20 @@ export default function CategoriesPage() {
     queryKey: ['categories', activeTab],
     queryFn: () => categoriesApi.list(activeTab),
   });
+
+  useEffect(() => {
+    const ids = new Set<string>();
+    function collect(nodes: CategoryNode[]) {
+      for (const n of nodes) {
+        if (n.children?.length) {
+          ids.add(n.id);
+          collect(n.children);
+        }
+      }
+    }
+    collect(categories);
+    setExpanded(ids);
+  }, [categories]);
 
   const createMutation = useMutation({
     mutationFn: (req: CreateCategoryReq) => categoriesApi.create(req),
@@ -75,10 +97,11 @@ export default function CategoriesPage() {
     setEditingId(cat.id);
     setFormData({ name: cat.name, parentId: cat.parentId ?? '', icon: cat.icon ?? '' });
     setShowForm(true);
+    if (slidingRef.current) slidingRef.current.close();
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function handleSubmit() {
+    if (!formData.name.trim()) return;
     if (editingId) {
       updateMutation.mutate({ id: editingId, name: formData.name, icon: formData.icon });
     } else {
@@ -91,7 +114,21 @@ export default function CategoriesPage() {
     }
   }
 
-  // Collect all categories in a flat list for parent select
+  function handleDeleteConfirm() {
+    if (!deleteTarget) return;
+    deleteMutation.mutate(deleteTarget.id);
+    setDeleteTarget(null);
+  }
+
+  function toggleExpand(id: string) {
+    setExpanded(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   const flatList: CategoryNode[] = [];
   function flatten(nodes: CategoryNode[]) {
     for (const n of nodes) {
@@ -101,184 +138,197 @@ export default function CategoriesPage() {
   }
   flatten(categories);
 
+  function renderTree(nodes: CategoryNode[], depth: number) {
+    return nodes.map(node => {
+      const hasChildren = !!(node.children?.length);
+      const isExpanded = expanded.has(node.id);
+
+      return (
+        <div key={node.id}>
+          <IonItemSliding ref={(el) => { slidingRef.current = el }}>
+            <IonItem
+              style={{ '--padding-start': `${16 + depth * 20}px` } as React.CSSProperties}
+              onClick={hasChildren ? () => toggleExpand(node.id) : undefined}
+              button={hasChildren}
+            >
+              {hasChildren && (
+                <IonIcon
+                  icon={isExpanded ? chevronDownOutline : chevronForwardOutline}
+                  slot="start"
+                  style={{ fontSize: '14px', marginRight: '4px' }}
+                />
+              )}
+              {!hasChildren && (
+                <span slot="start" style={{ width: '18px' }} />
+              )}
+              {node.icon && (
+                <span slot="start" style={{ fontSize: '20px', marginRight: '8px' }}>{node.icon}</span>
+              )}
+              <IonLabel>{node.name}</IonLabel>
+            </IonItem>
+            <IonItemOptions side="end">
+              <IonItemOption color="primary" onClick={() => handleEdit(node)}>
+                <IonIcon slot="icon-only" icon={createOutline} />
+              </IonItemOption>
+              <IonItemOption
+                color="danger"
+                onClick={() => {
+                  setDeleteTarget({ id: node.id, name: node.name });
+                  if (slidingRef.current) slidingRef.current.close();
+                }}
+              >
+                <IonIcon slot="icon-only" icon={trashOutline} />
+              </IonItemOption>
+            </IonItemOptions>
+          </IonItemSliding>
+          {hasChildren && isExpanded && renderTree(node.children, depth + 1)}
+        </div>
+      );
+    });
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-2xl mx-auto px-4 py-6">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="text-sm text-gray-500 hover:text-gray-800">← Главная</Link>
-            <h1 className="text-2xl font-bold text-gray-900">Категории</h1>
-          </div>
-          {!showForm && (
-            <button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700"
-            >
-              + Добавить
-            </button>
-          )}
-        </div>
-
-        {/* Tabs */}
-        <div className="flex bg-white rounded-lg border border-gray-200 mb-4 overflow-hidden">
-          {(['expense', 'income'] as CategoryType[]).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`flex-1 py-2 text-sm font-medium transition-colors ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-50'
-              }`}
-            >
-              {tab === 'expense' ? 'Расходы' : 'Доходы'}
-            </button>
-          ))}
-        </div>
-
-        {/* Form */}
-        {showForm && (
-          <div ref={formRef} className="bg-white rounded-xl border border-gray-200 p-4 mb-4">
-            <h2 className="font-semibold text-gray-900 mb-3">
-              {editingId ? 'Изменить категорию' : 'Новая категория'}
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-3">
-              <input
-                type="text"
-                placeholder="Название"
-                value={formData.name}
-                onChange={e => setFormData(f => ({ ...f, name: e.target.value }))}
-                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                required
-              />
-              <div>
-                <p className="text-xs text-gray-500 mb-1.5">Иконка</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {(activeTab === 'expense' ? EXPENSE_ICONS : INCOME_ICONS).map(icon => (
-                    <button
-                      key={icon}
-                      type="button"
-                      onClick={() => setFormData(f => ({ ...f, icon: f.icon === icon ? '' : icon }))}
-                      className={`w-9 h-9 rounded-lg border text-xl flex items-center justify-center transition-colors ${
-                        formData.icon === icon
-                          ? 'border-blue-500 ring-2 ring-blue-500 bg-blue-50'
-                          : 'border-gray-200 hover:border-gray-400'
-                      }`}
-                    >
-                      {icon}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {!editingId && (
-                <select
-                  value={formData.parentId}
-                  onChange={e => setFormData(f => ({ ...f, parentId: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  <option value="">Без родительской категории</option>
-                  {flatList.map(c => (
-                    <option key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ''}{c.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              {(createMutation.error || updateMutation.error) && (
-                <p className="text-red-500 text-sm">Ошибка. Попробуйте ещё раз.</p>
-              )}
-              <div className="flex gap-2">
-                <button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  className="flex-1 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {editingId ? 'Сохранить' : 'Создать'}
-                </button>
-                <button
-                  type="button"
-                  onClick={resetForm}
-                  className="flex-1 border border-gray-300 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-50"
-                >
-                  Отмена
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* Category tree */}
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
+          <IonTitle>Категории</IonTitle>
+        </IonToolbar>
+        <IonToolbar>
+          <IonSegment
+            value={activeTab}
+            onIonChange={e => setActiveTab(e.detail.value as CategoryType)}
+          >
+            <IonSegmentButton value="expense">Расходы</IonSegmentButton>
+            <IonSegmentButton value="income">Доходы</IonSegmentButton>
+          </IonSegment>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
         {isLoading ? (
-          <div className="text-center py-8 text-gray-500">Загрузка...</div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <IonSpinner />
+          </div>
         ) : categories.length === 0 ? (
-          <div className="text-center py-8 text-gray-400">
-            Нет категорий. Создайте первую!
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <IonIcon icon={folderOutline} style={{ fontSize: '40px', opacity: 0.3, marginBottom: '12px' }} />
+            <IonText color="medium">
+              <p>Нет категорий. Создайте первую!</p>
+            </IonText>
           </div>
         ) : (
-          <div className="space-y-2">
-            {categories.map(cat => (
-              <CategoryItem
-                key={cat.id}
-                node={cat}
-                depth={0}
-                onEdit={handleEdit}
-                onDelete={id => {
-                  if (confirm('Удалить категорию?')) deleteMutation.mutate(id);
-                }}
-              />
-            ))}
-          </div>
+          <IonList>
+            {renderTree(categories, 0)}
+          </IonList>
         )}
-      </div>
-    </div>
-  );
-}
 
-function CategoryItem({
-  node,
-  depth,
-  onEdit,
-  onDelete,
-}: {
-  node: CategoryNode;
-  depth: number;
-  onEdit: (cat: CategoryNode) => void;
-  onDelete: (id: string) => void;
-}) {
-  return (
-    <div>
-      <div
-        className="bg-white rounded-xl border border-gray-200 px-4 py-3 flex items-center justify-between"
-        style={{ marginLeft: depth * 16 }}
-      >
-        <div className="flex items-center gap-2">
-          {node.icon && <span className="text-xl">{node.icon}</span>}
-          <span className="font-medium text-gray-900">{node.name}</span>
-        </div>
-        <div className="flex gap-1">
-          <button
-            onClick={() => onEdit(node)}
-            className="text-xs text-blue-600 hover:text-blue-800 px-2 py-1 rounded hover:bg-blue-50"
-          >
-            Изменить
-          </button>
-          <button
-            onClick={() => onDelete(node.id)}
-            className="text-xs text-red-500 hover:text-red-700 px-2 py-1 rounded hover:bg-red-50"
-          >
-            Удалить
-          </button>
-        </div>
-      </div>
-      {node.children?.map((child: CategoryNode) => (
-        <CategoryItem
-          key={child.id}
-          node={child}
-          depth={depth + 1}
-          onEdit={onEdit}
-          onDelete={onDelete}
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => { setEditingId(null); setFormData({ name: '', parentId: '', icon: '' }); setShowForm(true); }}>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+
+        {/* Add/Edit Modal */}
+        <IonModal isOpen={showForm} onDidDismiss={resetForm}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>{editingId ? 'Изменить категорию' : 'Новая категория'}</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={resetForm}>Отмена</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <IonList>
+              <IonItem>
+                <IonInput
+                  label="Название"
+                  labelPlacement="floating"
+                  value={formData.name}
+                  onIonInput={e => setFormData(f => ({ ...f, name: e.detail.value ?? '' }))}
+                />
+              </IonItem>
+              {!editingId && (
+                <IonItem>
+                  <IonSelect
+                    label="Родительская категория"
+                    labelPlacement="floating"
+                    value={formData.parentId || undefined}
+                    onIonChange={e => setFormData(f => ({ ...f, parentId: e.detail.value ?? '' }))}
+                    placeholder="Без родительской"
+                  >
+                    <IonSelectOption value="">Без родительской</IonSelectOption>
+                    {flatList.map(c => (
+                      <IonSelectOption key={c.id} value={c.id}>
+                        {c.icon ? `${c.icon} ` : ''}{c.name}
+                      </IonSelectOption>
+                    ))}
+                  </IonSelect>
+                </IonItem>
+              )}
+            </IonList>
+
+            <div style={{ padding: '16px 0' }}>
+              <IonText color="medium"><p style={{ marginBottom: '8px', fontSize: '14px' }}>Иконка</p></IonText>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                {(activeTab === 'expense' ? EXPENSE_ICONS : INCOME_ICONS).map(icon => (
+                  <button
+                    key={icon}
+                    type="button"
+                    onClick={() => setFormData(f => ({ ...f, icon: f.icon === icon ? '' : icon }))}
+                    style={{
+                      width: '40px',
+                      height: '40px',
+                      borderRadius: '8px',
+                      border: formData.icon === icon ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-border-color, #e0e0e0)',
+                      background: formData.icon === icon ? 'var(--ion-color-primary-tint)' : 'transparent',
+                      fontSize: '20px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {icon}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {(createMutation.error || updateMutation.error) && (
+              <IonText color="danger">
+                <p style={{ padding: '0 16px' }}>Ошибка. Попробуйте ещё раз.</p>
+              </IonText>
+            )}
+
+            <IonButton
+              expand="block"
+              style={{ marginTop: '16px' }}
+              onClick={handleSubmit}
+              disabled={createMutation.isPending || updateMutation.isPending || !formData.name.trim()}
+            >
+              {(createMutation.isPending || updateMutation.isPending)
+                ? <IonSpinner name="crescent" />
+                : editingId ? 'Сохранить' : 'Создать'
+              }
+            </IonButton>
+          </IonContent>
+        </IonModal>
+
+        {/* Delete Confirmation Alert */}
+        <IonAlert
+          isOpen={!!deleteTarget}
+          onDidDismiss={() => setDeleteTarget(null)}
+          header="Удалить категорию?"
+          message={`Удалить категорию "${deleteTarget?.name}"?`}
+          buttons={[
+            { text: 'Отмена', role: 'cancel' },
+            { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },
+          ]}
         />
-      ))}
-    </div>
+      </IonContent>
+    </IonPage>
   );
 }
