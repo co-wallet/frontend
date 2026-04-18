@@ -24,6 +24,7 @@ import {
   IonSelect,
   IonSelectOption,
   IonChip,
+  IonMenuButton,
 } from '@ionic/react'
 import { logOutOutline, addOutline } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
@@ -264,6 +265,9 @@ export function DashboardPage() {
     <IonPage>
       <IonHeader>
         <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
           <IonTitle>co-wallet</IonTitle>
           <IonButtons slot="end">
             <IonSelect

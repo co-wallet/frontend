@@ -17,11 +17,13 @@ import { AdminUsersPage } from '@/pages/admin/AdminUsersPage'
 import { AdminCurrenciesPage } from '@/pages/admin/AdminCurrenciesPage'
 import { AdminInvitesPage } from '@/pages/admin/AdminInvitesPage'
 import { ProtectedRoute, AdminRoute } from '@/components/layout/ProtectedRoute'
+import { AppMenu } from '@/components/AppMenu'
 
 function App() {
   return (
     <IonReactRouter>
-      <IonRouterOutlet>
+      <AppMenu />
+      <IonRouterOutlet id="main-content">
         {/* Public */}
         <Route exact path="/login" component={LoginPage} />
         <Route exact path="/invite/:token" component={InvitePage} />
