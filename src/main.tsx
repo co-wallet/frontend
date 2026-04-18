@@ -16,6 +16,7 @@ import '@ionic/react/css/display.css'
 
 import './theme/variables.css'
 import './index.css'
+import './store/themeStore'
 import App from './App'
 
 setupIonicReact()

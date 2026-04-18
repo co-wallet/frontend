@@ -23,8 +23,12 @@ import {
   cashOutline,
   mailOutline,
   logOutOutline,
+  sunnyOutline,
+  moonOutline,
+  phonePortraitOutline,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
+import { useThemeStore } from '@/store/themeStore'
 
 const mainItems = [
   { label: 'Главная', icon: homeOutline, path: '/dashboard' },
@@ -41,15 +45,31 @@ const adminItems = [
   { label: 'Приглашения', icon: mailOutline, path: '/admin/invites' },
 ]
 
+const themeModes = [
+  { mode: 'light' as const, icon: sunnyOutline, label: 'Светлая' },
+  { mode: 'dark' as const, icon: moonOutline, label: 'Тёмная' },
+  { mode: 'system' as const, icon: phonePortraitOutline, label: 'Системная' },
+]
+
 export function AppMenu() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const history = useHistory()
+  const themeMode = useThemeStore((s) => s.mode)
+  const setThemeMode = useThemeStore((s) => s.setMode)
 
   const handleLogout = () => {
     logout()
     history.replace('/login')
   }
+
+  const cycleTheme = () => {
+    const idx = themeModes.findIndex((t) => t.mode === themeMode)
+    const next = themeModes[(idx + 1) % themeModes.length]
+    setThemeMode(next.mode)
+  }
+
+  const currentTheme = themeModes.find((t) => t.mode === themeMode) ?? themeModes[0]
 
   return (
     <IonMenu contentId="main-content" type="overlay">
@@ -89,6 +109,10 @@ export function AppMenu() {
         )}
 
         <IonList lines="none" className="ion-margin-top">
+          <IonItem button onClick={cycleTheme} detail={false}>
+            <IonIcon slot="start" icon={currentTheme.icon} />
+            <IonLabel>Тема: {currentTheme.label}</IonLabel>
+          </IonItem>
           <IonMenuToggle autoHide={false}>
             <IonItem button onClick={handleLogout} detail={false}>
               <IonIcon slot="start" icon={logOutOutline} color="danger" />
