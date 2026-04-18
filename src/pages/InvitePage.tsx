@@ -1,6 +1,25 @@
 import { useState } from 'react'
 import { useParams, useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonCard,
+  IonCardHeader,
+  IonCardTitle,
+  IonCardContent,
+  IonList,
+  IonItem,
+  IonInput,
+  IonSelect,
+  IonSelectOption,
+  IonButton,
+  IonText,
+  IonSpinner,
+} from '@ionic/react'
 import { invitesApi } from '@/api/invites'
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
@@ -41,92 +60,135 @@ export function InvitePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <p className="text-muted-foreground text-sm">Проверяем ссылку...</p>
-      </div>
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Приглашение</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding ion-text-center">
+          <div style={{ paddingTop: 64 }}>
+            <IonSpinner name="crescent" />
+            <IonText color="medium">
+              <p>Проверяем ссылку...</p>
+            </IonText>
+          </div>
+        </IonContent>
+      </IonPage>
     )
   }
 
   if (isError || !invite) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-        <div className="bg-card rounded-lg border p-6 w-full max-w-sm text-center">
-          <p className="font-semibold text-destructive mb-2">Ссылка недействительна</p>
-          <p className="text-sm text-muted-foreground">
-            Приглашение уже использовано или истёк срок действия. Попросите администратора выслать новое.
-          </p>
-        </div>
-      </div>
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Приглашение</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 32 }}>
+            <IonCard>
+              <IonCardHeader>
+                <IonCardTitle color="danger">Ссылка недействительна</IonCardTitle>
+              </IonCardHeader>
+              <IonCardContent>
+                <IonText color="medium">
+                  <p>
+                    Приглашение уже использовано или истёк срок действия.
+                    Попросите администратора выслать новое.
+                  </p>
+                </IonText>
+              </IonCardContent>
+            </IonCard>
+          </div>
+        </IonContent>
+      </IonPage>
     )
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <div className="bg-card rounded-lg border p-6 w-full max-w-sm">
-        <h1 className="text-xl font-bold mb-1">Создание аккаунта</h1>
-        <p className="text-sm text-muted-foreground mb-5">
-          Вас пригласили в co-wallet. Аккаунт будет привязан к <strong>{invite.email}</strong>.
-        </p>
-
-        <form
-          className="space-y-4"
-          onSubmit={(e) => { e.preventDefault(); setError(''); accept.mutate() }}
-        >
-          <div>
-            <label className="block text-sm font-medium mb-1">Имя пользователя</label>
-            <input
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              placeholder="myname"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              placeholder="Минимум 8 символов"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Валюта по умолчанию</label>
-            <select
-              value={defaultCurrency}
-              onChange={(e) => setDefaultCurrency(e.target.value)}
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            >
-              {currencies.length > 0
-                ? currencies.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
-                    </option>
-                  ))
-                : <option value="USD">USD</option>
-              }
-            </select>
-          </div>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Приглашение</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent className="ion-padding">
+        <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 16 }}>
+          <IonCard>
+            <IonCardHeader>
+              <IonCardTitle>Создание аккаунта</IonCardTitle>
+            </IonCardHeader>
+            <IonCardContent>
+              <IonText color="medium">
+                <p style={{ marginBottom: 16 }}>
+                  Вас пригласили в co-wallet. Аккаунт будет привязан к <strong>{invite.email}</strong>.
+                </p>
+              </IonText>
+            </IonCardContent>
+          </IonCard>
 
           {error && (
-            <p className="text-xs text-destructive bg-destructive/10 rounded-md px-3 py-2">{error}</p>
+            <IonText color="danger">
+              <p style={{ margin: '8px 16px' }}>{error}</p>
+            </IonText>
           )}
 
-          <button
-            type="submit"
-            disabled={accept.isPending}
-            className="w-full rounded-md bg-primary text-primary-foreground py-2.5 text-sm font-medium disabled:opacity-50"
-          >
-            {accept.isPending ? 'Создание...' : 'Создать аккаунт'}
-          </button>
-        </form>
-      </div>
-    </div>
+          <form onSubmit={(e) => { e.preventDefault(); setError(''); accept.mutate() }}>
+            <IonList>
+              <IonItem>
+                <IonInput
+                  label="Имя пользователя"
+                  labelPlacement="floating"
+                  value={username}
+                  onIonInput={(e) => setUsername(e.detail.value ?? '')}
+                  required
+                  placeholder="myname"
+                />
+              </IonItem>
+              <IonItem>
+                <IonInput
+                  label="Пароль"
+                  labelPlacement="floating"
+                  type="password"
+                  value={password}
+                  onIonInput={(e) => setPassword(e.detail.value ?? '')}
+                  required
+                  minlength={8}
+                  placeholder="Минимум 8 символов"
+                />
+              </IonItem>
+              <IonItem>
+                <IonSelect
+                  label="Валюта по умолчанию"
+                  labelPlacement="floating"
+                  value={defaultCurrency}
+                  onIonChange={(e) => setDefaultCurrency(e.detail.value)}
+                >
+                  {currencies.length > 0
+                    ? currencies.map((c) => (
+                        <IonSelectOption key={c.code} value={c.code}>
+                          {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
+                        </IonSelectOption>
+                      ))
+                    : <IonSelectOption value="USD">USD</IonSelectOption>
+                  }
+                </IonSelect>
+              </IonItem>
+            </IonList>
+
+            <IonButton
+              expand="block"
+              type="submit"
+              disabled={accept.isPending}
+              style={{ marginTop: 16 }}
+            >
+              {accept.isPending ? <IonSpinner name="crescent" /> : 'Создать аккаунт'}
+            </IonButton>
+          </form>
+        </div>
+      </IonContent>
+    </IonPage>
   )
 }
