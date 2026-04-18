@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useHistory, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type UpdateTransactionDto } from '@/api/transactions'
 import { accountsApi, type AccountMember } from '@/api/accounts'
@@ -27,7 +27,7 @@ function roundCents(v: number): number {
 
 export function EditTransactionPage() {
   const { txID } = useParams<{ txID: string }>()
-  const navigate = useNavigate()
+  const history = useHistory()
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
@@ -143,7 +143,7 @@ export function EditTransactionPage() {
       qc.invalidateQueries({ queryKey: ['accounts'] })
       qc.invalidateQueries({ queryKey: ['analytics'] })
       qc.invalidateQueries({ queryKey: ['tags'] })
-      navigate(-1)
+      history.goBack()
     },
   })
 
@@ -201,7 +201,7 @@ export function EditTransactionPage() {
     <div className="min-h-screen bg-muted">
       <div className="max-w-lg mx-auto p-4">
         <div className="flex items-center gap-2 mb-6">
-          <button onClick={() => navigate(-1)} className="text-muted-foreground hover:text-foreground text-sm">
+          <button onClick={() => history.goBack()} className="text-muted-foreground hover:text-foreground text-sm">
             ← Назад
           </button>
           <h1 className="text-xl font-bold">Редактировать</h1>
@@ -464,7 +464,7 @@ export function EditTransactionPage() {
           <div className="flex gap-2 pt-2">
             <button
               type="button"
-              onClick={() => navigate(-1)}
+              onClick={() => history.goBack()}
               className="flex-1 rounded-md border py-2.5 text-sm font-medium text-center hover:bg-muted"
             >
               Отмена

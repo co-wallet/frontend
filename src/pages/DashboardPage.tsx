@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { Wallet, List, Tag, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ChevronUp, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
@@ -146,7 +146,7 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const updateUser = useAuthStore((s) => s.updateUser)
-  const navigate = useNavigate()
+  const history = useHistory()
 
   const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
@@ -220,7 +220,7 @@ export function DashboardPage() {
 
   const handleLogout = () => {
     logout()
-    navigate('/login', { replace: true })
+    history.replace('/login')
   }
 
   const filteredAccounts = accountFilter === 'all'
@@ -522,7 +522,7 @@ export function DashboardPage() {
 
         {/* FAB */}
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
-          <IonFabButton onClick={() => navigate('/transactions/add')}>
+          <IonFabButton onClick={() => history.push('/transactions/add')}>
             <IonIcon icon={addOutline} />
           </IonFabButton>
         </IonFab>

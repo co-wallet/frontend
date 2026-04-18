@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
 import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
@@ -36,8 +36,9 @@ function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
 }
 
 export function AddTransactionPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const history = useHistory()
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
@@ -176,7 +177,7 @@ export function AddTransactionPage() {
       qc.invalidateQueries({ queryKey: ['accounts'] })
       qc.invalidateQueries({ queryKey: ['analytics'] })
       qc.invalidateQueries({ queryKey: ['tags'] })
-      navigate('/transactions')
+      history.push('/transactions')
     },
   })
 

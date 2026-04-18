@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { invitesApi } from '@/api/invites'
 import { currenciesApi } from '@/api/currencies'
@@ -7,7 +7,7 @@ import { useAuthStore } from '@/store/authStore'
 
 export function InvitePage() {
   const { token } = useParams<{ token: string }>()
-  const navigate = useNavigate()
+  const history = useHistory()
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const [username, setUsername] = useState('')
@@ -31,7 +31,7 @@ export function InvitePage() {
     mutationFn: () => invitesApi.accept(token!, username, password, defaultCurrency),
     onSuccess: ({ user, tokens }) => {
       setAuth(tokens.accessToken, tokens.refreshToken, user)
-      navigate('/dashboard', { replace: true })
+      history.replace('/dashboard')
     },
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     onError: (err: any) => {

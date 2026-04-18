@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { Link, useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Plus, ArrowDownLeft, ArrowUpRight, ArrowLeftRight, Trash2, Pencil, Users, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, TrendingDown, TrendingUp } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
@@ -60,7 +60,7 @@ function TransactionCard({
   currentUserId: string | undefined
   onDelete: (id: string) => void
 }) {
-  const navigate = useNavigate()
+  const history = useHistory()
   const account = accounts.find((a) => a.id === tx.accountId)
   const toAccount = tx.toAccountId ? accounts.find((a) => a.id === tx.toAccountId) : null
 
@@ -134,7 +134,7 @@ function TransactionCard({
           )}
         </div>
         <button
-          onClick={() => navigate(`/transactions/${tx.id}/edit`)}
+          onClick={() => history.push(`/transactions/${tx.id}/edit`)}
           className="p-1 rounded hover:bg-muted text-muted-foreground ml-1"
         >
           <Pencil size={14} />
@@ -174,11 +174,13 @@ function filterToParams(f: TransactionFilter): URLSearchParams {
 
 export function TransactionsPage() {
   const qc = useQueryClient()
-  const [searchParams, setSearchParams] = useSearchParams()
+  const location = useLocation()
+  const history = useHistory()
+  const searchParams = new URLSearchParams(location.search)
   const filter = filterFromParams(searchParams)
   const setFilter = useCallback((f: TransactionFilter) => {
-    setSearchParams(filterToParams(f), { replace: true })
-  }, [setSearchParams])
+    history.replace({ search: filterToParams(f).toString() })
+  }, [history])
   const currentUserId = useAuthStore((s) => s.user?.id)
   const defaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
   const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()

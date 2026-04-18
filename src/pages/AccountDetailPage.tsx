@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams, useNavigate } from 'react-router-dom'
+import { Link, useParams, useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Users, Pencil, Trash2, Check, X } from 'lucide-react'
 import { accountsApi } from '@/api/accounts'
@@ -8,7 +8,7 @@ import { useAuthStore } from '@/store/authStore'
 export function AccountDetailPage() {
   const { accountID } = useParams<{ accountID: string }>()
   const qc = useQueryClient()
-  const navigate = useNavigate()
+  const history = useHistory()
   const user = useAuthStore((s) => s.user)
 
   const [editing, setEditing] = useState(false)
@@ -33,7 +33,7 @@ export function AccountDetailPage() {
     mutationFn: () => accountsApi.delete(accountID!),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
-      navigate('/accounts')
+      history.push('/accounts')
     },
   })
 

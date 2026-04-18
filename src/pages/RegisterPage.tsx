@@ -1,9 +1,9 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useHistory } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 
 export function RegisterPage() {
-  const navigate = useNavigate()
+  const history = useHistory()
 
   const [username, setUsername] = useState('')
   const [email, setEmail] = useState('')
@@ -21,7 +21,7 @@ export function RegisterPage() {
     setLoading(true)
     try {
       await authApi.register(username, email, password)
-      navigate('/login', { replace: true, state: { registered: true } })
+      history.replace('/login', { registered: true })
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       setError(msg ?? 'Ошибка регистрации')

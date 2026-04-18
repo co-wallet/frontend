@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useHistory } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 
 export function LoginPage() {
-  const navigate = useNavigate()
+  const history = useHistory()
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const [email, setEmail] = useState('')
@@ -19,7 +19,7 @@ export function LoginPage() {
     try {
       const { user, tokens } = await authApi.login(email, password)
       setAuth(tokens.accessToken, tokens.refreshToken, user)
-      navigate('/dashboard', { replace: true })
+      history.replace('/dashboard')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       setError(msg ?? 'Ошибка входа')
