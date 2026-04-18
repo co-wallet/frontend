@@ -1,7 +1,14 @@
 import { useState } from 'react'
-import { Link, useParams, useHistory } from 'react-router-dom'
+import { useParams, useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Users, Pencil, Trash2, Check, X } from 'lucide-react'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonButtons, IonBackButton, IonButton, IonIcon,
+  IonList, IonItem, IonLabel, IonInput, IonToggle,
+  IonSpinner, IonText, IonCard, IonCardHeader, IonCardTitle,
+  IonCardContent, IonAlert, IonNote,
+} from '@ionic/react'
+import { pencilOutline, trashOutline, peopleOutline, chevronForwardOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
 import { useAuthStore } from '@/store/authStore'
 
@@ -14,6 +21,7 @@ export function AccountDetailPage() {
   const [editing, setEditing] = useState(false)
   const [editName, setEditName] = useState('')
   const [editInclude, setEditInclude] = useState(true)
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false)
 
   const { data: account, isLoading } = useQuery({
     queryKey: ['account', accountID],
@@ -39,17 +47,41 @@ export function AccountDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-muted flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Загрузка...</p>
-      </div>
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonBackButton defaultHref="/accounts" text="Счета" />
+            </IonButtons>
+            <IonTitle>Счёт</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ display: 'flex', justifyContent: 'center', marginTop: '2rem' }}>
+            <IonSpinner />
+          </div>
+        </IonContent>
+      </IonPage>
     )
   }
 
   if (!account) {
     return (
-      <div className="min-h-screen bg-muted flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Счёт не найден</p>
-      </div>
+      <IonPage>
+        <IonHeader>
+          <IonToolbar>
+            <IonButtons slot="start">
+              <IonBackButton defaultHref="/accounts" text="Счета" />
+            </IonButtons>
+            <IonTitle>Счёт</IonTitle>
+          </IonToolbar>
+        </IonHeader>
+        <IonContent className="ion-padding">
+          <IonText color="medium">
+            <p style={{ textAlign: 'center', marginTop: '2rem' }}>Счёт не найден</p>
+          </IonText>
+        </IonContent>
+      </IonPage>
     )
   }
 
@@ -62,105 +94,118 @@ export function AccountDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="max-w-lg mx-auto p-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Link to="/accounts" className="text-muted-foreground hover:text-foreground text-sm">
-            ← Счета
-          </Link>
-        </div>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/accounts" text="Счета" />
+          </IonButtons>
+          <IonTitle>{account.name}</IonTitle>
+          <IonButtons slot="end">
+            {!editing && (
+              <IonButton onClick={startEdit}>
+                <IonIcon slot="icon-only" icon={pencilOutline} />
+              </IonButton>
+            )}
+            {!editing && isOwner && (
+              <IonButton color="danger" onClick={() => setShowDeleteAlert(true)}>
+                <IonIcon slot="icon-only" icon={trashOutline} />
+              </IonButton>
+            )}
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
 
-        <div className="bg-card rounded-lg border p-4 mb-4">
-          {editing ? (
-            <div className="space-y-3">
-              <input
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                className="w-full rounded border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-              />
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={editInclude}
-                  onChange={(e) => setEditInclude(e.target.checked)}
+      <IonContent className="ion-padding">
+        {editing ? (
+          <>
+            <IonList inset>
+              <IonItem>
+                <IonInput
+                  label="Название"
+                  labelPlacement="floating"
+                  value={editName}
+                  onIonInput={(e) => setEditName(e.detail.value ?? '')}
                 />
-                Учитывать в балансе
-              </label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setEditing(false)}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded border text-sm hover:bg-muted"
+              </IonItem>
+              <IonItem>
+                <IonToggle
+                  checked={editInclude}
+                  onIonChange={(e) => setEditInclude(e.detail.checked)}
                 >
-                  <X size={14} /> Отмена
-                </button>
-                <button
-                  onClick={() => updateMutation.mutate()}
-                  disabled={updateMutation.isPending}
-                  className="flex items-center gap-1 px-3 py-1.5 rounded bg-primary text-primary-foreground text-sm disabled:opacity-50"
-                >
-                  <Check size={14} /> Сохранить
-                </button>
-              </div>
+                  Учитывать в балансе
+                </IonToggle>
+              </IonItem>
+            </IonList>
+            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1rem' }}>
+              <IonButton expand="block" color="medium" onClick={() => setEditing(false)} style={{ flex: 1 }}>
+                Отмена
+              </IonButton>
+              <IonButton
+                expand="block"
+                onClick={() => updateMutation.mutate()}
+                disabled={updateMutation.isPending}
+                style={{ flex: 1 }}
+              >
+                {updateMutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
+              </IonButton>
             </div>
-          ) : (
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-3">
-                <span className="text-3xl">{account.icon ?? '💳'}</span>
-                <div>
-                  <h1 className="text-lg font-bold">{account.name}</h1>
-                  <p className="text-sm text-muted-foreground">
-                    {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
-                  </p>
-                  {!account.includeInBalance && (
-                    <p className="text-xs text-muted-foreground">Не учитывается в балансе</p>
-                  )}
+          </>
+        ) : (
+          <>
+            <IonCard>
+              <IonCardHeader>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '2rem' }}>{account.icon ?? '💳'}</span>
+                  <div>
+                    <IonCardTitle>{account.name}</IonCardTitle>
+                    <IonNote>
+                      {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
+                    </IonNote>
+                  </div>
                 </div>
-              </div>
-              <div className="flex gap-1">
-                <button
-                  onClick={startEdit}
-                  className="p-1.5 rounded hover:bg-muted text-muted-foreground"
-                >
-                  <Pencil size={16} />
-                </button>
-                {isOwner && (
-                  <button
-                    onClick={() => {
-                      if (confirm('Удалить счёт?')) deleteMutation.mutate()
-                    }}
-                    className="p-1.5 rounded hover:bg-muted text-destructive"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+              </IonCardHeader>
+              <IonCardContent>
+                {!account.includeInBalance && (
+                  <IonText color="medium">
+                    <p style={{ fontSize: '0.85rem' }}>Не учитывается в балансе</p>
+                  </IonText>
                 )}
-              </div>
-            </div>
-          )}
-        </div>
+              </IonCardContent>
+            </IonCard>
 
-        {account.type === 'shared' && (
-          <Link
-            to={`/accounts/${accountID}/members`}
-            className="flex items-center gap-3 bg-card rounded-lg border p-3 mb-4 hover:bg-muted"
-          >
-            <Users size={18} className="text-muted-foreground" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Участники</p>
-              {account.members && (
-                <p className="text-xs text-muted-foreground">
-                  {account.members.length} чел.
-                </p>
-              )}
-            </div>
-            <span className="text-muted-foreground text-sm">→</span>
-          </Link>
+            {account.type === 'shared' && (
+              <IonList inset>
+                <IonItem button routerLink={`/accounts/${accountID}/members`} detail>
+                  <IonIcon icon={peopleOutline} slot="start" color="medium" />
+                  <IonLabel>
+                    <h2>Участники</h2>
+                    {account.members && (
+                      <p>{account.members.length} чел.</p>
+                    )}
+                  </IonLabel>
+                  <IonIcon icon={chevronForwardOutline} slot="end" color="medium" />
+                </IonItem>
+              </IonList>
+            )}
+          </>
         )}
 
-        <div className="bg-card rounded-lg border p-4">
-          <p className="text-sm text-muted-foreground">Транзакции</p>
-          <p className="text-xs text-muted-foreground mt-2">— появятся в следующей фазе —</p>
-        </div>
-      </div>
-    </div>
+        <IonAlert
+          isOpen={showDeleteAlert}
+          onDidDismiss={() => setShowDeleteAlert(false)}
+          header="Удалить счёт?"
+          message="Это действие нельзя отменить."
+          buttons={[
+            { text: 'Отмена', role: 'cancel' },
+            {
+              text: 'Удалить',
+              role: 'destructive',
+              handler: () => deleteMutation.mutate(),
+            },
+          ]}
+        />
+      </IonContent>
+    </IonPage>
   )
 }
