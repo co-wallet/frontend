@@ -1,7 +1,6 @@
 import { useState } from 'react'
-import { Link, useHistory } from 'react-router-dom'
+import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
-import { Wallet, List, Tag, TrendingDown, TrendingUp, Scale, LayoutList, ChevronDown, ChevronUp, ShieldCheck, SlidersHorizontal } from 'lucide-react'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   IonPage,
@@ -25,8 +24,26 @@ import {
   IonSelectOption,
   IonChip,
   IonMenuButton,
+  IonItem,
+  IonList,
+  IonNote,
+  IonText,
 } from '@ionic/react'
-import { logOutOutline, addOutline } from 'ionicons/icons'
+import {
+  logOutOutline,
+  addOutline,
+  walletOutline,
+  listOutline,
+  pricetagOutline,
+  trendingDownOutline,
+  trendingUpOutline,
+  analyticsOutline,
+  gridOutline,
+  chevronDownOutline,
+  chevronUpOutline,
+  shieldCheckmarkOutline,
+  optionsOutline,
+} from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
@@ -72,7 +89,9 @@ function ChartBlock({
 
   if (data.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-6">{emptyText}</p>
+      <IonText color="medium" style={{ display: 'block', textAlign: 'center', padding: '24px 0', fontSize: '0.875rem' }}>
+        {emptyText}
+      </IonText>
     )
   }
   return (
@@ -100,43 +119,42 @@ function ChartBlock({
           </PieChart>
         </ResponsiveContainer>
       )}
-      <div className="mt-2 space-y-1">
+      <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
           const isNegative = s.amount < 0
           return (
-            <div key={i} className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2">
+            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', padding: '2px 0' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span
-                  className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                  style={{ background: isNegative ? '#f87171' : colors[i % colors.length] }}
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: '50%',
+                    flexShrink: 0,
+                    background: isNegative ? '#f87171' : colors[i % colors.length],
+                  }}
                 />
-                <span className="text-muted-foreground truncate max-w-[160px]">
+                <span style={{ color: 'var(--ion-color-medium)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
                   {s.icon ? `${s.icon} ` : ''}{s.name}
                 </span>
               </div>
-              <span className={`font-medium ${isNegative ? 'text-red-500' : ''}`}>{formatAmount(s.amount, sym)}</span>
+              <span style={{ fontWeight: 500, color: isNegative ? 'var(--ion-color-danger)' : undefined }}>
+                {formatAmount(s.amount, sym)}
+              </span>
             </div>
           )
         })}
       </div>
-      <div className="mt-2 flex gap-3">
+      <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
         {visibleCount < allEntries.length && (
-          <button
-            type="button"
-            onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}
-            className="text-xs text-primary hover:underline"
-          >
+          <IonButton fill="clear" size="small" onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}>
             Показать ещё ({allEntries.length - visibleCount})
-          </button>
+          </IonButton>
         )}
         {visibleCount > LEGEND_PAGE_SIZE && (
-          <button
-            type="button"
-            onClick={() => setVisibleCount(LEGEND_PAGE_SIZE)}
-            className="text-xs text-muted-foreground hover:underline"
-          >
+          <IonButton fill="clear" size="small" color="medium" onClick={() => setVisibleCount(LEGEND_PAGE_SIZE)}>
             Свернуть
-          </button>
+          </IonButton>
         )}
       </div>
     </>
@@ -165,13 +183,11 @@ export function DashboardPage() {
     queryFn: () => accountsApi.list(displayCurrency),
   })
 
-  // Build account_ids for analytics filter
   const filteredAccountIds: string | undefined = (() => {
     if (accountFilter === 'all') return undefined
     if (accountFilter === 'custom') {
       return selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined
     }
-    // 'balance' — only accounts included in balance
     const ids = accounts.filter((a) => a.includeInBalance).map((a) => a.id)
     return ids.length > 0 ? ids.join(',') : undefined
   })()
@@ -261,6 +277,19 @@ export function DashboardPage() {
     chartMode === 'expenses' ? expensePieData :
     incomePieData
 
+  const navItems: { icon: string; label: string; href: string }[] = [
+    { icon: walletOutline, label: 'Счета', href: '/accounts' },
+    { icon: listOutline, label: 'Транзакции', href: '/transactions' },
+    { icon: pricetagOutline, label: 'Теги', href: '/tags' },
+    { icon: gridOutline, label: 'Категории', href: '/categories' },
+  ]
+
+  const summaryCards: { mode: ChartMode; icon: string; label: string; value: number; color: string }[] = [
+    { mode: 'balance', icon: analyticsOutline, label: 'Баланс', value: summary?.balance ?? 0, color: 'primary' },
+    { mode: 'expenses', icon: trendingDownOutline, label: 'Расходы', value: summary?.expenses ?? 0, color: 'danger' },
+    { mode: 'income', icon: trendingUpOutline, label: 'Доходы', value: summary?.income ?? 0, color: 'success' },
+  ]
+
   return (
     <IonPage>
       <IonHeader>
@@ -297,68 +326,81 @@ export function DashboardPage() {
       </IonHeader>
 
       <IonContent fullscreen className="ion-padding">
-        <div className="max-w-lg mx-auto">
-          {/* Period switcher — dropdown (6 labels не помещаются в сегмент) */}
-          <div className="mb-2 rounded-md border bg-card">
-            <IonSelect
-              aria-label="Период"
-              interface="popover"
-              value={period}
-              onIonChange={(e) => setPeriod(e.detail.value as Period)}
-              label="Период"
-              labelPlacement="start"
-            >
-              {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-                <IonSelectOption key={p} value={p}>
-                  {PERIOD_LABELS[p]}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-          </div>
+        <div style={{ maxWidth: 480, margin: '0 auto' }}>
+          {/* Period switcher */}
+          <IonList style={{ marginBottom: 8 }}>
+            <IonItem>
+              <IonSelect
+                aria-label="Период"
+                interface="popover"
+                value={period}
+                onIonChange={(e) => setPeriod(e.detail.value as Period)}
+                label="Период"
+                labelPlacement="start"
+              >
+                {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                  <IonSelectOption key={p} value={p}>
+                    {PERIOD_LABELS[p]}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+            </IonItem>
+          </IonList>
 
           {/* Custom date range */}
           {period === 'custom' && (
-            <div className="grid grid-cols-2 gap-3 mb-2">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">С</label>
+            <IonList style={{ marginBottom: 8 }}>
+              <IonItem>
+                <IonLabel position="stacked">С</IonLabel>
                 <input
                   type="date"
                   value={customFrom}
                   onChange={(e) => setCustomFrom(e.target.value)}
-                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--ion-text-color)',
+                    fontSize: '0.875rem',
+                    padding: '8px 0',
+                  }}
                 />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">По</label>
+              </IonItem>
+              <IonItem>
+                <IonLabel position="stacked">По</IonLabel>
                 <input
                   type="date"
                   value={customTo}
                   onChange={(e) => setCustomTo(e.target.value)}
-                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+                  style={{
+                    width: '100%',
+                    background: 'transparent',
+                    border: 'none',
+                    color: 'var(--ion-text-color)',
+                    fontSize: '0.875rem',
+                    padding: '8px 0',
+                  }}
                 />
-              </div>
-            </div>
+              </IonItem>
+            </IonList>
           )}
 
           {/* Account filter */}
-          <div className="mb-4 mt-3">
-            <button
-              onClick={() => setShowAccountFilter((v) => !v)}
-              className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border bg-card hover:bg-muted w-full justify-between"
-            >
-              <span className="flex items-center gap-1.5">
-                <SlidersHorizontal size={14} />
+          <div style={{ marginBottom: 16, marginTop: 12 }}>
+            <IonItem button detail={false} onClick={() => setShowAccountFilter((v) => !v)}>
+              <IonIcon icon={optionsOutline} slot="start" />
+              <IonLabel>
                 {accountFilter === 'balance' && 'Счета в балансе'}
                 {accountFilter === 'all' && 'Все счета'}
                 {accountFilter === 'custom' && (selectedAccountIds.length > 0
                   ? `Выбрано: ${selectedAccountIds.length}`
                   : 'Выбрать счета'
                 )}
-              </span>
-              {showAccountFilter ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-            </button>
+              </IonLabel>
+              <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
+            </IonItem>
             {showAccountFilter && (
-              <div className="mt-2 space-y-2">
+              <div style={{ marginTop: 8 }}>
                 <IonSegment
                   value={accountFilter}
                   onIonChange={(e) => setAccountFilter(e.detail.value as AccountFilter)}
@@ -368,7 +410,7 @@ export function DashboardPage() {
                   <IonSegmentButton value="custom"><IonLabel>Выбрать</IonLabel></IonSegmentButton>
                 </IonSegment>
                 {accountFilter === 'custom' && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 8 }}>
                     {accounts.map((a) => {
                       const active = selectedAccountIds.includes(a.id)
                       return (
@@ -390,56 +432,33 @@ export function DashboardPage() {
             )}
           </div>
 
-          {/* Summary cards — clickable to switch chart */}
-          <div className="grid grid-cols-3 gap-2 mb-4">
-            <IonCard
-              button
-              onClick={() => setChartMode('balance')}
-              color={chartMode === 'balance' ? 'primary' : undefined}
-              className="m-0"
-            >
-              <IonCardContent className="ion-padding">
-                <div className="flex items-center gap-1 mb-1">
-                  <Scale size={14} />
-                  <span className="text-xs">Баланс</span>
-                </div>
-                <p className="text-sm font-semibold truncate">{formatAmount(summary?.balance ?? 0, sym)}</p>
-              </IonCardContent>
-            </IonCard>
-            <IonCard
-              button
-              onClick={() => setChartMode('expenses')}
-              color={chartMode === 'expenses' ? 'danger' : undefined}
-              className="m-0"
-            >
-              <IonCardContent className="ion-padding">
-                <div className="flex items-center gap-1 mb-1">
-                  <TrendingDown size={14} />
-                  <span className="text-xs">Расходы</span>
-                </div>
-                <p className="text-sm font-semibold truncate">{formatAmount(summary?.expenses ?? 0, sym)}</p>
-              </IonCardContent>
-            </IonCard>
-            <IonCard
-              button
-              onClick={() => setChartMode('income')}
-              color={chartMode === 'income' ? 'success' : undefined}
-              className="m-0"
-            >
-              <IonCardContent className="ion-padding">
-                <div className="flex items-center gap-1 mb-1">
-                  <TrendingUp size={14} />
-                  <span className="text-xs">Доходы</span>
-                </div>
-                <p className="text-sm font-semibold truncate">{formatAmount(summary?.income ?? 0, sym)}</p>
-              </IonCardContent>
-            </IonCard>
+          {/* Summary cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+            {summaryCards.map((card) => (
+              <IonCard
+                key={card.mode}
+                button
+                onClick={() => setChartMode(card.mode)}
+                color={chartMode === card.mode ? card.color : undefined}
+                style={{ margin: 0 }}
+              >
+                <IonCardContent className="ion-padding">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
+                    <IonIcon icon={card.icon} style={{ fontSize: 14 }} />
+                    <span style={{ fontSize: '0.75rem' }}>{card.label}</span>
+                  </div>
+                  <p style={{ fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                    {formatAmount(card.value, sym)}
+                  </p>
+                </IonCardContent>
+              </IonCard>
+            ))}
           </div>
 
           {/* Pie chart block */}
-          <IonCard className="m-0 mb-4">
+          <IonCard style={{ margin: '0 0 16px 0' }}>
             <IonCardHeader>
-              <IonCardTitle className="text-sm">{chartTitles[chartMode]}</IonCardTitle>
+              <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
               <ChartBlock
@@ -453,80 +472,56 @@ export function DashboardPage() {
 
           {/* Tags breakdown */}
           {byTag.length > 0 && (
-            <IonCard className="m-0 mb-4">
+            <IonCard style={{ margin: '0 0 16px 0' }}>
               <IonCardHeader>
-                <IonCardTitle className="text-sm">Расходы по тегам</IonCardTitle>
+                <IonCardTitle style={{ fontSize: '0.875rem' }}>Расходы по тегам</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
-                <div className="space-y-2">
+                <IonList>
                   {byTag.slice(0, 6).map((s) => (
-                    <div key={s.tagId} className="flex items-center justify-between text-xs">
-                      <span className="text-muted-foreground">#{s.tagName}</span>
-                      <span className="font-medium">{formatAmount(s.amount, sym)}</span>
-                    </div>
+                    <IonItem key={s.tagId} lines="none" style={{ '--min-height': '32px' } as React.CSSProperties}>
+                      <IonLabel color="medium" style={{ fontSize: '0.75rem' }}>#{s.tagName}</IonLabel>
+                      <IonNote slot="end" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{formatAmount(s.amount, sym)}</IonNote>
+                    </IonItem>
                   ))}
-                </div>
+                </IonList>
               </IonCardContent>
             </IonCard>
           )}
 
           {/* Navigation tiles */}
-          <div className="grid grid-cols-2 gap-3">
-            <Link to="/accounts" className="contents">
-              <IonCard button className="m-0">
-                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
-                  <Wallet size={24} />
-                  <span className="text-sm font-medium">Счета</span>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
+            {navItems.map((item) => (
+              <IonCard key={item.href} button routerLink={item.href} style={{ margin: 0 }}>
+                <IonCardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 16 }}>
+                  <IonIcon icon={item.icon} style={{ fontSize: 24 }} />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{item.label}</span>
                 </IonCardContent>
               </IonCard>
-            </Link>
-            <Link to="/transactions" className="contents">
-              <IonCard button className="m-0">
-                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
-                  <List size={24} />
-                  <span className="text-sm font-medium">Транзакции</span>
-                </IonCardContent>
-              </IonCard>
-            </Link>
-            <Link to="/tags" className="contents">
-              <IonCard button className="m-0">
-                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
-                  <Tag size={24} />
-                  <span className="text-sm font-medium">Теги</span>
-                </IonCardContent>
-              </IonCard>
-            </Link>
-            <Link to="/categories" className="contents">
-              <IonCard button className="m-0">
-                <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
-                  <LayoutList size={24} />
-                  <span className="text-sm font-medium">Категории</span>
-                </IonCardContent>
-              </IonCard>
-            </Link>
+            ))}
             {user?.isAdmin && (
-              <Link to="/admin" className="contents col-span-2">
-                <IonCard button className="m-0 col-span-2">
-                  <IonCardContent className="flex flex-col items-center gap-2 ion-padding">
-                    <ShieldCheck size={24} />
-                    <span className="text-sm font-medium">Администрирование</span>
-                  </IonCardContent>
-                </IonCard>
-              </Link>
+              <IonCard button routerLink="/admin" style={{ margin: 0, gridColumn: 'span 2' }}>
+                <IonCardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 16 }}>
+                  <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 24 }} />
+                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Администрирование</span>
+                </IonCardContent>
+              </IonCard>
             )}
           </div>
 
           {/* Greeting */}
-          <IonCard className="m-0 mt-3">
-            <IonCardContent className="text-xs text-muted-foreground">
-              {user?.username}  ·  {user?.email}
+          <IonCard style={{ margin: '12px 0 0 0' }}>
+            <IonCardContent>
+              <IonText color="medium" style={{ fontSize: '0.75rem' }}>
+                {user?.username}  ·  {user?.email}
+              </IonText>
             </IonCardContent>
           </IonCard>
         </div>
 
         {/* FAB */}
         <IonFab slot="fixed" vertical="bottom" horizontal="end">
-          <IonFabButton onClick={() => history.push('/transactions/add')}>
+          <IonFabButton routerLink="/transactions/add">
             <IonIcon icon={addOutline} />
           </IonFabButton>
         </IonFab>
