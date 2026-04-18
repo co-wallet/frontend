@@ -10,10 +10,12 @@
     "lint": "eslint src"
   },
   "dependencies": {
+    "@ionic/react": "^8.8.3",
     "@tanstack/react-query": "^5.62.0",
     "axios": "^1.7.9",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "ionicons": "^8.0.13",
     "lucide-react": "^0.468.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
