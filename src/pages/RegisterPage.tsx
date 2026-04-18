@@ -1,5 +1,19 @@
 import { useState } from 'react'
 import { Link, useHistory } from 'react-router-dom'
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonItem,
+  IonInput,
+  IonButton,
+  IonText,
+  IonSpinner,
+  IonNote,
+} from '@ionic/react'
 import { authApi } from '@/api/auth'
 
 export function RegisterPage() {
@@ -31,68 +45,72 @@ export function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-      <div className="w-full max-w-sm bg-card rounded-lg border p-6 shadow-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">Регистрация</h1>
-
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Регистрация</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent className="ion-padding">
         {error && (
-          <div className="mb-4 rounded-md bg-destructive/10 text-destructive text-sm p-3">
-            {error}
-          </div>
+          <IonText color="danger">
+            <p style={{ margin: '0 0 16px' }}>{error}</p>
+          </IonText>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Имя пользователя</label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              required
-              autoComplete="username"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={8}
-              autoComplete="new-password"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-            <p className="mt-1 text-xs text-muted-foreground">Минимум 8 символов</p>
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary text-primary-foreground py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? 'Регистрация...' : 'Создать аккаунт'}
-          </button>
+        <form onSubmit={handleSubmit}>
+          <IonList>
+            <IonItem>
+              <IonInput
+                label="Имя пользователя"
+                labelPlacement="floating"
+                type="text"
+                value={username}
+                onIonInput={(e) => setUsername(e.detail.value ?? '')}
+                required
+                autocomplete="username"
+              />
+            </IonItem>
+            <IonItem>
+              <IonInput
+                label="Email"
+                labelPlacement="floating"
+                type="email"
+                value={email}
+                onIonInput={(e) => setEmail(e.detail.value ?? '')}
+                required
+                autocomplete="email"
+              />
+            </IonItem>
+            <IonItem>
+              <IonInput
+                label="Пароль"
+                labelPlacement="floating"
+                type="password"
+                value={password}
+                onIonInput={(e) => setPassword(e.detail.value ?? '')}
+                required
+                minlength={8}
+                autocomplete="new-password"
+              />
+            </IonItem>
+          </IonList>
+          <IonNote style={{ display: 'block', marginTop: 4, marginBottom: 16, paddingLeft: 16 }}>
+            Минимум 8 символов
+          </IonNote>
+
+          <IonButton expand="block" type="submit" disabled={loading}>
+            {loading ? <IonSpinner name="crescent" /> : 'Создать аккаунт'}
+          </IonButton>
         </form>
 
-        <p className="mt-4 text-center text-sm text-muted-foreground">
+        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 14 }}>
           Уже есть аккаунт?{' '}
-          <Link to="/login" className="text-primary font-medium hover:underline">
+          <Link to="/login" style={{ color: 'var(--ion-color-primary)', fontWeight: 500 }}>
             Войти
           </Link>
         </p>
-      </div>
-    </div>
+      </IonContent>
+    </IonPage>
   )
 }
