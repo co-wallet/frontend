@@ -1,6 +1,25 @@
 import { useState, useEffect } from 'react'
-import { X, SlidersHorizontal } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
+import {
+  IonModal,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonButton,
+  IonButtons,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonDatetime,
+  IonChip,
+  IonIcon,
+  IonSegment,
+  IonSegmentButton,
+  IonNote,
+  IonFooter,
+} from '@ionic/react'
+import { closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
@@ -27,12 +46,9 @@ function toggle<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]
 }
 
-const PAGE_SIZE = 5
-
 export function FilterSheet({ value, onChange }: FilterSheetProps) {
   const [open, setOpen] = useState(false)
 
-  // Local draft state — applied only on "Применить"
   const [accountIds, setAccountIds] = useState<string[]>(value.accountIds ?? [])
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
   const [tagIds, setTagIds] = useState<string[]>(value.tagIds ?? [])
@@ -40,12 +56,6 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
   const [dateFrom, setDateFrom] = useState(value.dateFrom ?? '')
   const [dateTo, setDateTo] = useState(value.dateTo ?? '')
 
-  // Visible counts for collapsible lists
-  const [accountsVisible, setAccountsVisible] = useState(PAGE_SIZE)
-  const [categoriesVisible, setCategoriesVisible] = useState(PAGE_SIZE)
-  const [tagsVisible, setTagsVisible] = useState(PAGE_SIZE)
-
-  // Sync draft when sheet opens
   useEffect(() => {
     if (open) {
       setAccountIds(value.accountIds ?? [])
@@ -54,9 +64,6 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
       setTagMode(value.tagMode ?? 'or')
       setDateFrom(value.dateFrom ?? '')
       setDateTo(value.dateTo ?? '')
-      setAccountsVisible(PAGE_SIZE)
-      setCategoriesVisible(PAGE_SIZE)
-      setTagsVisible(PAGE_SIZE)
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -107,235 +114,163 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
 
   return (
     <>
-      {/* Trigger button */}
-      <button
+      <IonButton
+        fill={activeCount > 0 ? 'solid' : 'outline'}
+        size="small"
         onClick={() => setOpen(true)}
-        className={`flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md border transition-colors ${
-          activeCount > 0
-            ? 'bg-primary text-primary-foreground border-primary'
-            : 'bg-card border-border text-foreground hover:bg-muted'
-        }`}
       >
-        <SlidersHorizontal size={14} />
+        <IonIcon icon={funnelOutline} slot="start" />
         Фильтры
         {activeCount > 0 && (
-          <span className="ml-0.5 bg-primary-foreground text-primary rounded-full w-4 h-4 text-xs flex items-center justify-center font-bold">
+          <span
+            style={{
+              marginLeft: 6,
+              background: 'var(--ion-color-primary-contrast)',
+              color: 'var(--ion-color-primary)',
+              borderRadius: '50%',
+              width: 18,
+              height: 18,
+              fontSize: 11,
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              fontWeight: 700,
+            }}
+          >
             {activeCount}
           </span>
         )}
-      </button>
+      </IonButton>
 
-      {/* Backdrop */}
-      {open && (
-        <div
-          className="fixed inset-0 bg-black/40 z-40"
-          onClick={() => setOpen(false)}
-        />
-      )}
-
-      {/* Bottom sheet */}
-      <div
-        className={`fixed bottom-0 left-0 right-0 z-50 bg-background rounded-t-2xl shadow-xl transition-transform duration-300 max-h-[85vh] flex flex-col ${
-          open ? 'translate-y-0' : 'translate-y-full'
-        }`}
+      <IonModal
+        isOpen={open}
+        onDidDismiss={() => setOpen(false)}
+        breakpoints={[0, 0.5, 1]}
+        initialBreakpoint={0.5}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between px-4 py-4 border-b flex-shrink-0">
-          <h2 className="font-semibold text-base">Фильтры</h2>
-          <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
-            <X size={20} />
-          </button>
-        </div>
+        <IonHeader>
+          <IonToolbar>
+            <IonTitle>Фильтры</IonTitle>
+            <IonButtons slot="end">
+              <IonButton onClick={() => setOpen(false)}>
+                <IonIcon icon={closeOutline} slot="icon-only" />
+              </IonButton>
+            </IonButtons>
+          </IonToolbar>
+        </IonHeader>
 
-        {/* Scrollable body */}
-        <div className="overflow-y-auto flex-1 px-4 py-4 space-y-6">
+        <IonContent className="ion-padding">
           {/* Date range */}
-          <section>
-            <h3 className="text-sm font-medium mb-2">Период</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">С</label>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground mb-1 block">По</label>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full rounded-md border px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-              </div>
-            </div>
-          </section>
+          <IonList>
+            <IonItem>
+              <IonLabel>Период с</IonLabel>
+              <IonDatetime
+                presentation="date"
+                preferWheel={true}
+                value={dateFrom || undefined}
+                onIonChange={(e) => {
+                  const val = e.detail.value
+                  setDateFrom(typeof val === 'string' ? val.slice(0, 10) : '')
+                }}
+                style={{ maxWidth: 180 }}
+              />
+            </IonItem>
+            <IonItem>
+              <IonLabel>Период по</IonLabel>
+              <IonDatetime
+                presentation="date"
+                preferWheel={true}
+                value={dateTo || undefined}
+                onIonChange={(e) => {
+                  const val = e.detail.value
+                  setDateTo(typeof val === 'string' ? val.slice(0, 10) : '')
+                }}
+                style={{ maxWidth: 180 }}
+              />
+            </IonItem>
+          </IonList>
 
           {/* Accounts */}
           {accounts.length > 0 && (
-            <section>
-              <h3 className="text-sm font-medium mb-2">Счета</h3>
-              <div className="flex flex-wrap gap-2">
-                {accounts.slice(0, accountsVisible).map((a) => (
-                  <button
+            <div style={{ marginTop: 16 }}>
+              <IonNote style={{ paddingLeft: 16, fontWeight: 600, fontSize: 14 }}>Счета</IonNote>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 16px' }}>
+                {accounts.map((a) => (
+                  <IonChip
                     key={a.id}
-                    type="button"
+                    color={accountIds.includes(a.id) ? 'primary' : undefined}
+                    outline={!accountIds.includes(a.id)}
                     onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
-                    className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      accountIds.includes(a.id)
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border text-foreground hover:bg-muted'
-                    }`}
                   >
                     {a.icon ? `${a.icon} ` : ''}{a.name}
-                  </button>
+                  </IonChip>
                 ))}
               </div>
-              <div className="mt-2 flex gap-3">
-                {accountsVisible < accounts.length && (
-                  <button
-                    type="button"
-                    onClick={() => setAccountsVisible((n) => n + PAGE_SIZE)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Показать ещё ({accounts.length - accountsVisible})
-                  </button>
-                )}
-                {accountsVisible > PAGE_SIZE && (
-                  <button
-                    type="button"
-                    onClick={() => setAccountsVisible(PAGE_SIZE)}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
-                    Свернуть
-                  </button>
-                )}
-              </div>
-            </section>
+            </div>
           )}
 
           {/* Categories */}
           {allCategories.length > 0 && (
-            <section>
-              <h3 className="text-sm font-medium mb-2">Категории</h3>
-              <div className="flex flex-wrap gap-2">
-                {allCategories.slice(0, categoriesVisible).map((c) => (
-                  <button
+            <div style={{ marginTop: 16 }}>
+              <IonNote style={{ paddingLeft: 16, fontWeight: 600, fontSize: 14 }}>Категории</IonNote>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 16px' }}>
+                {allCategories.map((c) => (
+                  <IonChip
                     key={c.id}
-                    type="button"
+                    color={categoryIds.includes(c.id) ? 'primary' : undefined}
+                    outline={!categoryIds.includes(c.id)}
                     onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
-                    className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      categoryIds.includes(c.id)
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border text-foreground hover:bg-muted'
-                    }`}
                   >
                     {c.icon ? `${c.icon} ` : ''}{c.name}
-                  </button>
+                  </IonChip>
                 ))}
               </div>
-              <div className="mt-2 flex gap-3">
-                {categoriesVisible < allCategories.length && (
-                  <button
-                    type="button"
-                    onClick={() => setCategoriesVisible((n) => n + PAGE_SIZE)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Показать ещё ({allCategories.length - categoriesVisible})
-                  </button>
-                )}
-                {categoriesVisible > PAGE_SIZE && (
-                  <button
-                    type="button"
-                    onClick={() => setCategoriesVisible(PAGE_SIZE)}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
-                    Свернуть
-                  </button>
-                )}
-              </div>
-            </section>
+            </div>
           )}
 
           {/* Tags */}
           {tags.length > 0 && (
-            <section>
-              <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm font-medium">Теги</h3>
-                <div className="flex gap-1 bg-muted rounded-md p-0.5">
-                  {(['or', 'and'] as const).map((m) => (
-                    <button
-                      key={m}
-                      type="button"
-                      onClick={() => setTagMode(m)}
-                      className={`text-xs px-2 py-0.5 rounded transition-colors ${
-                        tagMode === m ? 'bg-background shadow text-foreground' : 'text-muted-foreground'
-                      }`}
-                    >
-                      {m.toUpperCase()}
-                    </button>
-                  ))}
-                </div>
+            <div style={{ marginTop: 16 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
+                <IonNote style={{ fontWeight: 600, fontSize: 14 }}>Теги</IonNote>
+                <IonSegment
+                  value={tagMode}
+                  onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
+                  style={{ maxWidth: 120 }}
+                >
+                  <IonSegmentButton value="or">OR</IonSegmentButton>
+                  <IonSegmentButton value="and">AND</IonSegmentButton>
+                </IonSegment>
               </div>
-              <div className="flex flex-wrap gap-2">
-                {tags.slice(0, tagsVisible).map((t) => (
-                  <button
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 16px' }}>
+                {tags.map((t) => (
+                  <IonChip
                     key={t.id}
-                    type="button"
+                    color={tagIds.includes(t.id) ? 'primary' : undefined}
+                    outline={!tagIds.includes(t.id)}
                     onClick={() => setTagIds((prev) => toggle(prev, t.id))}
-                    className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
-                      tagIds.includes(t.id)
-                        ? 'bg-primary text-primary-foreground border-primary'
-                        : 'border-border text-foreground hover:bg-muted'
-                    }`}
                   >
                     #{t.name}
-                  </button>
+                  </IonChip>
                 ))}
               </div>
-              <div className="mt-2 flex gap-3">
-                {tagsVisible < tags.length && (
-                  <button
-                    type="button"
-                    onClick={() => setTagsVisible((n) => n + PAGE_SIZE)}
-                    className="text-xs text-primary hover:underline"
-                  >
-                    Показать ещё ({tags.length - tagsVisible})
-                  </button>
-                )}
-                {tagsVisible > PAGE_SIZE && (
-                  <button
-                    type="button"
-                    onClick={() => setTagsVisible(PAGE_SIZE)}
-                    className="text-xs text-muted-foreground hover:underline"
-                  >
-                    Свернуть
-                  </button>
-                )}
-              </div>
-            </section>
+            </div>
           )}
-        </div>
+        </IonContent>
 
-        {/* Footer */}
-        <div className="flex gap-3 px-4 py-4 border-t flex-shrink-0">
-          <button
-            onClick={reset}
-            className="flex-1 rounded-md border py-2.5 text-sm font-medium hover:bg-muted"
-          >
-            Сбросить
-          </button>
-          <button
-            onClick={apply}
-            className="flex-1 rounded-md bg-primary text-primary-foreground py-2.5 text-sm font-medium"
-          >
-            Применить
-          </button>
-        </div>
-      </div>
+        <IonFooter>
+          <IonToolbar>
+            <div style={{ display: 'flex', gap: 12, padding: '0 16px' }}>
+              <IonButton expand="block" fill="outline" color="medium" onClick={reset} style={{ flex: 1 }}>
+                Сбросить
+              </IonButton>
+              <IonButton expand="block" onClick={apply} style={{ flex: 1 }}>
+                Применить
+              </IonButton>
+            </div>
+          </IonToolbar>
+        </IonFooter>
+      </IonModal>
     </>
   )
 }
