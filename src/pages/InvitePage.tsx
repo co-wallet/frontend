@@ -22,6 +22,7 @@ import {
 } from '@ionic/react'
 import { invitesApi } from '@/api/invites'
 import { currenciesApi } from '@/api/currencies'
+import { NEW_USER_DEFAULT_CURRENCY } from '@/lib/currencyDefaults'
 import { useAuthStore } from '@/store/authStore'
 
 export function InvitePage() {
@@ -31,7 +32,7 @@ export function InvitePage() {
 
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
-  const [defaultCurrency, setDefaultCurrency] = useState('USD')
+  const [defaultCurrency, setDefaultCurrency] = useState(NEW_USER_DEFAULT_CURRENCY)
   const [error, setError] = useState('')
 
   const { data: invite, isLoading, isError } = useQuery({
@@ -172,7 +173,11 @@ export function InvitePage() {
                           {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
                         </IonSelectOption>
                       ))
-                    : <IonSelectOption value="USD">USD</IonSelectOption>
+                    : (
+                        <IonSelectOption value={NEW_USER_DEFAULT_CURRENCY}>
+                          {NEW_USER_DEFAULT_CURRENCY}
+                        </IonSelectOption>
+                      )
                   }
                 </IonSelect>
               </IonItem>
