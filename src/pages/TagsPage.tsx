@@ -1,14 +1,22 @@
-import { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Tag, Pencil, Trash2, Check, X } from 'lucide-react'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonList, IonItem, IonLabel, IonNote, IonIcon,
+  IonItemSliding, IonItemOptions, IonItemOption,
+  IonMenuButton, IonButtons, IonSpinner, IonText,
+  IonAlert, IonModal, IonInput, IonButton,
+} from '@ionic/react'
+import { pricetagOutline, createOutline, trashOutline } from 'ionicons/icons'
 import { tagsApi } from '@/api/tags'
 
 export function TagsPage() {
   const qc = useQueryClient()
-  const [editingId, setEditingId] = useState<string | null>(null)
+  const [editingTag, setEditingTag] = useState<{ id: string; name: string } | null>(null)
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
+  const [deleteTag, setDeleteTag] = useState<{ id: string; name: string; txCount: number } | null>(null)
+  const slidingRef = useRef<HTMLIonItemSlidingElement | null>(null)
 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ['tags'],
@@ -25,7 +33,7 @@ export function TagsPage() {
     mutationFn: ({ id, name }: { id: string; name: string }) => tagsApi.rename(id, name),
     onSuccess: () => {
       invalidateTagConsumers()
-      setEditingId(null)
+      setEditingTag(null)
       setEditError(null)
     },
     onError: (err: any) => {
@@ -38,99 +46,135 @@ export function TagsPage() {
     onSuccess: invalidateTagConsumers,
   })
 
-  function startEdit(id: string, name: string) {
-    setEditingId(id)
+  function handleEditOpen(id: string, name: string) {
     setEditName(name)
     setEditError(null)
+    setEditingTag({ id, name })
+    if (slidingRef.current) slidingRef.current.close()
   }
 
-  function cancelEdit() {
-    setEditingId(null)
-    setEditName('')
-    setEditError(null)
+  function handleEditSave() {
+    if (!editingTag || !editName.trim()) return
+    renameMutation.mutate({ id: editingTag.id, name: editName })
+  }
+
+  function handleDeleteConfirm() {
+    if (!deleteTag) return
+    deleteMutation.mutate(deleteTag.id)
+    setDeleteTag(null)
   }
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="max-w-lg mx-auto p-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Link to="/dashboard" className="text-muted-foreground hover:text-foreground text-sm">
-            ← Назад
-          </Link>
-          <h1 className="text-xl font-bold">Теги</h1>
-        </div>
-
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
+          <IonTitle>Теги</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+            <IonSpinner />
+          </div>
         ) : tags.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Tag size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Нет тегов. Добавьте теги к транзакциям.</p>
+          <div style={{ textAlign: 'center', padding: '3rem' }}>
+            <IonIcon icon={pricetagOutline} style={{ fontSize: '40px', opacity: 0.3, marginBottom: '12px' }} />
+            <IonText color="medium">
+              <p>Нет тегов. Добавьте теги к транзакциям.</p>
+            </IonText>
           </div>
         ) : (
-          <div className="space-y-2">
+          <IonList>
             {tags.map((tag) => (
-              <div key={tag.id} className="bg-card rounded-lg border px-4 py-3 flex items-center gap-3">
-                {editingId === tag.id ? (
-                  <div className="flex-1 flex flex-col gap-1">
-                    <div className="flex items-center gap-3">
-                      <input
-                        autoFocus
-                        value={editName}
-                        onChange={(e) => {
-                          setEditName(e.target.value)
-                          if (editError) setEditError(null)
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') renameMutation.mutate({ id: tag.id, name: editName })
-                          if (e.key === 'Escape') cancelEdit()
-                        }}
-                        className="flex-1 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary"
-                      />
-                      <button
-                        onClick={() => renameMutation.mutate({ id: tag.id, name: editName })}
-                        disabled={renameMutation.isPending || !editName.trim()}
-                        className="p-1 rounded hover:bg-muted text-green-600 disabled:opacity-50"
-                      >
-                        <Check size={16} />
-                      </button>
-                      <button onClick={cancelEdit} className="p-1 rounded hover:bg-muted text-muted-foreground">
-                        <X size={16} />
-                      </button>
-                    </div>
-                    {editError && <p className="text-xs text-destructive">{editError}</p>}
-                  </div>
-                ) : (
-                  <>
-                    <span className="flex-1 text-sm font-medium">#{tag.name}</span>
-                    {tag.txCount !== undefined && (
-                      <span className="text-xs text-muted-foreground">{tag.txCount} транзакций</span>
-                    )}
-                    <button
-                      onClick={() => startEdit(tag.id, tag.name)}
-                      className="p-1 rounded hover:bg-muted text-muted-foreground"
-                    >
-                      <Pencil size={14} />
-                    </button>
-                    <button
-                      onClick={() => {
-                        const txCount = tag.txCount ?? 0
-                        const warning = txCount > 0
-                          ? `Тег #${tag.name} будет удалён из ${txCount} транзакций. Продолжить?`
-                          : `Удалить тег #${tag.name}?`
-                        if (confirm(warning)) deleteMutation.mutate(tag.id)
-                      }}
-                      className="p-1 rounded hover:bg-muted text-destructive"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </>
-                )}
-              </div>
+              <IonItemSliding
+                key={tag.id}
+                ref={(el) => { slidingRef.current = el }}
+              >
+                <IonItem>
+                  <IonIcon icon={pricetagOutline} slot="start" color="primary" />
+                  <IonLabel>#{tag.name}</IonLabel>
+                  {tag.txCount !== undefined && (
+                    <IonNote slot="end">{tag.txCount} транз.</IonNote>
+                  )}
+                </IonItem>
+                <IonItemOptions side="end">
+                  <IonItemOption color="primary" onClick={() => handleEditOpen(tag.id, tag.name)}>
+                    <IonIcon slot="icon-only" icon={createOutline} />
+                  </IonItemOption>
+                  <IonItemOption
+                    color="danger"
+                    onClick={() => {
+                      setDeleteTag({ id: tag.id, name: tag.name, txCount: tag.txCount ?? 0 })
+                      if (slidingRef.current) slidingRef.current.close()
+                    }}
+                  >
+                    <IonIcon slot="icon-only" icon={trashOutline} />
+                  </IonItemOption>
+                </IonItemOptions>
+              </IonItemSliding>
             ))}
-          </div>
+          </IonList>
         )}
-      </div>
-    </div>
+
+        {/* Edit Modal */}
+        <IonModal isOpen={!!editingTag} onDidDismiss={() => setEditingTag(null)}>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Переименовать тег</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setEditingTag(null)}>Отмена</IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
+          <IonContent className="ion-padding">
+            <IonList>
+              <IonItem>
+                <IonInput
+                  label="Название"
+                  labelPlacement="floating"
+                  value={editName}
+                  onIonInput={(e) => {
+                    setEditName(e.detail.value ?? '')
+                    if (editError) setEditError(null)
+                  }}
+                />
+              </IonItem>
+            </IonList>
+            {editError && (
+              <IonText color="danger">
+                <p style={{ padding: '0 16px' }}>{editError}</p>
+              </IonText>
+            )}
+            <IonButton
+              expand="block"
+              style={{ marginTop: '16px' }}
+              onClick={handleEditSave}
+              disabled={renameMutation.isPending || !editName.trim()}
+            >
+              {renameMutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
+            </IonButton>
+          </IonContent>
+        </IonModal>
+
+        {/* Delete Confirmation Alert */}
+        <IonAlert
+          isOpen={!!deleteTag}
+          onDidDismiss={() => setDeleteTag(null)}
+          header="Удалить тег?"
+          message={
+            deleteTag && deleteTag.txCount > 0
+              ? `Тег #${deleteTag.name} будет удалён из ${deleteTag.txCount} транзакций. Продолжить?`
+              : `Удалить тег #${deleteTag?.name}?`
+          }
+          buttons={[
+            { text: 'Отмена', role: 'cancel' },
+            { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },
+          ]}
+        />
+      </IonContent>
+    </IonPage>
   )
 }

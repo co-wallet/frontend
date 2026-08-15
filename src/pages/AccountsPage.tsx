@@ -1,11 +1,45 @@
-import { useState, useRef, useEffect } from 'react'
-import { Link } from 'react-router-dom'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, Wallet, Users, Trash2, Pencil } from 'lucide-react'
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonItem,
+  IonLabel,
+  IonNote,
+  IonFab,
+  IonFabButton,
+  IonIcon,
+  IonModal,
+  IonInput,
+  IonSelect,
+  IonSelectOption,
+  IonToggle,
+  IonButton,
+  IonButtons,
+  IonSpinner,
+  IonText,
+  IonMenuButton,
+  IonItemSliding,
+  IonItemOptions,
+  IonItemOption,
+  IonAlert,
+} from '@ionic/react'
+import {
+  addOutline,
+  walletOutline,
+  createOutline,
+  trashOutline,
+  peopleOutline,
+} from 'ionicons/icons'
 import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts'
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
-import { cn, parseDecimal, filterDecimalInput } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
+
 const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
 
 function fmtCurrency(amount: number, currency: string): string {
@@ -20,20 +54,24 @@ function fmtCurrency(amount: number, currency: string): string {
   }
 }
 
-function AccountForm({
+function AccountFormModal({
+  isOpen,
+  onClose,
   initial,
   defaultCurrency,
   onSubmit,
-  onCancel,
   loading,
   isEditing = false,
+  title,
 }: {
+  isOpen: boolean
+  onClose: () => void
   initial?: Partial<CreateAccountDto>
   defaultCurrency: string
   onSubmit: (dto: CreateAccountDto) => void
-  onCancel: () => void
   loading: boolean
   isEditing?: boolean
+  title: string
 }) {
   const [name, setName] = useState(initial?.name ?? '')
   const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
@@ -55,234 +93,167 @@ function AccountForm({
     staleTime: 60_000,
   })
 
+  const handleSubmit = () => {
+    onSubmit({
+      name,
+      type,
+      currency,
+      icon,
+      includeInBalance,
+      initialBalance: parseDecimal(initialBalance),
+      initialBalanceDate,
+    })
+  }
+
+  const resetForm = () => {
+    setName(initial?.name ?? '')
+    setType(initial?.type ?? 'personal')
+    setCurrency(initial?.currency ?? defaultCurrency)
+    setIcon(initial?.icon ?? '💳')
+    setIncludeInBalance(initial?.includeInBalance ?? true)
+    setInitialBalance(initial?.initialBalance ? String(initial.initialBalance) : '')
+    setInitialBalanceDate(
+      initial?.initialBalanceDate
+        ? initial.initialBalanceDate.slice(0, 10)
+        : new Date().toISOString().slice(0, 10)
+    )
+  }
+
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault()
-        onSubmit({ name, type, currency, icon, includeInBalance, initialBalance: parseDecimal(initialBalance), initialBalanceDate })
-      }}
-      className="space-y-4"
-    >
-      <div>
-        <label className="block text-sm font-medium mb-1">Название</label>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          placeholder="Например: Карта Сбер"
-          className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-        />
-      </div>
+    <IonModal isOpen={isOpen} onDidDismiss={onClose} onWillPresent={resetForm}>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonButton onClick={onClose}>Отмена</IonButton>
+          </IonButtons>
+          <IonTitle>{title}</IonTitle>
+          <IonButtons slot="end">
+            <IonButton strong onClick={handleSubmit} disabled={loading || !name.trim()}>
+              {loading ? <IonSpinner name="dots" /> : 'Сохранить'}
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent className="ion-padding">
+        <IonList>
+          <IonItem>
+            <IonInput
+              label="Название"
+              labelPlacement="floating"
+              value={name}
+              onIonInput={(e) => setName(e.detail.value ?? '')}
+              placeholder="Например: Карта Сбер"
+              required
+            />
+          </IonItem>
 
-      <div>
-        <label className="block text-sm font-medium mb-2">Иконка</label>
-        <div className="flex gap-2 flex-wrap">
-          {ICONS.map((i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setIcon(i)}
-              className={cn(
-                'w-9 h-9 rounded-md border text-lg flex items-center justify-center',
-                icon === i ? 'border-primary ring-2 ring-primary' : 'border-border',
-              )}
-            >
-              {i}
-            </button>
-          ))}
-        </div>
-      </div>
+          <IonItem>
+            <IonLabel>Иконка</IonLabel>
+            <div slot="end" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', padding: '8px 0' }}>
+              {ICONS.map((i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => setIcon(i)}
+                  style={{
+                    width: '36px',
+                    height: '36px',
+                    fontSize: '18px',
+                    border: icon === i ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-border-color, #ccc)',
+                    borderRadius: '8px',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {i}
+                </button>
+              ))}
+            </div>
+          </IonItem>
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Тип</label>
-        {isEditing ? (
-          <p className="text-sm text-muted-foreground">{type === 'personal' ? 'Личный' : 'Совместный'}</p>
-        ) : (
-          <div className="flex gap-2">
-            {(['personal', 'shared'] as const).map((t) => (
-              <button
-                key={t}
-                type="button"
-                onClick={() => setType(t)}
-                className={cn(
-                  'flex-1 py-2 rounded-md border text-sm font-medium',
-                  type === t
-                    ? 'bg-primary text-primary-foreground border-primary'
-                    : 'border-border text-foreground',
-                )}
+          {!isEditing && (
+            <IonItem>
+              <IonSelect
+                label="Тип"
+                labelPlacement="floating"
+                value={type}
+                onIonChange={(e) => setType(e.detail.value)}
               >
-                {t === 'personal' ? 'Личный' : 'Совместный'}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+                <IonSelectOption value="personal">Личный</IonSelectOption>
+                <IonSelectOption value="shared">Совместный</IonSelectOption>
+              </IonSelect>
+            </IonItem>
+          )}
+          {isEditing && (
+            <IonItem>
+              <IonLabel>Тип</IonLabel>
+              <IonNote slot="end">{type === 'personal' ? 'Личный' : 'Совместный'}</IonNote>
+            </IonItem>
+          )}
 
-      <div>
-        <label className="block text-sm font-medium mb-1">Валюта</label>
-        {isEditing ? (
-          <p className="text-sm text-muted-foreground">{currency}</p>
-        ) : (
-          <select
-            value={currency}
-            onChange={(e) => setCurrency(e.target.value)}
-            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-          >
-            {currencies.length > 0
-              ? currencies.map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
-                  </option>
-                ))
-              : ['RUB', 'USD', 'EUR', 'GBP', 'CNY'].map((c) => (
-                  <option key={c} value={c}>{c}</option>
-                ))
-            }
-          </select>
-        )}
-      </div>
+          {!isEditing && (
+            <IonItem>
+              <IonSelect
+                label="Валюта"
+                labelPlacement="floating"
+                value={currency}
+                onIonChange={(e) => setCurrency(e.detail.value)}
+              >
+                {currencies.length > 0
+                  ? currencies.map((c) => (
+                      <IonSelectOption key={c.code} value={c.code}>
+                        {c.code} — {c.name}{c.symbol ? ` (${c.symbol})` : ''}
+                      </IonSelectOption>
+                    ))
+                  : ['RUB', 'USD', 'EUR', 'GBP', 'CNY'].map((c) => (
+                      <IonSelectOption key={c} value={c}>{c}</IonSelectOption>
+                    ))}
+              </IonSelect>
+            </IonItem>
+          )}
+          {isEditing && (
+            <IonItem>
+              <IonLabel>Валюта</IonLabel>
+              <IonNote slot="end">{currency}</IonNote>
+            </IonItem>
+          )}
 
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-sm font-medium mb-1">Начальный баланс</label>
-          <input
-            type="text"
-            inputMode="decimal"
-            value={initialBalance}
-            onChange={(e) => setInitialBalance(filterDecimalInput(e.target.value))}
-            placeholder="0"
-            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Дата баланса</label>
-          <input
-            type="date"
-            value={initialBalanceDate}
-            onChange={(e) => setInitialBalanceDate(e.target.value)}
-            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-      </div>
+          <IonItem>
+            <IonInput
+              label="Начальный баланс"
+              labelPlacement="floating"
+              type="text"
+              inputMode="decimal"
+              value={initialBalance}
+              onIonInput={(e) => setInitialBalance(filterDecimalInput(e.detail.value ?? ''))}
+              placeholder="0"
+            />
+          </IonItem>
 
-      <label className="flex items-center gap-2 cursor-pointer">
-        <input
-          type="checkbox"
-          checked={includeInBalance}
-          onChange={(e) => setIncludeInBalance(e.target.checked)}
-          className="rounded"
-        />
-        <span className="text-sm">Учитывать в общем балансе</span>
-      </label>
+          <IonItem>
+            <IonInput
+              label="Дата баланса"
+              labelPlacement="floating"
+              type="date"
+              value={initialBalanceDate}
+              onIonInput={(e) => setInitialBalanceDate(e.detail.value ?? '')}
+            />
+          </IonItem>
 
-      <div className="flex gap-2 pt-2">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="flex-1 rounded-md border py-2 text-sm font-medium hover:bg-muted"
-        >
-          Отмена
-        </button>
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 rounded-md bg-primary text-primary-foreground py-2 text-sm font-medium disabled:opacity-50"
-        >
-          {loading ? 'Сохранение...' : 'Сохранить'}
-        </button>
-      </div>
-    </form>
-  )
-}
-
-function AccountCard({
-  account,
-  onEdit,
-  onDelete,
-}: {
-  account: Account
-  onEdit: (a: Account) => void
-  onDelete: (id: string) => void
-}) {
-  const user = useAuthStore((s) => s.user)
-  const isOwner = account.ownerId === user?.id
-
-  return (
-    <div className="bg-card rounded-lg border p-4">
-      <div className="flex items-start justify-between">
-        <Link to={`/accounts/${account.id}`} className="flex items-center gap-3 flex-1">
-          <span className="text-2xl">{account.icon ?? '💳'}</span>
-          <div>
-            <p className="font-medium">{account.name}</p>
-            <p className="text-xs text-muted-foreground">
-              {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
-            </p>
-          </div>
-        </Link>
-        <div className="flex items-center gap-1 ml-2">
-          {account.type === 'shared' && (
-            <Link
-              to={`/accounts/${account.id}/members`}
-              className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
+          <IonItem>
+            <IonToggle
+              checked={includeInBalance}
+              onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
             >
-              <Users size={16} />
-            </Link>
-          )}
-          <button
-            onClick={() => onEdit(account)}
-            className="p-1.5 rounded-md hover:bg-muted text-muted-foreground"
-          >
-            <Pencil size={16} />
-          </button>
-          {isOwner && (
-            <button
-              onClick={() => onDelete(account.id)}
-              className="p-1.5 rounded-md hover:bg-muted text-destructive"
-            >
-              <Trash2 size={16} />
-            </button>
-          )}
-        </div>
-      </div>
-      {account.balance && (
-        <div className="mt-3 pt-3 border-t border-border">
-          {account.type === 'shared' ? (
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 text-sm">
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Мой баланс</p>
-                <p className="font-medium">{fmtCurrency(account.balance.native, account.currency)}</p>
-                {account.balance.displayCurrency !== account.currency && (
-                  <p className="text-xs text-muted-foreground">
-                    ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
-                  </p>
-                )}
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground mb-0.5">Всего на счёте</p>
-                <p className="font-medium">{fmtCurrency(account.balance.totalNative, account.currency)}</p>
-                {account.balance.displayCurrency !== account.currency && (
-                  <p className="text-xs text-muted-foreground">
-                    ≈ {fmtCurrency(account.balance.totalDisplay, account.balance.displayCurrency)}
-                  </p>
-                )}
-              </div>
-            </div>
-          ) : (
-            <div className="text-sm">
-              <p className="font-medium">{fmtCurrency(account.balance.native, account.currency)}</p>
-              {account.balance.displayCurrency !== account.currency && (
-                <p className="text-xs text-muted-foreground">
-                  ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-      {!account.includeInBalance && (
-        <p className="mt-2 text-xs text-muted-foreground">Не учитывается в балансе</p>
-      )}
-    </div>
+              Учитывать в общем балансе
+            </IonToggle>
+          </IonItem>
+        </IonList>
+      </IonContent>
+    </IonModal>
   )
 }
 
@@ -290,15 +261,9 @@ export function AccountsPage() {
   const qc = useQueryClient()
   const user = useAuthStore((s) => s.user)
   const defaultCurrency = user?.defaultCurrency ?? 'USD'
-  const [showCreateForm, setShowCreateForm] = useState(false)
+  const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
-  const formRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (showCreateForm || editingAccount) {
-      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
-  }, [showCreateForm, editingAccount])
+  const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null)
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts', defaultCurrency],
@@ -309,7 +274,7 @@ export function AccountsPage() {
     mutationFn: accountsApi.create,
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['accounts'] })
-      setShowCreateForm(false)
+      setShowCreateModal(false)
     },
   })
 
@@ -334,71 +299,140 @@ export function AccountsPage() {
   })
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="max-w-lg mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-2">
-            <Link to="/" className="text-muted-foreground hover:text-foreground text-sm">
-              ← Назад
-            </Link>
-            <h1 className="text-xl font-bold">Счета</h1>
-          </div>
-          <button
-            onClick={() => { setShowCreateForm(true); setEditingAccount(null) }}
-            className="flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium"
-          >
-            <Plus size={16} /> Добавить
-          </button>
-        </div>
-
-        {showCreateForm && (
-          <div ref={formRef} className="bg-card rounded-lg border p-4 mb-4">
-            <h2 className="font-semibold mb-4">Новый счёт</h2>
-            <AccountForm
-              defaultCurrency={defaultCurrency}
-              onSubmit={(dto) => createMutation.mutate(dto)}
-              onCancel={() => setShowCreateForm(false)}
-              loading={createMutation.isPending}
-            />
-          </div>
-        )}
-
-        {editingAccount && (
-          <div key={editingAccount.id} ref={formRef} className="bg-card rounded-lg border p-4 mb-4">
-            <h2 className="font-semibold mb-4">Редактировать счёт</h2>
-            <AccountForm
-              initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined }}
-              defaultCurrency={defaultCurrency}
-              onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
-              onCancel={() => setEditingAccount(null)}
-              loading={updateMutation.isPending}
-              isEditing
-            />
-          </div>
-        )}
-
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonMenuButton />
+          </IonButtons>
+          <IonTitle>Счета</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+            <IonSpinner />
+          </div>
         ) : accounts.length === 0 ? (
-          <div className="text-center py-12 text-muted-foreground">
-            <Wallet size={40} className="mx-auto mb-3 opacity-30" />
-            <p className="text-sm">Нет счетов. Создайте первый!</p>
+          <div style={{ textAlign: 'center', padding: '48px 16px' }}>
+            <IonIcon icon={walletOutline} style={{ fontSize: '48px', opacity: 0.3 }} />
+            <IonText>
+              <p>Нет счетов. Создайте первый!</p>
+            </IonText>
           </div>
         ) : (
-          <div className="space-y-3">
-            {accounts.map((a) => (
-              <AccountCard
-                key={a.id}
-                account={a}
-                onEdit={(a) => { setEditingAccount(a); setShowCreateForm(false) }}
-                onDelete={(id) => {
-                  if (confirm('Удалить счёт?')) deleteMutation.mutate(id)
-                }}
-              />
-            ))}
-          </div>
+          <IonList>
+            {accounts.map((account) => {
+              const isOwner = account.ownerId === user?.id
+              return (
+                <IonItemSliding key={account.id}>
+                  <IonItem
+                    routerLink={`/accounts/${account.id}`}
+                    detail={false}
+                  >
+                    <span slot="start" style={{ fontSize: '24px' }}>
+                      {account.icon ?? '💳'}
+                    </span>
+                    <IonLabel>
+                      <h2>{account.name}</h2>
+                      <p>
+                        {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
+                        {!account.includeInBalance && ' · Не в балансе'}
+                      </p>
+                    </IonLabel>
+                    {account.balance && (
+                      <IonNote slot="end" style={{ fontSize: '14px', fontWeight: 500 }}>
+                        <div style={{ textAlign: 'right' }}>
+                          {fmtCurrency(account.balance.native, account.currency)}
+                          {account.balance.displayCurrency !== account.currency && (
+                            <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                              ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                            </div>
+                          )}
+                          {account.type === 'shared' && (
+                            <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                              Всего: {fmtCurrency(account.balance.totalNative, account.currency)}
+                            </div>
+                          )}
+                        </div>
+                      </IonNote>
+                    )}
+                  </IonItem>
+                  <IonItemOptions side="end">
+                    {account.type === 'shared' && (
+                      <IonItemOption
+                        color="tertiary"
+                        routerLink={`/accounts/${account.id}/members`}
+                      >
+                        <IonIcon slot="icon-only" icon={peopleOutline} />
+                      </IonItemOption>
+                    )}
+                    <IonItemOption
+                      color="primary"
+                      onClick={() => setEditingAccount(account)}
+                    >
+                      <IonIcon slot="icon-only" icon={createOutline} />
+                    </IonItemOption>
+                    {isOwner && (
+                      <IonItemOption
+                        color="danger"
+                        onClick={() => setDeleteAccountId(account.id)}
+                      >
+                        <IonIcon slot="icon-only" icon={trashOutline} />
+                      </IonItemOption>
+                    )}
+                  </IonItemOptions>
+                </IonItemSliding>
+              )
+            })}
+          </IonList>
         )}
-      </div>
-    </div>
+
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => { setShowCreateModal(true); setEditingAccount(null) }}>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+
+        <AccountFormModal
+          isOpen={showCreateModal}
+          onClose={() => setShowCreateModal(false)}
+          defaultCurrency={defaultCurrency}
+          onSubmit={(dto) => createMutation.mutate(dto)}
+          loading={createMutation.isPending}
+          title="Новый счёт"
+        />
+
+        {editingAccount && (
+          <AccountFormModal
+            isOpen={!!editingAccount}
+            onClose={() => setEditingAccount(null)}
+            initial={{ ...editingAccount, icon: editingAccount.icon ?? undefined }}
+            defaultCurrency={defaultCurrency}
+            onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
+            loading={updateMutation.isPending}
+            isEditing
+            title="Редактировать счёт"
+          />
+        )}
+
+        <IonAlert
+          isOpen={!!deleteAccountId}
+          header="Удалить счёт?"
+          message="Это действие нельзя отменить. Все транзакции по этому счёту будут удалены."
+          buttons={[
+            { text: 'Отмена', role: 'cancel' },
+            {
+              text: 'Удалить',
+              role: 'destructive',
+              handler: () => {
+                if (deleteAccountId) deleteMutation.mutate(deleteAccountId)
+              },
+            },
+          ]}
+          onDidDismiss={() => setDeleteAccountId(null)}
+        />
+      </IonContent>
+    </IonPage>
   )
 }

@@ -1,13 +1,20 @@
 import { useState, useEffect, useRef } from 'react'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
+import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonBackButton, IonButton, IonSegment, IonSegmentButton, IonLabel,
+  IonList, IonItem, IonInput, IonSelect, IonSelectOption, IonToggle,
+  IonSpinner, IonText, IonNote, IonIcon,
+} from '@ionic/react'
+import { refreshOutline } from 'ionicons/icons'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
 import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
 import { useAuthStore } from '@/store/authStore'
-import { cn, parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/utils'
+import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Расход' },
@@ -36,8 +43,9 @@ function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
 }
 
 export function AddTransactionPage() {
-  const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const history = useHistory()
+  const location = useLocation()
+  const searchParams = new URLSearchParams(location.search)
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
@@ -54,7 +62,6 @@ export function AddTransactionPage() {
   const [tags, setTags] = useState<string[]>([])
   const pendingTagRef = useRef('')
 
-  // Shares
   const [customShares, setCustomShares] = useState(false)
   const [shareAmounts, setShareAmounts] = useState<Record<string, string>>({})
 
@@ -88,7 +95,6 @@ export function AddTransactionPage() {
   })
   const flatCategories = flattenCategories(categoryTree)
 
-  // Auto-distribute shares when amount or members change
   useEffect(() => {
     if (!isShared || !members.length || customShares) return
     const total = parseDecimal(amount)
@@ -107,25 +113,21 @@ export function AddTransactionPage() {
     setShareAmounts(newAmounts)
   }, [amount, members, isShared, customShares])
 
-  // Reset shares when switching account
   useEffect(() => {
     setCustomShares(false)
     setShareAmounts({})
   }, [accountId])
 
-  // Reset categoryId when switching type
   useEffect(() => {
     setCategoryId('')
   }, [type])
 
-  // Auto-compute default currency amount when amount or account changes
   const accountCurrency = selectedAccount?.currency ?? ''
   const toAccount = accounts.find((a) => a.id === toAccountId)
   const toAccountCurrency = toAccount?.currency ?? ''
   const isCrossCurrencyTransfer = type === 'transfer' && !!toAccountCurrency && toAccountCurrency !== accountCurrency
   const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
 
-  // Auto-compute toAmount for cross-currency transfers
   useEffect(() => {
     if (!isCrossCurrencyTransfer) {
       setToAmountStr('')
@@ -152,7 +154,6 @@ export function AddTransactionPage() {
       setDefaultCurrencyAmountStr('')
       return
     }
-    // If source account is already in default currency, amount = defaultCurrencyAmount
     if (accountCurrency === userDefaultCurrency) {
       setDefaultCurrencyAmountStr(String(total))
       return
@@ -176,12 +177,11 @@ export function AddTransactionPage() {
       qc.invalidateQueries({ queryKey: ['accounts'] })
       qc.invalidateQueries({ queryKey: ['analytics'] })
       qc.invalidateQueries({ queryKey: ['tags'] })
-      navigate('/transactions')
+      history.push('/transactions')
     },
   })
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  function handleSubmit() {
     if (!amountValid || !sharesValid) return
 
     const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
@@ -219,355 +219,349 @@ export function AddTransactionPage() {
 
   const otherAccounts = accounts.filter((a) => a.id !== accountId)
 
+  function renderCurrencyRate() {
+    if (!selectedAccount) return null
+    if (isCrossCurrencyTransfer) {
+      const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+      const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+      if (fromRate <= 0 || toRate <= 0) return null
+      const rate = toRate / fromRate
+      return (
+        <IonNote style={{ fontSize: '0.75rem', display: 'block', marginTop: 4 }}>
+          {rate >= 1
+            ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
+            : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
+        </IonNote>
+      )
+    }
+    if (selectedAccount.currency === userDefaultCurrency) return null
+    const acctRate = currencies.find((c) => c.code === selectedAccount.currency)?.rateToUsd ?? 0
+    const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
+    if (acctRate <= 0 || defRate <= 0) return null
+    const rate = acctRate / defRate
+    return (
+      <IonNote style={{ fontSize: '0.75rem', display: 'block', marginTop: 4 }}>
+        {rate >= 1
+          ? `1 ${userDefaultCurrency} = ${rate.toFixed(4)} ${selectedAccount.currency}`
+          : `1 ${selectedAccount.currency} = ${(1 / rate).toFixed(4)} ${userDefaultCurrency}`}
+      </IonNote>
+    )
+  }
+
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="max-w-lg mx-auto p-4">
-        <div className="flex items-center gap-2 mb-6">
-          <Link to="/transactions" className="text-muted-foreground hover:text-foreground text-sm">
-            ← Назад
-          </Link>
-          <h1 className="text-xl font-bold">Новая транзакция</h1>
-        </div>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/transactions" text="Назад" />
+          </IonButtons>
+          <IonTitle>Новая транзакция</IonTitle>
+        </IonToolbar>
+        <IonToolbar>
+          <IonSegment
+            value={type}
+            onIonChange={(e) => setType(e.detail.value as TransactionType)}
+          >
+            {TYPE_OPTIONS.map((opt) => (
+              <IonSegmentButton key={opt.value} value={opt.value}>
+                <IonLabel>{opt.label}</IonLabel>
+              </IonSegmentButton>
+            ))}
+          </IonSegment>
+        </IonToolbar>
+      </IonHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Type */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Тип</label>
-            <div className="flex gap-2">
-              {TYPE_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => setType(opt.value)}
-                  className={cn(
-                    'flex-1 py-2 rounded-md border text-sm font-medium',
-                    type === opt.value
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'border-border text-foreground',
-                  )}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Account */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Счёт</label>
-            <select
-              value={accountId}
-              onChange={(e) => setAccountId(e.target.value)}
-              required
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
-            >
-              <option value="">Выберите счёт</option>
-              {accounts.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.icon ? `${a.icon} ` : ''}{a.name} ({a.currency})
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* To account (transfer only) */}
-          {type === 'transfer' && (
-            <div>
-              <label className="block text-sm font-medium mb-1">На счёт</label>
-              <select
-                value={toAccountId}
-                onChange={(e) => setToAccountId(e.target.value)}
-                required
-                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
+      <IonContent>
+        <div className="ion-padding">
+          <IonList>
+            {/* Account */}
+            <IonItem>
+              <IonSelect
+                label="Счёт"
+                labelPlacement="floating"
+                value={accountId || undefined}
+                onIonChange={(e) => setAccountId(e.detail.value ?? '')}
+                interface="action-sheet"
               >
-                <option value="">Выберите счёт</option>
-                {otherAccounts.map((a) => (
-                  <option key={a.id} value={a.id}>
+                {accounts.map((a) => (
+                  <IonSelectOption key={a.id} value={a.id}>
                     {a.icon ? `${a.icon} ` : ''}{a.name} ({a.currency})
-                  </option>
+                  </IonSelectOption>
                 ))}
-              </select>
-            </div>
-          )}
+              </IonSelect>
+            </IonItem>
 
-          {/* Amount */}
-          <div>
-            <label className="block text-sm font-medium mb-1">
-              Сумма {selectedAccount ? `(${selectedAccount.currency})` : ''}
-            </label>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={amount}
-              onChange={(e) => setAmount(filterDecimalInput(e.target.value))}
-              required
-              placeholder="0.00"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-            {selectedAccount && (() => {
-              // For cross-currency transfers, show rate between the two accounts
-              if (isCrossCurrencyTransfer) {
-                const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
-                const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
-                if (fromRate <= 0 || toRate <= 0) return null
-                const rate = toRate / fromRate
-                return (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {rate >= 1
-                      ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
-                      : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
-                  </p>
-                )
-              }
-              // For non-transfer: show rate to user's default currency
-              if (selectedAccount.currency === userDefaultCurrency) return null
-              const acctRate = currencies.find((c) => c.code === selectedAccount.currency)?.rateToUsd ?? 0
-              const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
-              if (acctRate <= 0 || defRate <= 0) return null
-              const rate = acctRate / defRate
-              return (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {rate >= 1
-                    ? `1 ${userDefaultCurrency} = ${rate.toFixed(4)} ${selectedAccount.currency}`
-                    : `1 ${selectedAccount.currency} = ${(1 / rate).toFixed(4)} ${userDefaultCurrency}`}
-                </p>
-              )
-            })()}
-          </div>
-
-          {/* To-amount for cross-currency transfers */}
-          {isCrossCurrencyTransfer && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Сумма на счёт ({toAccountCurrency})
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={toAmountStr}
-                  onChange={(e) => setToAmountStr(filterDecimalInput(e.target.value))}
-                  placeholder="0.00"
-                  className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const total = parseDecimal(amount)
-                    if (total <= 0) return
-                    const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
-                    const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
-                    if (fromRate <= 0 || toRate <= 0) return
-                    setToAmountStr(String(roundCents(total * toRate / fromRate)))
-                  }}
-                  className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
-                  title="Пересчитать по текущему курсу"
+            {/* To account (transfer) */}
+            {type === 'transfer' && (
+              <IonItem>
+                <IonSelect
+                  label="На счёт"
+                  labelPlacement="floating"
+                  value={toAccountId || undefined}
+                  onIonChange={(e) => setToAccountId(e.detail.value ?? '')}
+                  interface="action-sheet"
                 >
-                  ↻
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Сумма, которая поступит на целевой счёт. Можно скорректировать вручную.
-              </p>
-            </div>
-          )}
+                  {otherAccounts.map((a) => (
+                    <IonSelectOption key={a.id} value={a.id}>
+                      {a.icon ? `${a.icon} ` : ''}{a.name} ({a.currency})
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            )}
 
-          {/* Default currency amount (only when account currency differs from user default) */}
-          {needsDefaultCurrency && (
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                Сумма в {userDefaultCurrency}
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  value={defaultCurrencyAmountStr}
-                  onChange={(e) => setDefaultCurrencyAmountStr(filterDecimalInput(e.target.value))}
-                  placeholder="0.00"
-                  className="flex-1 rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-                />
-                <button
-                  type="button"
-                  onClick={() => {
-                    const total = parseDecimal(amount)
-                    if (total <= 0) return
-                    if (accountCurrency === userDefaultCurrency) {
-                      setDefaultCurrencyAmountStr(String(total))
-                      return
-                    }
-                    const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
-                    const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
-                    if (acctRate <= 0 || defRate <= 0) return
-                    setDefaultCurrencyAmountStr(String(roundCents(total * defRate / acctRate)))
-                  }}
-                  className="rounded-md border px-3 py-2 text-sm text-muted-foreground hover:text-foreground hover:bg-muted"
-                  title="Пересчитать по текущему курсу"
+            {/* Amount */}
+            <IonItem>
+              <IonInput
+                label={`Сумма${selectedAccount ? ` (${selectedAccount.currency})` : ''}`}
+                labelPlacement="floating"
+                type="text"
+                inputMode="decimal"
+                value={amount}
+                placeholder="0.00"
+                onIonInput={(e) => setAmount(filterDecimalInput(e.detail.value ?? ''))}
+              />
+            </IonItem>
+            {renderCurrencyRate()}
+
+            {/* To-amount (cross-currency transfer) */}
+            {isCrossCurrencyTransfer && (
+              <>
+                <IonItem>
+                  <IonInput
+                    label={`Сумма на счёт (${toAccountCurrency})`}
+                    labelPlacement="floating"
+                    type="text"
+                    inputMode="decimal"
+                    value={toAmountStr}
+                    placeholder="0.00"
+                    onIonInput={(e) => setToAmountStr(filterDecimalInput(e.detail.value ?? ''))}
+                  />
+                  <IonButton
+                    slot="end"
+                    fill="clear"
+                    onClick={() => {
+                      const total = parseDecimal(amount)
+                      if (total <= 0) return
+                      const fromRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                      const toRate = currencies.find((c) => c.code === toAccountCurrency)?.rateToUsd ?? 0
+                      if (fromRate <= 0 || toRate <= 0) return
+                      setToAmountStr(String(roundCents(total * toRate / fromRate)))
+                    }}
+                  >
+                    <IonIcon slot="icon-only" icon={refreshOutline} />
+                  </IonButton>
+                </IonItem>
+                <IonNote style={{ padding: '0 16px', fontSize: '0.75rem', display: 'block' }}>
+                  Сумма, которая поступит на целевой счёт. Можно скорректировать вручную.
+                </IonNote>
+              </>
+            )}
+
+            {/* Default currency amount */}
+            {needsDefaultCurrency && (
+              <>
+                <IonItem>
+                  <IonInput
+                    label={`Сумма в ${userDefaultCurrency}`}
+                    labelPlacement="floating"
+                    type="text"
+                    inputMode="decimal"
+                    value={defaultCurrencyAmountStr}
+                    placeholder="0.00"
+                    onIonInput={(e) => setDefaultCurrencyAmountStr(filterDecimalInput(e.detail.value ?? ''))}
+                  />
+                  <IonButton
+                    slot="end"
+                    fill="clear"
+                    onClick={() => {
+                      const total = parseDecimal(amount)
+                      if (total <= 0) return
+                      if (accountCurrency === userDefaultCurrency) {
+                        setDefaultCurrencyAmountStr(String(total))
+                        return
+                      }
+                      const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
+                      const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
+                      if (acctRate <= 0 || defRate <= 0) return
+                      setDefaultCurrencyAmountStr(String(roundCents(total * defRate / acctRate)))
+                    }}
+                  >
+                    <IonIcon slot="icon-only" icon={refreshOutline} />
+                  </IonButton>
+                </IonItem>
+                <IonNote style={{ padding: '0 16px', fontSize: '0.75rem', display: 'block' }}>
+                  Автоматически рассчитано по текущему курсу. Можно скорректировать вручную.
+                </IonNote>
+              </>
+            )}
+
+            {/* Category */}
+            {type !== 'transfer' && (
+              <IonItem>
+                <IonSelect
+                  label="Категория"
+                  labelPlacement="floating"
+                  value={categoryId || undefined}
+                  onIonChange={(e) => setCategoryId(e.detail.value ?? '')}
+                  interface="action-sheet"
                 >
-                  ↻
-                </button>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">
-                Автоматически рассчитано по текущему курсу. Можно скорректировать вручную.
-              </p>
-            </div>
-          )}
+                  {flatCategories.map((c) => (
+                    <IonSelectOption key={c.id} value={c.id}>
+                      {c.icon ? `${c.icon} ` : ''}{c.name}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              </IonItem>
+            )}
 
-          {/* Category (not for transfer) */}
-          {type !== 'transfer' && (
-            <div>
-              <label className="block text-sm font-medium mb-1">Категория</label>
-              <select
-                value={categoryId}
-                onChange={(e) => setCategoryId(e.target.value)}
-                required
-                className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary bg-card"
-              >
-                <option value="">Выберите категорию</option>
-                {flatCategories.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.icon ? `${c.icon} ` : ''}{c.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+            {/* Date */}
+            <IonItem>
+              <IonInput
+                label="Дата"
+                labelPlacement="floating"
+                type="date"
+                value={date}
+                onIonInput={(e) => setDate(e.detail.value ?? todayISO())}
+              />
+            </IonItem>
 
-          {/* Date */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Дата</label>
-            <input
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-              required
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-
-          {/* Description */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Описание</label>
-            <input
-              type="text"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Необязательно"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
+            {/* Description */}
+            <IonItem>
+              <IonInput
+                label="Описание"
+                labelPlacement="floating"
+                type="text"
+                value={description}
+                placeholder="Необязательно"
+                onIonInput={(e) => setDescription(e.detail.value ?? '')}
+              />
+            </IonItem>
+          </IonList>
 
           {/* Tags */}
-          <div>
-            <label className="block text-sm font-medium mb-1">Теги</label>
+          <div style={{ padding: '8px 0' }}>
+            <IonLabel style={{ fontSize: '0.875rem', fontWeight: 500, paddingLeft: 16, display: 'block', marginBottom: 4 }}>
+              Теги
+            </IonLabel>
             <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
           </div>
 
           {/* Include in balance */}
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={includeInBalance}
-              onChange={(e) => setIncludeInBalance(e.target.checked)}
-              className="rounded"
-            />
-            <span className="text-sm">Учитывать в балансе</span>
-          </label>
+          <IonList>
+            <IonItem>
+              <IonToggle
+                checked={includeInBalance}
+                onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
+              >
+                Учитывать в балансе
+              </IonToggle>
+            </IonItem>
+          </IonList>
 
-          {/* Shares (shared accounts with >1 member) */}
+          {/* Shares */}
           {isShared && members.length > 1 && (
-            <div className="bg-card rounded-lg border p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-sm font-medium">Распределение долей</p>
-                <button
-                  type="button"
-                  onClick={() => setCustomShares((v) => !v)}
-                  className="text-xs text-primary underline"
-                >
-                  {customShares ? 'Авто' : 'Настроить'}
-                </button>
-              </div>
-              {members.map((m) => (
-                <div key={m.userId} className="flex items-center justify-between gap-3">
-                  <span className="text-sm text-muted-foreground flex-1 truncate">{m.username}</span>
-                  {customShares ? (
-                    <input
-                      type="text"
-                      inputMode="decimal"
-                      value={shareAmounts[m.userId] ?? ''}
-                      onChange={(e) => {
-                        const newVal = filterDecimalInput(e.target.value)
-                        const newAmt = parseDecimal(newVal)
-                        setShareAmounts((prev) => {
-                          const others = members.filter((om) => om.userId !== m.userId)
-                          const otherSum = others.reduce((s, om) => s + parseDecimal(prev[om.userId] ?? '0'), 0)
-                          const remaining = Math.max(0, totalAmount - newAmt)
-                          const next: Record<string, string> = { ...prev, [m.userId]: newVal }
-                          if (others.length === 0) return next
-                          if (otherSum > 0.01) {
-                            let distributed = 0
-                            others.forEach((om, i) => {
-                              if (i < others.length - 1) {
-                                const part = roundCents(parseDecimal(prev[om.userId] ?? '0') * remaining / otherSum)
-                                next[om.userId] = String(part)
-                                distributed += part
-                              } else {
-                                next[om.userId] = String(roundCents(remaining - distributed))
-                              }
-                            })
-                          } else {
-                            let distributed = 0
-                            others.forEach((om, i) => {
-                              if (i < others.length - 1) {
-                                const part = roundCents(remaining / others.length)
-                                next[om.userId] = String(part)
-                                distributed += part
-                              } else {
-                                next[om.userId] = String(roundCents(remaining - distributed))
-                              }
-                            })
-                          }
-                          return next
-                        })
-                      }}
-                      className="w-28 rounded-md border px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-primary text-right"
-                    />
-                  ) : (
-                    <span className="text-sm font-medium">
-                      {shareAmounts[m.userId] ?? '0.00'} {selectedAccount?.currency}
-                    </span>
-                  )}
-                </div>
-              ))}
+            <div style={{ margin: '16px 0' }}>
+              <IonList>
+                <IonItem lines="none">
+                  <IonLabel>Распределение долей</IonLabel>
+                  <IonButton
+                    slot="end"
+                    fill="clear"
+                    size="small"
+                    onClick={() => setCustomShares((v) => !v)}
+                  >
+                    {customShares ? 'Авто' : 'Настроить'}
+                  </IonButton>
+                </IonItem>
+                {members.map((m) => (
+                  <IonItem key={m.userId}>
+                    <IonLabel>{m.username}</IonLabel>
+                    {customShares ? (
+                      <IonInput
+                        slot="end"
+                        type="text"
+                        inputMode="decimal"
+                        value={shareAmounts[m.userId] ?? ''}
+                        style={{ textAlign: 'right', maxWidth: 120 }}
+                        onIonInput={(e) => {
+                          const newVal = filterDecimalInput(e.detail.value ?? '')
+                          const newAmt = parseDecimal(newVal)
+                          setShareAmounts((prev) => {
+                            const others = members.filter((om) => om.userId !== m.userId)
+                            const otherSum = others.reduce((s, om) => s + parseDecimal(prev[om.userId] ?? '0'), 0)
+                            const remaining = Math.max(0, totalAmount - newAmt)
+                            const next: Record<string, string> = { ...prev, [m.userId]: newVal }
+                            if (others.length === 0) return next
+                            if (otherSum > 0.01) {
+                              let distributed = 0
+                              others.forEach((om, i) => {
+                                if (i < others.length - 1) {
+                                  const part = roundCents(parseDecimal(prev[om.userId] ?? '0') * remaining / otherSum)
+                                  next[om.userId] = String(part)
+                                  distributed += part
+                                } else {
+                                  next[om.userId] = String(roundCents(remaining - distributed))
+                                }
+                              })
+                            } else {
+                              let distributed = 0
+                              others.forEach((om, i) => {
+                                if (i < others.length - 1) {
+                                  const part = roundCents(remaining / others.length)
+                                  next[om.userId] = String(part)
+                                  distributed += part
+                                } else {
+                                  next[om.userId] = String(roundCents(remaining - distributed))
+                                }
+                              })
+                            }
+                            return next
+                          })
+                        }}
+                      />
+                    ) : (
+                      <IonNote slot="end">
+                        {shareAmounts[m.userId] ?? '0.00'} {selectedAccount?.currency}
+                      </IonNote>
+                    )}
+                  </IonItem>
+                ))}
+              </IonList>
               {customShares && !sharesValid && (
-                <p className="text-xs text-destructive">
+                <IonText color="danger" style={{ display: 'block', padding: '4px 16px', fontSize: '0.75rem' }}>
                   Сумма долей ({sharesSum.toFixed(2)}) должна равняться сумме транзакции ({totalAmount.toFixed(2)})
-                </p>
+                </IonText>
               )}
             </div>
           )}
 
           {createMutation.error && (
-            <p className="text-sm text-destructive">Ошибка. Проверьте данные и попробуйте ещё раз.</p>
+            <IonText color="danger" style={{ display: 'block', padding: '8px 16px', fontSize: '0.875rem' }}>
+              Ошибка. Проверьте данные и попробуйте ещё раз.
+            </IonText>
           )}
 
-          <div className="flex gap-2 pt-2">
-            <Link
-              to="/transactions"
-              className="flex-1 rounded-md border py-2.5 text-sm font-medium text-center hover:bg-muted"
+          <div style={{ padding: '16px 0', display: 'flex', gap: 8 }}>
+            <IonButton
+              expand="block"
+              fill="outline"
+              style={{ flex: 1 }}
+              onClick={() => history.push('/transactions')}
             >
               Отмена
-            </Link>
-            <button
-              type="submit"
+            </IonButton>
+            <IonButton
+              expand="block"
+              style={{ flex: 1 }}
+              onClick={handleSubmit}
               disabled={createMutation.isPending || !amountValid || !sharesValid}
-              className="flex-1 rounded-md bg-primary text-primary-foreground py-2.5 text-sm font-medium disabled:opacity-50"
             >
-              {createMutation.isPending ? 'Сохранение...' : 'Создать'}
-            </button>
+              {createMutation.isPending ? <IonSpinner name="crescent" /> : 'Создать'}
+            </IonButton>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </IonContent>
+    </IonPage>
   )
 }

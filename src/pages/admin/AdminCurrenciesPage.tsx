@@ -1,11 +1,15 @@
 import { useState } from 'react'
-import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { RefreshCw, Plus, Coins } from 'lucide-react'
+import {
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonBackButton, IonButton, IonIcon, IonList, IonItem, IonLabel,
+  IonNote, IonToggle, IonSpinner, IonModal, IonInput, IonText,
+  IonFab, IonFabButton, IonItemGroup, IonItemDivider,
+} from '@ionic/react'
+import { refreshOutline, addOutline, cashOutline } from 'ionicons/icons'
 import { adminApi, type AdminCurrency } from '@/api/admin'
-import { cn } from '@/lib/utils'
 
-function AddCurrencyForm({ onClose }: { onClose: () => void }) {
+function AddCurrencyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
   const qc = useQueryClient()
   const [code, setCode] = useState('')
   const [name, setName] = useState('')
@@ -23,80 +27,86 @@ function AddCurrencyForm({ onClose }: { onClose: () => void }) {
     },
   })
 
+  const handleSubmit = () => {
+    setApiError(null)
+    mutation.mutate()
+  }
+
   return (
-    <div className="bg-card rounded-lg border p-4 mb-4">
-      <h2 className="font-semibold mb-3">Новая валюта</h2>
-      <form
-        className="space-y-3"
-        onSubmit={(e) => { e.preventDefault(); setApiError(null); mutation.mutate() }}
-      >
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-xs font-medium mb-1">Код (ISO)</label>
-            <input
+    <IonModal
+      isOpen={isOpen}
+      onDidDismiss={onClose}
+      onWillPresent={() => {
+        setCode(''); setName(''); setSymbol(''); setIsActive(true); setApiError(null)
+      }}
+    >
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonButton onClick={onClose}>Отмена</IonButton>
+          </IonButtons>
+          <IonTitle>Новая валюта</IonTitle>
+          <IonButtons slot="end">
+            <IonButton strong onClick={handleSubmit} disabled={mutation.isPending || !code || !name}>
+              {mutation.isPending ? <IonSpinner name="crescent" /> : 'Добавить'}
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent>
+        <IonList inset>
+          <IonItem>
+            <IonInput
+              label="Код (ISO)"
+              labelPlacement="stacked"
               value={code}
-              onChange={(e) => setCode(e.target.value)}
-              maxLength={3}
-              required
+              onIonInput={(e) => setCode(e.detail.value ?? '')}
+              maxlength={3}
               placeholder="USD"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary uppercase"
+              style={{ textTransform: 'uppercase' }}
             />
-          </div>
-          <div>
-            <label className="block text-xs font-medium mb-1">Символ</label>
-            <input
+          </IonItem>
+          <IonItem>
+            <IonInput
+              label="Символ"
+              labelPlacement="stacked"
               value={symbol}
-              onChange={(e) => setSymbol(e.target.value)}
-              maxLength={5}
+              onIonInput={(e) => setSymbol(e.detail.value ?? '')}
+              maxlength={5}
               placeholder="$"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
             />
-          </div>
-        </div>
-        <div>
-          <label className="block text-xs font-medium mb-1">Название</label>
-          <input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            placeholder="US Dollar"
-            className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-        <label className="flex items-center gap-2 cursor-pointer text-sm">
-          <input
-            type="checkbox"
-            checked={isActive}
-            onChange={(e) => setIsActive(e.target.checked)}
-            className="rounded"
-          />
-          Активна
-        </label>
+          </IonItem>
+          <IonItem>
+            <IonInput
+              label="Название"
+              labelPlacement="stacked"
+              value={name}
+              onIonInput={(e) => setName(e.detail.value ?? '')}
+              placeholder="US Dollar"
+            />
+          </IonItem>
+          <IonItem>
+            <IonToggle
+              checked={isActive}
+              onIonChange={(e) => setIsActive(e.detail.checked)}
+            >
+              Активна
+            </IonToggle>
+          </IonItem>
+        </IonList>
         {apiError && (
-          <p className="text-xs text-destructive bg-destructive/10 rounded-md px-3 py-2">{apiError}</p>
+          <div className="ion-padding-horizontal">
+            <IonText color="danger">
+              <p style={{ fontSize: '0.85rem' }}>{apiError}</p>
+            </IonText>
+          </div>
         )}
-        <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex-1 rounded-md border py-2 text-sm hover:bg-muted"
-          >
-            Отмена
-          </button>
-          <button
-            type="submit"
-            disabled={mutation.isPending}
-            className="flex-1 rounded-md bg-primary text-primary-foreground py-2 text-sm disabled:opacity-50"
-          >
-            {mutation.isPending ? 'Сохранение...' : 'Добавить'}
-          </button>
-        </div>
-      </form>
-    </div>
+      </IonContent>
+    </IonModal>
   )
 }
 
-function CurrencyRow({ currency }: { currency: AdminCurrency }) {
+function CurrencyItem({ currency }: { currency: AdminCurrency }) {
   const qc = useQueryClient()
   const toggle = useMutation({
     mutationFn: () => adminApi.updateCurrency(currency.code, { isActive: !currency.isActive }),
@@ -104,37 +114,27 @@ function CurrencyRow({ currency }: { currency: AdminCurrency }) {
   })
 
   return (
-    <div className="flex items-center justify-between p-3 bg-card rounded-lg border">
-      <div className="flex items-center gap-3">
-        <div className={cn('w-2 h-2 rounded-full', currency.isActive ? 'bg-green-500' : 'bg-muted-foreground')} />
-        <div>
-          <span className="font-medium text-sm">{currency.code}</span>
-          {currency.symbol && (
-            <span className="text-muted-foreground text-sm ml-1">({currency.symbol})</span>
-          )}
-          <p className="text-xs text-muted-foreground">{currency.name}</p>
-        </div>
-      </div>
-      <div className="flex items-center gap-3">
-        {currency.rateToUsd > 0 && (
-          <span className="text-xs text-muted-foreground">
-            1 USD = {currency.rateToUsd.toFixed(4)} {currency.code}
-          </span>
-        )}
-        <button
-          onClick={() => toggle.mutate()}
-          disabled={toggle.isPending}
-          className={cn(
-            'text-xs px-2 py-1 rounded-md border font-medium transition-colors',
-            currency.isActive
-              ? 'text-muted-foreground hover:text-destructive hover:border-destructive'
-              : 'text-green-600 hover:bg-green-50 border-green-300',
-          )}
-        >
-          {currency.isActive ? 'Отключить' : 'Включить'}
-        </button>
-      </div>
-    </div>
+    <IonItem>
+      <IonIcon icon={cashOutline} slot="start" color={currency.isActive ? 'success' : 'medium'} />
+      <IonLabel>
+        <h2>
+          {currency.code}
+          {currency.symbol && <span style={{ color: 'var(--ion-color-medium)', marginLeft: 4 }}>({currency.symbol})</span>}
+        </h2>
+        <p>{currency.name}</p>
+      </IonLabel>
+      {currency.rateToUsd > 0 && (
+        <IonNote slot="end" style={{ marginRight: 8, fontSize: '0.75rem' }}>
+          1 USD = {currency.rateToUsd.toFixed(4)}
+        </IonNote>
+      )}
+      <IonToggle
+        slot="end"
+        checked={currency.isActive}
+        disabled={toggle.isPending}
+        onIonChange={() => toggle.mutate()}
+      />
+    </IonItem>
   )
 }
 
@@ -156,65 +156,55 @@ export function AdminCurrenciesPage() {
   const inactive = currencies.filter((c) => !c.isActive)
 
   return (
-    <div className="min-h-screen bg-muted">
-      <div className="max-w-2xl mx-auto p-4">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-3">
-            <Link to="/admin" className="text-muted-foreground hover:text-foreground text-sm">
-              ← Назад
-            </Link>
-            <div className="flex items-center gap-2">
-              <Coins size={20} />
-              <h1 className="text-xl font-bold">Валюты</h1>
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => refresh.mutate()}
-              disabled={refresh.isPending}
-              className="flex items-center gap-1.5 text-sm border rounded-md px-3 py-1.5 hover:bg-muted disabled:opacity-50"
-            >
-              <RefreshCw size={14} className={refresh.isPending ? 'animate-spin' : ''} />
-              Обновить курсы
-            </button>
-            <button
-              onClick={() => setShowAdd(true)}
-              className="flex items-center gap-1.5 text-sm bg-primary text-primary-foreground rounded-md px-3 py-1.5"
-            >
-              <Plus size={14} /> Добавить
-            </button>
-          </div>
-        </div>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonButtons slot="start">
+            <IonBackButton defaultHref="/admin" />
+          </IonButtons>
+          <IonTitle>Валюты</IonTitle>
+          <IonButtons slot="end">
+            <IonButton onClick={() => refresh.mutate()} disabled={refresh.isPending}>
+              {refresh.isPending ? <IonSpinner name="crescent" /> : <IonIcon icon={refreshOutline} />}
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </IonHeader>
 
-        {showAdd && <AddCurrencyForm onClose={() => setShowAdd(false)} />}
-
+      <IonContent>
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground text-sm">Загрузка...</div>
+          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}>
+            <IonSpinner />
+          </div>
         ) : (
-          <div className="space-y-4">
+          <IonList>
             {active.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                  Активные ({active.length})
-                </p>
-                <div className="space-y-2">
-                  {active.map((c) => <CurrencyRow key={c.code} currency={c} />)}
-                </div>
-              </div>
+              <IonItemGroup>
+                <IonItemDivider>
+                  <IonLabel>Активные ({active.length})</IonLabel>
+                </IonItemDivider>
+                {active.map((c) => <CurrencyItem key={c.code} currency={c} />)}
+              </IonItemGroup>
             )}
             {inactive.length > 0 && (
-              <div>
-                <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                  Отключённые ({inactive.length})
-                </p>
-                <div className="space-y-2">
-                  {inactive.map((c) => <CurrencyRow key={c.code} currency={c} />)}
-                </div>
-              </div>
+              <IonItemGroup>
+                <IonItemDivider>
+                  <IonLabel>Отключённые ({inactive.length})</IonLabel>
+                </IonItemDivider>
+                {inactive.map((c) => <CurrencyItem key={c.code} currency={c} />)}
+              </IonItemGroup>
             )}
-          </div>
+          </IonList>
         )}
-      </div>
-    </div>
+
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton onClick={() => setShowAdd(true)}>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+
+        <AddCurrencyModal isOpen={showAdd} onClose={() => setShowAdd(false)} />
+      </IonContent>
+    </IonPage>
   )
 }

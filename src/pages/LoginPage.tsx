@@ -1,10 +1,23 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useHistory } from 'react-router-dom'
+import {
+  IonPage,
+  IonHeader,
+  IonToolbar,
+  IonTitle,
+  IonContent,
+  IonList,
+  IonItem,
+  IonInput,
+  IonButton,
+  IonText,
+  IonSpinner,
+} from '@ionic/react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
 
 export function LoginPage() {
-  const navigate = useNavigate()
+  const history = useHistory()
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const [email, setEmail] = useState('')
@@ -19,7 +32,7 @@ export function LoginPage() {
     try {
       const { user, tokens } = await authApi.login(email, password)
       setAuth(tokens.accessToken, tokens.refreshToken, user)
-      navigate('/dashboard', { replace: true })
+      history.replace('/dashboard')
     } catch (err: unknown) {
       const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
       setError(msg ?? 'Ошибка входа')
@@ -29,52 +42,67 @@ export function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
-      <div className="w-full max-w-sm bg-card rounded-lg border p-6 shadow-sm">
-        <h1 className="text-2xl font-bold mb-6 text-center">co-wallet</h1>
+    <IonPage>
+      <IonHeader>
+        <IonToolbar>
+          <IonTitle>Вход</IonTitle>
+        </IonToolbar>
+      </IonHeader>
+      <IonContent className="ion-padding">
+        <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 32 }}>
+          <h1 style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, marginBottom: 24 }}>
+            co-wallet
+          </h1>
 
-        {error && (
-          <div className="mb-4 rounded-md bg-destructive/10 text-destructive text-sm p-3">
-            {error}
-          </div>
-        )}
+          {error && (
+            <IonText color="danger">
+              <p style={{ marginBottom: 16 }}>{error}</p>
+            </IonText>
+          )}
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Email</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="email"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Пароль</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-primary text-primary-foreground py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50"
-          >
-            {loading ? 'Вход...' : 'Войти'}
-          </button>
-        </form>
+          <form onSubmit={handleSubmit}>
+            <IonList>
+              <IonItem>
+                <IonInput
+                  label="Email"
+                  labelPlacement="floating"
+                  type="email"
+                  value={email}
+                  onIonInput={(e) => setEmail(e.detail.value ?? '')}
+                  required
+                  autocomplete="email"
+                />
+              </IonItem>
+              <IonItem>
+                <IonInput
+                  label="Пароль"
+                  labelPlacement="floating"
+                  type="password"
+                  value={password}
+                  onIonInput={(e) => setPassword(e.detail.value ?? '')}
+                  required
+                  autocomplete="current-password"
+                />
+              </IonItem>
+            </IonList>
 
-        <p className="mt-4 text-center text-sm text-muted-foreground">
-          Доступ предоставляется по приглашению администратора.
-        </p>
-      </div>
-    </div>
+            <IonButton
+              expand="block"
+              type="submit"
+              disabled={loading}
+              style={{ marginTop: 16 }}
+            >
+              {loading ? <IonSpinner name="crescent" /> : 'Войти'}
+            </IonButton>
+          </form>
+
+          <IonText color="medium">
+            <p style={{ textAlign: 'center', marginTop: 16, fontSize: '0.875rem' }}>
+              Доступ предоставляется по приглашению администратора.
+            </p>
+          </IonText>
+        </div>
+      </IonContent>
+    </IonPage>
   )
 }
