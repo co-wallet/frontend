@@ -8,6 +8,7 @@ import {
   IonAlert, IonModal, IonInput, IonButton,
 } from '@ionic/react'
 import { pricetagOutline, createOutline, trashOutline } from 'ionicons/icons'
+import axios from 'axios'
 import { tagsApi } from '@/api/tags'
 
 export function TagsPage() {
@@ -36,8 +37,11 @@ export function TagsPage() {
       setEditingTag(null)
       setEditError(null)
     },
-    onError: (err: any) => {
-      setEditError(err?.response?.data?.error ?? 'Не удалось сохранить тег')
+    onError: (err: unknown) => {
+      const message = axios.isAxiosError<{ error?: string }>(err)
+        ? err.response?.data?.error
+        : undefined
+      setEditError(message ?? 'Не удалось сохранить тег')
     },
   })
 
