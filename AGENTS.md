@@ -22,7 +22,7 @@ npm run lint  # ESLint 9
 npm run build # TypeScript + production build
 ```
 
-Для локального запуска API должен быть доступен на `http://localhost:8080`.
+При локальном запуске вне Docker API по умолчанию должен быть доступен на `http://localhost:8080`; адрес proxy можно изменить через `VITE_API_URL`. В dev-compose Vite обращается к сервису `backend` внутри Docker-сети.
 
 ## Структура
 
@@ -65,4 +65,13 @@ src/
 - Проверять успешный сценарий, ошибки API, повтор запроса и очистку сессии.
 - Не тестировать приватные функции напрямую — проверять публичное поведение модулей.
 
-Перед публикацией PR выполнить `npm run test`, `npm run lint` и `npm run build`. После изменений пересобрать стек командой `docker compose build && docker compose up -d` в репозитории Docker-конфигурации проекта.
+Перед публикацией PR выполнить `npm run test`, `npm run lint` и `npm run build`.
+
+## Локальная разработка в Docker
+
+При запущенном dev-стеке изменения `.ts`, `.tsx` и CSS подхватывает Vite HMR: пересборка образа и перезапуск контейнера не нужны.
+
+- После изменения `package.json` или lock-файла выполнить `make deps-frontend` в репозитории Docker-конфигурации.
+- После изменения `VITE_*` или других переменных окружения выполнить там же `make recreate-frontend`.
+- После изменения dev Dockerfile или версии Node.js выполнить `make rebuild-frontend`.
+- Полная пересборка обязательна для production-образа и deployment-конфигурации, но не для обычной правки исходников.
