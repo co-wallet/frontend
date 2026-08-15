@@ -1,10 +1,10 @@
 # AGENTS.md
 
-Инструкции для Codex при работе с frontend-репозиторием **co-wallet**.
+Инструкции по работе с frontend-репозиторием **co-wallet**.
 
 ## Назначение и стек
 
-Mobile-first SPA для личных и семейных финансов. Backend находится в `../backend`, Docker-конфигурация — в `../docker`.
+Mobile-first SPA для учёта личных и семейных финансов.
 
 - React 18, TypeScript, Vite 6.
 - Ionic React 8 и `IonReactRouter`.
@@ -65,4 +65,4 @@ src/
 - Проверять успешный сценарий, ошибки API, повтор запроса и очистку сессии.
 - Не тестировать приватные функции напрямую — проверять публичное поведение модулей.
 
-Перед публикацией PR выполнить `npm run test`, `npm run lint` и `npm run build`. После изменений пересобрать стек командой `docker compose build && docker compose up -d` из `../docker`.
+Перед публикацией PR выполнить `npm run test`, `npm run lint` и `npm run build`. После изменений пересобрать стек командой `docker compose build && docker compose up -d` в репозитории Docker-конфигурации проекта.
