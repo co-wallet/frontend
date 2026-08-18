@@ -47,13 +47,19 @@ import {
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
-import { accountsApi } from '@/api/accounts'
+import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon } from '@/components/AccountIcon'
+import { ACCOUNT_KIND_OPTIONS, accountKindLabel } from '@/lib/accountKind'
+import {
+  filterAccountsByKinds,
+  selectedVisibleAccountIds,
+  toggleAccountKind,
+} from '@/lib/accountFilters'
 
 type ChartMode = 'balance' | 'expenses' | 'income'
-type AccountFilter = 'balance' | 'all' | 'custom'
+type AccountFilter = 'all' | 'custom'
 
 import { BALANCE_COLORS, EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 import { useChartTheme } from '@/lib/useChartTheme'
@@ -181,7 +187,8 @@ export function DashboardPage() {
   const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
-  const [accountFilter, setAccountFilter] = useState<AccountFilter>('balance')
+  const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
+  const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['current'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
   const [showAccountFilter, setShowAccountFilter] = useState(false)
 
@@ -194,19 +201,27 @@ export function DashboardPage() {
     queryFn: () => accountsApi.list(displayCurrency),
   })
 
+  const kindFilteredAccounts = filterAccountsByKinds(accounts, selectedKinds)
+  const effectiveSelectedAccountIds = selectedVisibleAccountIds(kindFilteredAccounts, selectedAccountIds)
+
   const filteredAccountIds: string | undefined = (() => {
     if (accountFilter === 'all') return undefined
     if (accountFilter === 'custom') {
-      return selectedAccountIds.length > 0 ? selectedAccountIds.join(',') : undefined
+      return effectiveSelectedAccountIds.length > 0 ? effectiveSelectedAccountIds.join(',') : undefined
     }
-    const ids = accounts.filter((a) => a.includeInBalance).map((a) => a.id)
-    return ids.length > 0 ? ids.join(',') : undefined
+    return undefined
   })()
 
-  const isEmptyCustom = accountFilter === 'custom' && selectedAccountIds.length === 0
+  const isEmptyCustom = accountFilter === 'custom' && effectiveSelectedAccountIds.length === 0
 
   const { dateFrom, dateTo } = computeDateRange(period, 0, customFrom, customTo)
-  const params: AnalyticsParams = { date_from: dateFrom, date_to: dateTo, currency: displayCurrency, account_ids: filteredAccountIds }
+  const params: AnalyticsParams = {
+    date_from: dateFrom,
+    date_to: dateTo,
+    currency: displayCurrency,
+    account_ids: filteredAccountIds,
+    account_kinds: selectedKinds.join(','),
+  }
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', displayCurrency],
@@ -252,10 +267,8 @@ export function DashboardPage() {
   }
 
   const filteredAccounts = accountFilter === 'all'
-    ? accounts
-    : accountFilter === 'custom'
-      ? accounts.filter((a) => selectedAccountIds.includes(a.id))
-      : accounts.filter((a) => a.includeInBalance)
+    ? kindFilteredAccounts
+    : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
 
   const balancePieData: PieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
@@ -303,7 +316,13 @@ export function DashboardPage() {
   ]
 
   const summaryCards: { mode: ChartMode; icon: string; label: string; value: number; color: string }[] = [
-    { mode: 'balance', icon: analyticsOutline, label: 'Баланс', value: summary?.balance ?? 0, color: 'primary' },
+    {
+      mode: 'balance',
+      icon: analyticsOutline,
+      label: selectedKinds.length === 1 && selectedKinds[0] === 'current' ? 'Доступно' : 'Баланс',
+      value: summary?.balance ?? 0,
+      color: 'primary',
+    },
     { mode: 'expenses', icon: trendingDownOutline, label: 'Расходы', value: summary?.expenses ?? 0, color: 'danger' },
     { mode: 'income', icon: trendingUpOutline, label: 'Доходы', value: summary?.income ?? 0, color: 'success' },
   ]
@@ -408,37 +427,85 @@ export function DashboardPage() {
             <IonItem button detail={false} onClick={() => setShowAccountFilter((v) => !v)}>
               <IonIcon icon={optionsOutline} slot="start" />
               <IonLabel>
-                {accountFilter === 'balance' && 'Счета в балансе'}
-                {accountFilter === 'all' && 'Все счета'}
-                {accountFilter === 'custom' && (selectedAccountIds.length > 0
-                  ? `Выбрано: ${selectedAccountIds.length}`
-                  : 'Выбрать счета'
-                )}
+                <h2>
+                  {selectedKinds.length === 1
+                    ? accountKindLabel(selectedKinds[0])
+                    : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
+                      ? 'Все типы средств'
+                      : `Типов средств: ${selectedKinds.length}`}
+                </h2>
+                <p>
+                  {accountFilter === 'all' && 'Все счета выбранных типов'}
+                  {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
+                    ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
+                    : 'Счета не выбраны'
+                  )}
+                </p>
               </IonLabel>
               <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
             </IonItem>
             {showAccountFilter && (
               <div style={{ marginTop: 8 }}>
+                <IonText color="medium" style={{ fontSize: '0.75rem' }}>Тип средств</IonText>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0 12px' }}>
+                  {ACCOUNT_KIND_OPTIONS.map((option) => {
+                    const active = selectedKinds.includes(option.value)
+                    const toggleKind = () => setSelectedKinds((previous) =>
+                      toggleAccountKind(previous, option.value)
+                    )
+                    return (
+                      <IonChip
+                        key={option.value}
+                        color={active ? 'primary' : 'medium'}
+                        outline={!active}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={active}
+                        onClick={toggleKind}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter' || event.key === ' ') {
+                            event.preventDefault()
+                            toggleKind()
+                          }
+                        }}
+                      >
+                        <IonLabel>{option.label}</IonLabel>
+                      </IonChip>
+                    )
+                  })}
+                </div>
+                <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
                 <IonSegment
                   value={accountFilter}
                   onIonChange={(e) => setAccountFilter(e.detail.value as AccountFilter)}
                 >
-                  <IonSegmentButton value="balance"><IonLabel>В балансе</IonLabel></IonSegmentButton>
                   <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
                   <IonSegmentButton value="custom"><IonLabel>Выбрать</IonLabel></IonSegmentButton>
                 </IonSegment>
                 {accountFilter === 'custom' && (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 8 }}>
-                    {accounts.map((a) => {
+                    {kindFilteredAccounts.map((a) => {
                       const active = selectedAccountIds.includes(a.id)
+                      const toggleAccount = () => setSelectedAccountIds((previous) =>
+                        previous.includes(a.id)
+                          ? previous.filter((id) => id !== a.id)
+                          : [...previous, a.id]
+                      )
                       return (
                         <IonChip
                           key={a.id}
                           color={active ? 'primary' : 'medium'}
                           outline={!active}
-                          onClick={() => setSelectedAccountIds((prev) =>
-                            prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]
-                          )}
+                          role="button"
+                          tabIndex={0}
+                          aria-pressed={active}
+                          onClick={toggleAccount}
+                          onKeyDown={(event) => {
+                            if (event.key === 'Enter' || event.key === ' ') {
+                              event.preventDefault()
+                              toggleAccount()
+                            }
+                          }}
                         >
                           <AccountIcon value={a.icon} size={20} framed={false} />
                           <IonLabel>{a.name}</IonLabel>

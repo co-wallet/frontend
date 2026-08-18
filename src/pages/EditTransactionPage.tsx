@@ -72,7 +72,7 @@ export function EditTransactionPage() {
   })
 
   const selectedAccount = accounts.find((a) => a.id === tx?.accountId)
-  const isShared = selectedAccount?.type === 'shared'
+  const isShared = selectedAccount?.accessMode === 'shared'
 
   const { data: members = [] } = useQuery<AccountMember[]>({
     queryKey: ['account-members', tx?.accountId],

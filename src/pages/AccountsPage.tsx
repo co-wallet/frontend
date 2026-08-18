@@ -20,6 +20,7 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
+  IonToggle,
   IonButton,
   IonButtons,
   IonSpinner,
@@ -36,11 +37,18 @@ import {
   trashOutline,
   peopleOutline,
 } from 'ionicons/icons'
-import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts'
+import {
+  accountsApi,
+  type CreateAccountDto,
+  type Account,
+  type AccountAccessMode,
+  type AccountKind,
+} from '@/api/accounts'
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
-import { shouldShowPersonalTypeWarning } from '@/lib/accountType'
+import { shouldShowPersonalAccessModeWarning } from '@/lib/accountAccessMode'
+import { ACCOUNT_KIND_OPTIONS, accountKindLabel } from '@/lib/accountKind'
 import {
   hasAccountFormChanges,
   initialBalanceInputValue,
@@ -52,7 +60,6 @@ import {
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
-import { BalanceInclusionToggle } from '@/components/BalanceInclusionToggle'
 
 import './AccountsPage.css'
 
@@ -76,7 +83,7 @@ function AccountFormModal({
   onSubmit,
   loading,
   isEditing = false,
-  canChangeType = false,
+  canChangeAccessMode = false,
   onManageMembers,
   onDelete,
   error,
@@ -89,7 +96,7 @@ function AccountFormModal({
   onSubmit: (dto: CreateAccountDto) => void
   loading: boolean
   isEditing?: boolean
-  canChangeType?: boolean
+  canChangeAccessMode?: boolean
   onManageMembers?: () => void
   onDelete?: () => void
   error?: string
@@ -97,38 +104,38 @@ function AccountFormModal({
 }) {
   const today = new Date().toISOString().slice(0, 10)
   const initialName = initial?.name ?? ''
-  const initialType = initial?.type ?? 'personal'
+  const initialAccessMode = initial?.accessMode ?? 'personal'
+  const initialKind = initial?.kind ?? 'current'
   const initialCurrency = initial?.currency ?? defaultCurrency
   const initialIcon = normalizeAccountIconValue(initial?.icon)
-  const initialIncludeInBalance = initial?.includeInBalance ?? true
   const initialBalanceValue = initialBalanceInputValue(initial?.initialBalance)
   const initialBalanceDateValue = initial?.initialBalanceDate
     ? initial.initialBalanceDate.slice(0, 10)
     : today
 
   const [name, setName] = useState(initialName)
-  const [type, setType] = useState<'personal' | 'shared'>(initialType)
+  const [accessMode, setAccessMode] = useState<AccountAccessMode>(initialAccessMode)
+  const [kind, setKind] = useState<AccountKind>(initialKind)
   const [currency, setCurrency] = useState(initialCurrency)
   const [icon, setIcon] = useState(initialIcon)
-  const [includeInBalance, setIncludeInBalance] = useState(initialIncludeInBalance)
   const [initialBalance, setInitialBalance] = useState(initialBalanceValue)
   const [initialBalanceDate, setInitialBalanceDate] = useState(initialBalanceDateValue)
 
   const initialFormState: AccountFormState = {
     name: initialName,
-    type: initialType,
+    accessMode: initialAccessMode,
+    kind: initialKind,
     currency: initialCurrency,
     icon: initialIcon,
-    includeInBalance: initialIncludeInBalance,
     initialBalance: initialBalanceValue,
     initialBalanceDate: initialBalanceDateValue,
   }
   const isDirty = hasAccountFormChanges(initialFormState, {
     name,
-    type,
+    accessMode,
+    kind,
     currency,
     icon,
-    includeInBalance,
     initialBalance,
     initialBalanceDate,
   })
@@ -142,10 +149,10 @@ function AccountFormModal({
   const handleSubmit = () => {
     onSubmit({
       name,
-      type,
+      accessMode,
+      kind,
       currency,
       icon: normalizeAccountIconValue(icon),
-      includeInBalance,
       initialBalance: parseDecimal(initialBalance),
       initialBalanceDate,
     })
@@ -153,10 +160,10 @@ function AccountFormModal({
 
   const resetForm = () => {
     setName(initialName)
-    setType(initialType)
+    setAccessMode(initialAccessMode)
+    setKind(initialKind)
     setCurrency(initialCurrency)
     setIcon(initialIcon)
-    setIncludeInBalance(initialIncludeInBalance)
     setInitialBalance(initialBalanceValue)
     setInitialBalanceDate(initialBalanceDateValue)
   }
@@ -203,29 +210,56 @@ function AccountFormModal({
             sessionKey={isOpen ? 'open' : 'closed'}
           />
 
-          {(!isEditing || canChangeType) && (
+          {!isEditing && (
             <IonItem className="account-form-row account-form-row--compact">
               <IonSelect
-                label="Тип"
+                label="Тип средств"
                 labelPlacement="fixed"
-                value={type}
-                onIonChange={(e) => setType(e.detail.value)}
+                interface="action-sheet"
+                cancelText="Отмена"
+                value={kind}
+                selectedText={accountKindLabel(kind)}
+                onIonChange={(e) => setKind(e.detail.value as AccountKind)}
               >
-                <IonSelectOption value="personal">Личный</IonSelectOption>
-                <IonSelectOption value="shared">Совместный</IonSelectOption>
+                {ACCOUNT_KIND_OPTIONS.map((option) => (
+                  <IonSelectOption key={option.value} value={option.value}>
+                    {option.label} — {option.description}
+                  </IonSelectOption>
+                ))}
               </IonSelect>
             </IonItem>
           )}
-          {isEditing && !canChangeType && (
+          {isEditing && (
             <IonItem className="account-form-row account-form-row--compact">
-              <IonLabel>Тип</IonLabel>
+              <IonLabel>Тип средств</IonLabel>
               <IonNote slot="end" className="account-form-readonly-value">
-                {type === 'personal' ? 'Личный' : 'Совместный'}
+                {accountKindLabel(kind)}
               </IonNote>
             </IonItem>
           )}
 
-          {isEditing && canChangeType && shouldShowPersonalTypeWarning(initial?.type, type) && (
+          {(!isEditing || canChangeAccessMode) && (
+            <IonItem className="account-form-row account-form-row--compact">
+              <IonToggle
+                checked={accessMode === 'shared'}
+                onIonChange={(event) => setAccessMode(
+                  event.detail.checked ? 'shared' : 'personal',
+                )}
+              >
+                Совместный счёт
+              </IonToggle>
+            </IonItem>
+          )}
+          {isEditing && !canChangeAccessMode && (
+            <IonItem className="account-form-row account-form-row--compact">
+              <IonLabel>Совместный счёт</IonLabel>
+              <IonNote slot="end" className="account-form-readonly-value">
+                {accessMode === 'shared' ? 'Да' : 'Нет'}
+              </IonNote>
+            </IonItem>
+          )}
+
+          {isEditing && canChangeAccessMode && shouldShowPersonalAccessModeWarning(initial?.accessMode, accessMode) && (
             <IonNote className="account-form-type-warning">
               Совместный счёт можно сделать личным только без других участников и транзакций.
             </IonNote>
@@ -258,7 +292,7 @@ function AccountFormModal({
             </IonItem>
           )}
 
-          {isEditing && initial?.type === 'shared' && onManageMembers && (
+          {isEditing && initial?.accessMode === 'shared' && onManageMembers && (
             <IonItem
               button
               detail
@@ -301,11 +335,6 @@ function AccountFormModal({
             />
           </IonItem>
 
-          <BalanceInclusionToggle
-            className="account-form-row account-form-row--compact"
-            checked={includeInBalance}
-            onChange={setIncludeInBalance}
-          />
         </IonList>
 
         {error && (
@@ -357,9 +386,8 @@ export function AccountsPage() {
     mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
       accountsApi.update(id, {
         name: dto.name,
-        type: dto.type,
+        accessMode: dto.accessMode,
         icon: dto.icon,
-        includeInBalance: dto.includeInBalance,
         initialBalance: dto.initialBalance,
         initialBalanceDate: dto.initialBalanceDate,
       }),
@@ -424,8 +452,7 @@ export function AccountsPage() {
                     <IonLabel>
                       <h2>{account.name}</h2>
                       <p>
-                        {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
-                        {!account.includeInBalance && ' · Не в балансе'}
+                        {accountKindLabel(account.kind)} · {account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
                       </p>
                     </IonLabel>
                     {account.balance && (
@@ -437,7 +464,7 @@ export function AccountsPage() {
                               ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
                             </div>
                           )}
-                          {account.type === 'shared' && (
+                          {account.accessMode === 'shared' && (
                             <div style={{ fontSize: '11px', opacity: 0.7 }}>
                               Всего: {fmtCurrency(account.balance.totalNative, account.currency)}
                             </div>
@@ -447,7 +474,7 @@ export function AccountsPage() {
                     )}
                   </IonItem>
                   <IonItemOptions side="end">
-                    {account.type === 'shared' && (
+                    {account.accessMode === 'shared' && (
                       <IonItemOption
                         color="tertiary"
                         routerLink={`/accounts/${account.id}/members`}
@@ -494,8 +521,8 @@ export function AccountsPage() {
             onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
             loading={updateMutation.isPending}
             isEditing
-            canChangeType={editingAccount.ownerId === user?.id}
-            onManageMembers={editingAccount.type === 'shared' ? () => {
+            canChangeAccessMode={editingAccount.ownerId === user?.id}
+            onManageMembers={editingAccount.accessMode === 'shared' ? () => {
               setEditingAccount(null)
               history.push(`/accounts/${editingAccount.id}/members`)
             } : undefined}

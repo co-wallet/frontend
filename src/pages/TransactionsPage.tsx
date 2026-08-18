@@ -112,7 +112,7 @@ function TransactionItem({
 
   const amountSign = tx.type === 'income' ? '+' : tx.type === 'transfer' ? '' : '−'
 
-  const isShared = account?.type === 'shared'
+  const isShared = account?.accessMode === 'shared'
   const userShare = isShared && currentUserId
     ? tx.shares?.find((s) => s.userId === currentUserId)
     : null

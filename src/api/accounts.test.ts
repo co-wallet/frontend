@@ -13,10 +13,10 @@ const account: Account = {
   id: 'account-1',
   ownerId: 'user-1',
   name: 'Семейный',
-  type: 'shared',
+  accessMode: 'shared',
+  kind: 'current',
   currency: 'RUB',
   icon: 'preset:shared|purple|orange',
-  includeInBalance: true,
   initialBalance: 1500,
   initialBalanceDate: '2026-08-18T00:00:00Z',
   createdAt: '2026-08-18T00:00:00Z',
@@ -28,14 +28,13 @@ describe('accountsApi.update', () => {
     vi.mocked(apiClient.patch).mockReset()
   })
 
-  it('sends the account type together with editable appearance and balance fields', async () => {
+  it('sends access mode together with editable appearance and balance fields', async () => {
     vi.mocked(apiClient.patch).mockResolvedValue({ data: account })
 
     const dto = {
       name: 'Семейный',
-      type: 'shared' as const,
+      accessMode: 'shared' as const,
       icon: 'preset:shared|purple|orange',
-      includeInBalance: true,
       initialBalance: 1500,
       initialBalanceDate: '2026-08-18',
     }

@@ -23,6 +23,7 @@ export interface AnalyticsParams {
   date_from?: string
   date_to?: string
   account_ids?: string
+  account_kinds?: string
   currency?: string
   type?: string
 }

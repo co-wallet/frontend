@@ -105,7 +105,7 @@ export function AccountSelect({
                     <IonLabel>
                       <h2>{account.name}</h2>
                       <p>
-                        {account.type === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
+                        {account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
                       </p>
                     </IonLabel>
                     {selected && (

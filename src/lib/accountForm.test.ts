@@ -8,10 +8,10 @@ import {
 
 const initialState: AccountFormState = {
   name: 'Карта',
-  type: 'personal',
+  accessMode: 'personal',
+  kind: 'current',
   currency: 'RUB',
   icon: 'preset:debit-card',
-  includeInBalance: true,
   initialBalance: '0',
   initialBalanceDate: '2026-08-18',
 }
@@ -27,7 +27,8 @@ describe('initialBalanceInputValue', () => {
 describe('hasAccountFormChanges', () => {
   it('detects only real changes to the form state', () => {
     expect(hasAccountFormChanges(initialState, { ...initialState })).toBe(false)
-    expect(hasAccountFormChanges(initialState, { ...initialState, type: 'shared' })).toBe(true)
+    expect(hasAccountFormChanges(initialState, { ...initialState, accessMode: 'shared' })).toBe(true)
+    expect(hasAccountFormChanges(initialState, { ...initialState, kind: 'investment' })).toBe(true)
     expect(hasAccountFormChanges(initialState, { ...initialState, initialBalance: '100' })).toBe(true)
   })
 })

@@ -1,6 +1,7 @@
 import { apiClient } from './client'
 
-export type AccountType = 'personal' | 'shared'
+export type AccountAccessMode = 'personal' | 'shared'
+export type AccountKind = 'current' | 'deposit' | 'investment'
 
 export interface AccountMember {
   accountId: string
@@ -21,10 +22,10 @@ export interface Account {
   id: string
   ownerId: string
   name: string
-  type: AccountType
+  accessMode: AccountAccessMode
+  kind: AccountKind
   currency: string
   icon: string | null
-  includeInBalance: boolean
   initialBalance: number
   initialBalanceDate: string
   members?: AccountMember[]
@@ -35,19 +36,18 @@ export interface Account {
 
 export interface CreateAccountDto {
   name: string
-  type: AccountType
+  accessMode: AccountAccessMode
+  kind: AccountKind
   currency: string
   icon?: string
-  includeInBalance?: boolean
   initialBalance?: number
   initialBalanceDate: string
 }
 
 export interface UpdateAccountDto {
   name?: string
-  type?: AccountType
+  accessMode?: AccountAccessMode
   icon?: string | null
-  includeInBalance?: boolean
   initialBalance?: number
   initialBalanceDate?: string
 }
