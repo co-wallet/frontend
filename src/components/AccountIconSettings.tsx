@@ -14,7 +14,7 @@ export function AccountIconSettings({
   return (
     <IonAccordionGroup key={sessionKey} className="account-icon-settings">
       <IonAccordion value="account-icon-settings">
-        <IonItem slot="header" className="account-icon-settings__header">
+        <IonItem slot="header" lines="full" className="account-icon-settings__header">
           <span slot="start">
             <AccountIcon value={value} size={32} />
           </span>
