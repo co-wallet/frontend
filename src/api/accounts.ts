@@ -45,6 +45,7 @@ export interface CreateAccountDto {
 
 export interface UpdateAccountDto {
   name?: string
+  type?: AccountType
   icon?: string | null
   includeInBalance?: boolean
   initialBalance?: number

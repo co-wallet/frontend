@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import {
   IonPage,
   IonHeader,
@@ -31,7 +33,6 @@ import {
 import {
   addOutline,
   walletOutline,
-  createOutline,
   trashOutline,
   peopleOutline,
 } from 'ionicons/icons'
@@ -66,6 +67,10 @@ function AccountFormModal({
   onSubmit,
   loading,
   isEditing = false,
+  canChangeType = false,
+  onManageMembers,
+  onDelete,
+  error,
   title,
 }: {
   isOpen: boolean
@@ -75,6 +80,10 @@ function AccountFormModal({
   onSubmit: (dto: CreateAccountDto) => void
   loading: boolean
   isEditing?: boolean
+  canChangeType?: boolean
+  onManageMembers?: () => void
+  onDelete?: () => void
+  error?: string
   title: string
 }) {
   const [name, setName] = useState(initial?.name ?? '')
@@ -153,7 +162,7 @@ function AccountFormModal({
 
           <AccountIconPicker value={icon} onChange={setIcon} />
 
-          {!isEditing && (
+          {(!isEditing || canChangeType) && (
             <IonItem>
               <IonSelect
                 label="Тип"
@@ -166,11 +175,19 @@ function AccountFormModal({
               </IonSelect>
             </IonItem>
           )}
-          {isEditing && (
+          {isEditing && !canChangeType && (
             <IonItem>
               <IonLabel>Тип</IonLabel>
-              <IonNote slot="end">{type === 'personal' ? 'Личный' : 'Совместный'}</IonNote>
+              <IonNote slot="end">
+                {type === 'personal' ? 'Личный' : 'Совместный'} · меняет владелец
+              </IonNote>
             </IonItem>
+          )}
+
+          {isEditing && canChangeType && (
+            <IonNote style={{ display: 'block', padding: '8px 16px 4px', lineHeight: 1.4 }}>
+              Совместный счёт можно сделать личным только без других участников и транзакций.
+            </IonNote>
           )}
 
           {!isEditing && (
@@ -230,7 +247,27 @@ function AccountFormModal({
               Учитывать в общем балансе
             </IonToggle>
           </IonItem>
+
+          {isEditing && initial?.type === 'shared' && onManageMembers && (
+            <IonItem button detail onClick={onManageMembers}>
+              <IonIcon icon={peopleOutline} slot="start" color="medium" />
+              <IonLabel>Участники и доли</IonLabel>
+            </IonItem>
+          )}
         </IonList>
+
+        {error && (
+          <IonText color="danger">
+            <p style={{ padding: '0 16px', fontSize: '0.875rem' }}>{error}</p>
+          </IonText>
+        )}
+
+        {isEditing && onDelete && (
+          <IonButton expand="block" fill="clear" color="danger" onClick={onDelete}>
+            <IonIcon icon={trashOutline} slot="start" />
+            Удалить счёт
+          </IonButton>
+        )}
       </IonContent>
     </IonModal>
   )
@@ -238,6 +275,7 @@ function AccountFormModal({
 
 export function AccountsPage() {
   const qc = useQueryClient()
+  const history = useHistory()
   const user = useAuthStore((s) => s.user)
   const defaultCurrency = user?.defaultCurrency ?? 'USD'
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -261,6 +299,7 @@ export function AccountsPage() {
     mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
       accountsApi.update(id, {
         name: dto.name,
+        type: dto.type,
         icon: dto.icon,
         includeInBalance: dto.includeInBalance,
         initialBalance: dto.initialBalance,
@@ -276,6 +315,17 @@ export function AccountsPage() {
     mutationFn: accountsApi.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   })
+
+  const updateError = updateMutation.error
+    ? axios.isAxiosError<{ error?: string }>(updateMutation.error) && updateMutation.error.response?.status === 409
+      ? 'Совместный счёт можно сделать личным только без других участников и транзакций.'
+      : 'Не удалось сохранить счёт. Проверьте данные и попробуйте ещё раз.'
+    : undefined
+
+  const openEditor = (account: Account) => {
+    updateMutation.reset()
+    setEditingAccount(account)
+  }
 
   return (
     <IonPage>
@@ -306,7 +356,8 @@ export function AccountsPage() {
               return (
                 <IonItemSliding key={account.id}>
                   <IonItem
-                    routerLink={`/accounts/${account.id}`}
+                    button
+                    onClick={() => openEditor(account)}
                     detail={false}
                   >
                     <span slot="start">
@@ -346,12 +397,6 @@ export function AccountsPage() {
                         <IonIcon slot="icon-only" icon={peopleOutline} />
                       </IonItemOption>
                     )}
-                    <IonItemOption
-                      color="primary"
-                      onClick={() => setEditingAccount(account)}
-                    >
-                      <IonIcon slot="icon-only" icon={createOutline} />
-                    </IonItemOption>
                     {isOwner && (
                       <IonItemOption
                         color="danger"
@@ -391,6 +436,16 @@ export function AccountsPage() {
             onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
             loading={updateMutation.isPending}
             isEditing
+            canChangeType={editingAccount.ownerId === user?.id}
+            onManageMembers={editingAccount.type === 'shared' ? () => {
+              setEditingAccount(null)
+              history.push(`/accounts/${editingAccount.id}/members`)
+            } : undefined}
+            onDelete={editingAccount.ownerId === user?.id ? () => {
+              setEditingAccount(null)
+              setDeleteAccountId(editingAccount.id)
+            } : undefined}
+            error={updateError}
             title="Редактировать счёт"
           />
         )}
