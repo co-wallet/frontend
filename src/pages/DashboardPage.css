@@ -1,0 +1,10 @@
+.dashboard-chart-card {
+  border: 1px solid transparent;
+}
+
+body.dark .dashboard-chart-card {
+  --background: #202238;
+
+  border-color: var(--ion-border-color);
+  box-shadow: 0 8px 24px rgba(4, 6, 20, 0.22);
+}

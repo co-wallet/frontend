@@ -57,6 +57,12 @@ import {
   selectedVisibleAccountIds,
   toggleAccountKind,
 } from '@/lib/accountFilters'
+import {
+  prepareDashboardChart,
+  type DashboardPieEntry,
+} from '@/lib/dashboardChart'
+
+import './DashboardPage.css'
 
 type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'all' | 'custom'
@@ -69,13 +75,6 @@ function formatAmount(n: number, symbol?: string): string {
   return symbol ? `${symbol} ${num}` : num
 }
 
-interface PieEntry {
-  name: string
-  amount: number
-  icon?: string
-  iconType?: 'account' | 'category'
-}
-
 const LEGEND_PAGE_SIZE = 5
 
 function ChartBlock({
@@ -86,7 +85,7 @@ function ChartBlock({
   tooltipStyle,
   legendColor,
 }: {
-  data: PieEntry[]
+  data: DashboardPieEntry[]
   sym: string
   emptyText: string
   colors: string[]
@@ -94,11 +93,8 @@ function ChartBlock({
   legendColor: string
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
-  const positive = data.filter((d) => d.amount > 0).sort((a, b) => b.amount - a.amount)
-  const negative = data.filter((d) => d.amount < 0).sort((a, b) => a.amount - b.amount)
-  const zero = data.filter((d) => d.amount === 0)
-  const allEntries = [...positive, ...negative, ...zero]
-  const visibleEntries = allEntries.slice(0, visibleCount)
+  const { chartEntries, legendEntries } = prepareDashboardChart(data)
+  const visibleEntries = legendEntries.slice(0, visibleCount)
 
   if (data.length === 0) {
     return (
@@ -109,24 +105,30 @@ function ChartBlock({
   }
   return (
     <>
-      {positive.length > 0 && (
+      {chartEntries.length > 0 && (
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
-              data={positive}
-              dataKey="amount"
+              data={chartEntries}
+              dataKey="chartAmount"
               nameKey="name"
               cx="50%"
               cy="50%"
               outerRadius={80}
               innerRadius={40}
             >
-              {positive.map((_, i) => (
-                <Cell key={i} fill={colors[i % colors.length]} />
+              {chartEntries.map((entry, i) => (
+                <Cell
+                  key={`${entry.name}-${i}`}
+                  fill={entry.amount < 0 ? 'var(--ion-color-danger)' : colors[i % colors.length]}
+                />
               ))}
             </Pie>
             <Tooltip
-              formatter={(value: number) => formatAmount(value, sym)}
+              formatter={(value, _name, item) => {
+                const signedAmount = item.payload?.amount
+                return formatAmount(typeof signedAmount === 'number' ? signedAmount : Number(value), sym)
+              }}
               labelFormatter={(label) => String(label)}
               contentStyle={tooltipStyle}
             />
@@ -145,11 +147,11 @@ function ChartBlock({
                     height: 10,
                     borderRadius: '50%',
                     flexShrink: 0,
-                    background: isNegative ? '#f87171' : colors[i % colors.length],
+                    background: isNegative ? 'var(--ion-color-danger)' : colors[i % colors.length],
                   }}
                 />
                 {s.iconType === 'account' && (
-                  <AccountIcon value={s.icon} size={20} framed={false} />
+                  <AccountIcon value={s.icon} size={20} shape="rectangle" />
                 )}
                 <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
                   {s.iconType !== 'account' && s.icon ? `${s.icon} ` : ''}{s.name}
@@ -163,9 +165,9 @@ function ChartBlock({
         })}
       </div>
       <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
-        {visibleCount < allEntries.length && (
+        {visibleCount < legendEntries.length && (
           <IonButton fill="clear" size="small" onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}>
-            Показать ещё ({allEntries.length - visibleCount})
+            Показать ещё ({legendEntries.length - visibleCount})
           </IonButton>
         )}
         {visibleCount > LEGEND_PAGE_SIZE && (
@@ -270,7 +272,7 @@ export function DashboardPage() {
     ? kindFilteredAccounts
     : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
 
-  const balancePieData: PieEntry[] = filteredAccounts
+  const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
     .map((a) => ({
       name: a.name,
@@ -279,12 +281,12 @@ export function DashboardPage() {
       amount: a.balance!.display,
     }))
 
-  const expensePieData: PieEntry[] = byExpense
+  const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
     .slice(0, 8)
     .map((s) => ({ name: s.categoryName, icon: s.icon ?? undefined, amount: s.amount }))
 
-  const incomePieData: PieEntry[] = byIncome
+  const incomePieData: DashboardPieEntry[] = byIncome
     .filter((s) => s.amount > 0)
     .slice(0, 8)
     .map((s) => ({ name: s.categoryName, icon: s.icon ?? undefined, amount: s.amount }))
@@ -507,7 +509,7 @@ export function DashboardPage() {
                             }
                           }}
                         >
-                          <AccountIcon value={a.icon} size={20} framed={false} />
+                          <AccountIcon value={a.icon} size={20} shape="rectangle" />
                           <IonLabel>{a.name}</IonLabel>
                         </IonChip>
                       )
@@ -542,7 +544,7 @@ export function DashboardPage() {
           </div>
 
           {/* Pie chart block */}
-          <IonCard style={{ margin: '0 0 16px 0' }}>
+          <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
             <IonCardHeader>
               <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
             </IonCardHeader>
