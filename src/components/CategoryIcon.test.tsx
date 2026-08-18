@@ -59,4 +59,52 @@ describe('CategoryIcon', () => {
     expect(markup).toContain('Цвет иконки')
     expect(markup).toContain('Цвет обводки')
   })
+
+  it('includes the extended screenshot-inspired presets in the correct category tabs', () => {
+    const expenseMarkup = renderToStaticMarkup(
+      <CategoryIconPicker
+        value="preset:tax"
+        type="expense"
+        onChange={vi.fn()}
+      />,
+    )
+    const incomeMarkup = renderToStaticMarkup(
+      <CategoryIconPicker
+        value="preset:cashback"
+        type="income"
+        onChange={vi.fn()}
+      />,
+    )
+
+    for (const label of [
+      'Налог',
+      'Родители',
+      'Подписки',
+      'Психология',
+      'Первая помощь',
+      'Телефон',
+      'Костёр',
+      'Стиральная машина',
+      'Бытовая химия',
+      'Возврат долга',
+      'Курение',
+      'Бег',
+      'Очки',
+    ]) {
+      expect(expenseMarkup).toContain(`Иконка «${label}»`)
+    }
+
+    for (const label of [
+      'Долги',
+      'Кэшбэк',
+      'Проценты',
+      'Процентная ставка',
+      'Люди',
+      'Возврат долга',
+      'Очки',
+      'Монеты',
+    ]) {
+      expect(incomeMarkup).toContain(`Иконка «${label}»`)
+    }
+  })
 })
