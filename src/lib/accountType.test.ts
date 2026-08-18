@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { shouldShowSharedTypeHint } from './accountType'
+import { shouldShowPersonalTypeWarning } from './accountType'
 
-describe('shouldShowSharedTypeHint', () => {
-  it('shows the hint only when a personal account becomes shared', () => {
-    expect(shouldShowSharedTypeHint('personal', 'shared')).toBe(true)
-    expect(shouldShowSharedTypeHint('personal', 'personal')).toBe(false)
-    expect(shouldShowSharedTypeHint('shared', 'personal')).toBe(false)
-    expect(shouldShowSharedTypeHint('shared', 'shared')).toBe(false)
+describe('shouldShowPersonalTypeWarning', () => {
+  it('shows the warning only when a shared account becomes personal', () => {
+    expect(shouldShowPersonalTypeWarning('shared', 'personal')).toBe(true)
+    expect(shouldShowPersonalTypeWarning('shared', 'shared')).toBe(false)
+    expect(shouldShowPersonalTypeWarning('personal', 'shared')).toBe(false)
+    expect(shouldShowPersonalTypeWarning('personal', 'personal')).toBe(false)
   })
 })
