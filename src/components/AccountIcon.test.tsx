@@ -1,8 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import {
   AccountIcon,
+  AccountIconPicker,
   DEFAULT_ACCOUNT_ICON,
   MAX_CUSTOM_ACCOUNT_ICON_LENGTH,
   customAccountIconValue,
@@ -77,5 +78,17 @@ describe('AccountIcon', () => {
 
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-foreground-yellow)')
     expect(markup).toContain('--account-icon-border:var(--account-icon-color-yellow)')
+  })
+
+  it('shows the effective yellow values in both appearance palettes', () => {
+    const markup = renderToStaticMarkup(
+      <AccountIconPicker
+        value="preset:cash|yellow|yellow"
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('--account-icon-swatch:var(--account-icon-foreground-yellow)')
+    expect(markup).toContain('--account-icon-swatch:var(--account-icon-color-yellow)')
   })
 })

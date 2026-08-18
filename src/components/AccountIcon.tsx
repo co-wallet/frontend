@@ -336,10 +336,13 @@ function AccountIconColorGroup({
         {options.map((option) => {
           const selected = value === option.id
           const isNone = option.id === 'none'
+          const swatchColor = kind === 'foreground' && option.id === 'yellow'
+            ? 'var(--account-icon-foreground-yellow)'
+            : `var(--account-icon-color-${option.id})`
           const style = {
             '--account-icon-swatch': isNone
               ? 'var(--ion-color-medium)'
-              : `var(--account-icon-color-${option.id})`,
+              : swatchColor,
           } as CSSProperties
 
           return (
