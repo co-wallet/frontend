@@ -9,14 +9,14 @@ import {
 } from './accountFilters'
 
 const accounts = [
-  { id: 'current', kind: 'current' },
+  { id: 'spending', kind: 'spending' },
   { id: 'deposit', kind: 'deposit' },
   { id: 'investment', kind: 'investment' },
 ] as Account[]
 
 describe('account analytics filters', () => {
   it('filters accounts by selected kinds', () => {
-    expect(filterAccountsByKinds(accounts, ['current']).map((account) => account.id)).toEqual(['current'])
+    expect(filterAccountsByKinds(accounts, ['spending']).map((account) => account.id)).toEqual(['spending'])
     expect(filterAccountsByKinds(accounts, ['deposit', 'investment']).map((account) => account.id)).toEqual([
       'deposit',
       'investment',
@@ -24,12 +24,12 @@ describe('account analytics filters', () => {
   })
 
   it('keeps selected IDs that remain visible for the active kinds', () => {
-    expect(selectedVisibleAccountIds(accounts.slice(0, 2), ['current', 'investment'])).toEqual(['current'])
+    expect(selectedVisibleAccountIds(accounts.slice(0, 2), ['spending', 'investment'])).toEqual(['spending'])
   })
 
   it('does not allow deselecting the last kind', () => {
-    expect(toggleAccountKind(['current'], 'current')).toEqual(['current'])
-    expect(toggleAccountKind(['current'], 'deposit')).toEqual(['current', 'deposit'])
-    expect(toggleAccountKind(['current', 'deposit'], 'current')).toEqual(['deposit'])
+    expect(toggleAccountKind(['spending'], 'spending')).toEqual(['spending'])
+    expect(toggleAccountKind(['spending'], 'deposit')).toEqual(['spending', 'deposit'])
+    expect(toggleAccountKind(['spending', 'deposit'], 'spending')).toEqual(['deposit'])
   })
 })

@@ -1,7 +1,7 @@
 import { apiClient } from './client'
 
 export type AccountAccessMode = 'personal' | 'shared'
-export type AccountKind = 'current' | 'deposit' | 'investment'
+export type AccountKind = 'spending' | 'deposit' | 'investment'
 
 export interface AccountMember {
   accountId: string

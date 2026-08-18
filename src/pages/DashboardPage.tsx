@@ -51,7 +51,7 @@ import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon } from '@/components/AccountIcon'
-import { ACCOUNT_KIND_OPTIONS, accountKindLabel } from '@/lib/accountKind'
+import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
   filterAccountsByKinds,
   selectedVisibleAccountIds,
@@ -188,7 +188,7 @@ export function DashboardPage() {
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
-  const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['current'])
+  const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
   const [showAccountFilter, setShowAccountFilter] = useState(false)
 
@@ -319,7 +319,7 @@ export function DashboardPage() {
     {
       mode: 'balance',
       icon: analyticsOutline,
-      label: selectedKinds.length === 1 && selectedKinds[0] === 'current' ? 'Доступно' : 'Баланс',
+      label: selectedKinds.length === 1 && selectedKinds[0] === 'spending' ? 'Доступно' : 'Баланс',
       value: summary?.balance ?? 0,
       color: 'primary',
     },
@@ -429,7 +429,7 @@ export function DashboardPage() {
               <IonLabel>
                 <h2>
                   {selectedKinds.length === 1
-                    ? accountKindLabel(selectedKinds[0])
+                    ? accountKindShortLabel(selectedKinds[0])
                     : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
                       ? 'Все типы средств'
                       : `Типов средств: ${selectedKinds.length}`}
@@ -469,7 +469,7 @@ export function DashboardPage() {
                           }
                         }}
                       >
-                        <IonLabel>{option.label}</IonLabel>
+                        <IonLabel>{option.shortLabel}</IonLabel>
                       </IonChip>
                     )
                   })}

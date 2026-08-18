@@ -48,7 +48,7 @@ import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
 import { shouldShowPersonalAccessModeWarning } from '@/lib/accountAccessMode'
-import { ACCOUNT_KIND_OPTIONS, accountKindLabel } from '@/lib/accountKind'
+import { ACCOUNT_KIND_OPTIONS, accountKindLabel, accountKindShortLabel } from '@/lib/accountKind'
 import {
   hasAccountFormChanges,
   initialBalanceInputValue,
@@ -105,7 +105,7 @@ function AccountFormModal({
   const today = new Date().toISOString().slice(0, 10)
   const initialName = initial?.name ?? ''
   const initialAccessMode = initial?.accessMode ?? 'personal'
-  const initialKind = initial?.kind ?? 'current'
+  const initialKind = initial?.kind ?? 'spending'
   const initialCurrency = initial?.currency ?? defaultCurrency
   const initialIcon = normalizeAccountIconValue(initial?.icon)
   const initialBalanceValue = initialBalanceInputValue(initial?.initialBalance)
@@ -452,7 +452,7 @@ export function AccountsPage() {
                     <IonLabel>
                       <h2>{account.name}</h2>
                       <p>
-                        {accountKindLabel(account.kind)} · {account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
+                        {accountKindShortLabel(account.kind)} · {account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
                       </p>
                     </IonLabel>
                     {account.balance && (

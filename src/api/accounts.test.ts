@@ -14,7 +14,7 @@ const account: Account = {
   ownerId: 'user-1',
   name: 'Семейный',
   accessMode: 'shared',
-  kind: 'current',
+  kind: 'spending',
   currency: 'RUB',
   icon: 'preset:shared|purple|orange',
   initialBalance: 1500,

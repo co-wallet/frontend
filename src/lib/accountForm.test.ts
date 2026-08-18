@@ -9,7 +9,7 @@ import {
 const initialState: AccountFormState = {
   name: 'Карта',
   accessMode: 'personal',
-  kind: 'current',
+  kind: 'spending',
   currency: 'RUB',
   icon: 'preset:debit-card',
   initialBalance: '0',
