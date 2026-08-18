@@ -48,7 +48,7 @@ import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
 import { shouldShowPersonalAccessModeWarning } from '@/lib/accountAccessMode'
-import { ACCOUNT_KIND_OPTIONS, accountKindLabel, accountKindShortLabel } from '@/lib/accountKind'
+import { accountKindShortLabel } from '@/lib/accountKind'
 import {
   hasAccountFormChanges,
   initialBalanceInputValue,
@@ -60,6 +60,7 @@ import {
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
+import { AccountKindField } from '@/components/AccountKindField'
 
 import './AccountsPage.css'
 
@@ -210,33 +211,11 @@ function AccountFormModal({
             sessionKey={isOpen ? 'open' : 'closed'}
           />
 
-          {!isEditing && (
-            <IonItem className="account-form-row account-form-row--compact">
-              <IonSelect
-                label="Тип средств"
-                labelPlacement="fixed"
-                interface="action-sheet"
-                cancelText="Отмена"
-                value={kind}
-                selectedText={accountKindLabel(kind)}
-                onIonChange={(e) => setKind(e.detail.value as AccountKind)}
-              >
-                {ACCOUNT_KIND_OPTIONS.map((option) => (
-                  <IonSelectOption key={option.value} value={option.value}>
-                    {option.label} — {option.description}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
-          )}
-          {isEditing && (
-            <IonItem className="account-form-row account-form-row--compact">
-              <IonLabel>Тип средств</IonLabel>
-              <IonNote slot="end" className="account-form-readonly-value">
-                {accountKindLabel(kind)}
-              </IonNote>
-            </IonItem>
-          )}
+          <AccountKindField
+            className="account-form-row account-form-row--compact"
+            value={kind}
+            onChange={isEditing ? undefined : setKind}
+          />
 
           {(!isEditing || canChangeAccessMode) && (
             <IonItem className="account-form-row account-form-row--compact">

@@ -1,0 +1,83 @@
+.account-kind-help__trigger {
+  display: inline-flex;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0;
+  appearance: none;
+  flex: 1;
+  align-items: center;
+  gap: 6px;
+  color: var(--ion-text-color);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  text-align: start;
+  touch-action: manipulation;
+  transition: opacity 150ms ease;
+}
+
+.account-kind-help__trigger ion-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  color: var(--ion-color-medium-shade);
+}
+
+.account-kind-help__trigger:active {
+  opacity: 0.65;
+}
+
+.account-kind-help__trigger:focus-visible {
+  border-radius: 6px;
+  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+.account-kind-field__select {
+  max-width: 58%;
+}
+
+.account-kind-help {
+  --width: min(320px, calc(100vw - 32px));
+}
+
+.account-kind-help__content {
+  padding: 16px;
+  color: var(--ion-text-color);
+}
+
+.account-kind-help__content h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.account-kind-help__content dl,
+.account-kind-help__content dd {
+  margin: 0;
+}
+
+.account-kind-help__content dl > div + div {
+  margin-top: 12px;
+}
+
+.account-kind-help__content dt {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.account-kind-help__content dd {
+  margin-top: 2px;
+  color: var(--ion-color-medium-shade);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-kind-help__trigger {
+    transition: none;
+  }
+}
