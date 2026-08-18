@@ -356,7 +356,10 @@ export function CategoryIconPicker({
   const availablePresets = CATEGORY_ICON_PRESETS.filter((preset) => preset.types.includes(type))
 
   return (
-    <section className="account-icon-picker" aria-labelledby={titleId}>
+    <section
+      className="account-icon-picker account-icon-picker--category"
+      aria-labelledby={titleId}
+    >
       <div className="account-icon-picker__header">
         <h2 id={titleId}>Иконка категории</h2>
         <p>Выберите подходящую и настройте оформление</p>
@@ -368,15 +371,15 @@ export function CategoryIconPicker({
 
           return (
             <button
-              className="account-icon-option"
+              className="account-icon-option category-icon-option"
               type="button"
               key={preset.id}
               aria-label={`Иконка «${preset.label}»`}
               aria-pressed={resolved.preset.id === preset.id}
+              title={preset.label}
               onClick={() => onChange(optionValue)}
             >
               <CategoryIcon value={optionValue} type={type} size={36} />
-              <span>{preset.label}</span>
             </button>
           )
         })}

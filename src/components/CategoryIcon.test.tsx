@@ -52,6 +52,8 @@ describe('CategoryIcon', () => {
 
     expect(markup).toContain('Иконка категории')
     expect(markup).toContain('Иконка «Продукты»')
+    expect(markup).toContain('title="Продукты"')
+    expect(markup).not.toContain('<span>Продукты</span>')
     expect(markup).not.toContain('Иконка «Работа»')
     expect(markup).not.toContain('Своя')
     expect(markup).toContain('Цвет иконки')

@@ -107,6 +107,20 @@
   outline-offset: 2px;
 }
 
+.account-icon-picker--category .account-icon-picker__grid {
+  grid-template-columns: repeat(auto-fit, minmax(52px, 1fr));
+}
+
+.account-icon-option.category-icon-option {
+  min-height: 54px;
+  padding: 8px 4px;
+}
+
+.account-icon-option.category-icon-option > .account-icon {
+  min-height: 0;
+  margin-top: 0;
+}
+
 .account-icon-picker__custom {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
