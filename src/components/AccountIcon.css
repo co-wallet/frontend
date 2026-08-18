@@ -154,6 +154,17 @@
   pointer-events: none;
 }
 
+.md .account-icon-settings::after {
+  height: 1px;
+  background: var(
+    --ion-item-border-color,
+    var(
+      --ion-border-color,
+      var(--ion-color-step-150, var(--ion-background-color-step-150, rgba(0, 0, 0, 0.13)))
+    )
+  );
+}
+
 .account-icon-appearance {
   margin-top: 16px;
   padding-top: 16px;
