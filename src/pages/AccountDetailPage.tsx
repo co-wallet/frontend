@@ -11,6 +11,7 @@ import {
 import { pencilOutline, trashOutline, peopleOutline, chevronForwardOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
 import { useAuthStore } from '@/store/authStore'
+import { AccountIcon } from '@/components/AccountIcon'
 
 export function AccountDetailPage() {
   const { accountID } = useParams<{ accountID: string }>()
@@ -156,7 +157,7 @@ export function AccountDetailPage() {
             <IonCard>
               <IonCardHeader>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                  <span style={{ fontSize: '2rem' }}>{account.icon ?? '💳'}</span>
+                  <AccountIcon value={account.icon} size={52} />
                   <div>
                     <IonCardTitle>{account.name}</IonCardTitle>
                     <IonNote>

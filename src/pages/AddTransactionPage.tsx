@@ -13,6 +13,7 @@ import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
+import { AccountSelect } from '@/components/AccountSelect'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 
@@ -275,39 +276,21 @@ export function AddTransactionPage() {
         <div className="ion-padding">
           <IonList>
             {/* Account */}
-            <IonItem>
-              <IonSelect
-                label="Счёт"
-                labelPlacement="floating"
-                value={accountId || undefined}
-                onIonChange={(e) => setAccountId(e.detail.value ?? '')}
-                interface="action-sheet"
-              >
-                {accounts.map((a) => (
-                  <IonSelectOption key={a.id} value={a.id}>
-                    {a.icon ? `${a.icon} ` : ''}{a.name} ({a.currency})
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </IonItem>
+            <AccountSelect
+              label="Счёт"
+              accounts={accounts}
+              value={accountId}
+              onChange={setAccountId}
+            />
 
             {/* To account (transfer) */}
             {type === 'transfer' && (
-              <IonItem>
-                <IonSelect
-                  label="На счёт"
-                  labelPlacement="floating"
-                  value={toAccountId || undefined}
-                  onIonChange={(e) => setToAccountId(e.detail.value ?? '')}
-                  interface="action-sheet"
-                >
-                  {otherAccounts.map((a) => (
-                    <IonSelectOption key={a.id} value={a.id}>
-                      {a.icon ? `${a.icon} ` : ''}{a.name} ({a.currency})
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+              <AccountSelect
+                label="На счёт"
+                accounts={otherAccounts}
+                value={toAccountId}
+                onChange={setToAccountId}
+              />
             )}
 
             {/* Amount */}
