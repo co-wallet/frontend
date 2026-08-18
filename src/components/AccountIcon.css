@@ -133,6 +133,13 @@
   --min-height: 64px;
 }
 
+.account-icon-settings {
+  border-bottom: 0.55px solid var(
+    --ion-item-border-color,
+    var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.14))
+  );
+}
+
 .account-icon-appearance {
   margin-top: 16px;
   padding-top: 16px;
