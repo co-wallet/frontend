@@ -7,7 +7,7 @@
   color: var(--account-icon-foreground, var(--ion-color-primary));
   background: rgba(var(--account-icon-foreground-rgb, var(--ion-color-primary-rgb)), 0.1);
   border: 1.5px solid var(--account-icon-border, var(--ion-color-primary));
-  border-radius: 12px;
+  border-radius: var(--account-icon-border-radius, 12px);
   line-height: 1;
 }
 
@@ -15,6 +15,10 @@
   background: transparent;
   border-color: transparent;
   border-radius: 0;
+}
+
+.account-icon--rectangle {
+  box-sizing: border-box;
 }
 
 .account-icon--custom {

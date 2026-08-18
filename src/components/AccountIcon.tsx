@@ -245,13 +245,24 @@ function customLabelFontSize(label: string, size: number): number {
   return Math.round(size * 0.2)
 }
 
+function rectangularCustomLabelFontSize(label: string, size: number): number {
+  return Math.round(size * (label.length <= 5 ? 0.4 : 0.3))
+}
+
+type AccountIconShape = 'square' | 'rectangle'
+
 interface AccountIconCSSProperties extends CSSProperties {
   '--account-icon-foreground': string
   '--account-icon-foreground-rgb': string
   '--account-icon-border': string
+  '--account-icon-border-radius': string
 }
 
-function accountIconStyle(resolved: ResolvedAccountIcon, size: number): AccountIconCSSProperties {
+function accountIconStyle(
+  resolved: ResolvedAccountIcon,
+  size: number,
+  shape: AccountIconShape,
+): AccountIconCSSProperties {
   const foreground = resolved.foreground === 'yellow'
     ? 'var(--account-icon-foreground-yellow)'
     : `var(--account-icon-color-${resolved.foreground})`
@@ -260,8 +271,9 @@ function accountIconStyle(resolved: ResolvedAccountIcon, size: number): AccountI
     : `var(--account-icon-color-${resolved.foreground}-rgb)`
 
   return {
-    width: size,
+    width: shape === 'rectangle' ? Math.round(size * 1.7) : size,
     height: size,
+    '--account-icon-border-radius': `${Math.round(size * (shape === 'rectangle' ? 0.2 : 0.27))}px`,
     '--account-icon-foreground': foreground,
     '--account-icon-foreground-rgb': foregroundRgb,
     '--account-icon-border': resolved.border === 'none'
@@ -274,14 +286,20 @@ export function AccountIcon({
   value,
   size = 44,
   framed = true,
+  shape = 'square',
 }: {
   value?: string | null
   size?: number
   framed?: boolean
+  shape?: AccountIconShape
 }) {
   const resolved = resolveAccountIcon(value)
-  const className = framed ? 'account-icon' : 'account-icon account-icon--unframed'
-  const style = accountIconStyle(resolved, size)
+  const className = [
+    'account-icon',
+    framed ? '' : 'account-icon--unframed',
+    shape === 'rectangle' ? 'account-icon--rectangle' : '',
+  ].filter(Boolean).join(' ')
+  const style = accountIconStyle(resolved, size, shape)
 
   if (resolved.kind === 'preset') {
     const PresetIcon = resolved.preset.icon
@@ -301,7 +319,12 @@ export function AccountIcon({
   return (
     <span
       className={`${className} account-icon--custom`}
-      style={{ ...style, fontSize: customLabelFontSize(label, size) }}
+      style={{
+        ...style,
+        fontSize: shape === 'rectangle'
+          ? rectangularCustomLabelFontSize(label, size)
+          : customLabelFontSize(label, size),
+      }}
       role="img"
       aria-label={resolved.label.trim() ? `Своя иконка: ${resolved.label.trim()}` : 'Своя иконка'}
     >

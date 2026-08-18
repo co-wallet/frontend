@@ -544,6 +544,7 @@ export function AccountsPage() {
         )}
 
         <IonAlert
+          cssClass="account-delete-alert"
           isOpen={!!deleteAccountId}
           header="Удалить счёт?"
           message="Это действие нельзя отменить. Все транзакции по этому счёту будут удалены."

@@ -20,6 +20,30 @@ describe('AccountIcon', () => {
     expect(markup).not.toContain('🐷')
   })
 
+  it('scales the frame radius with the icon size', () => {
+    const compactMarkup = renderToStaticMarkup(
+      <AccountIcon value="preset:cash" size={20} />,
+    )
+    const defaultMarkup = renderToStaticMarkup(
+      <AccountIcon value="preset:cash" />,
+    )
+
+    expect(compactMarkup).toContain('--account-icon-border-radius:5px')
+    expect(defaultMarkup).toContain('--account-icon-border-radius:12px')
+  })
+
+  it('renders a compact rectangular frame when requested', () => {
+    const markup = renderToStaticMarkup(
+      <AccountIcon value="custom:TBank" size={20} shape="rectangle" />,
+    )
+
+    expect(markup).toContain('account-icon--rectangle')
+    expect(markup).toContain('width:34px')
+    expect(markup).toContain('height:20px')
+    expect(markup).toContain('--account-icon-border-radius:4px')
+    expect(markup).toContain('font-size:8px')
+  })
+
   it('renders custom text without exposing its storage prefix', () => {
     const markup = renderToStaticMarkup(<AccountIcon value="custom:TBank|green|purple" />)
 
