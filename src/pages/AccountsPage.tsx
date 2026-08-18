@@ -249,6 +249,8 @@ function AccountFormModal({
               <IonSelect
                 label="Валюта"
                 labelPlacement="fixed"
+                interface="action-sheet"
+                cancelText="Отмена"
                 value={currency}
                 onIonChange={(e) => setCurrency(e.detail.value)}
               >
