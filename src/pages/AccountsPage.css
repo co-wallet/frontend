@@ -72,7 +72,3 @@
   margin-top: 24px;
   margin-bottom: 8px;
 }
-
-body.dark .account-delete-alert {
-  --background: #202238;
-}

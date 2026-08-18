@@ -51,6 +51,7 @@ import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon } from '@/components/AccountIcon'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
   filterAccountsByKinds,
@@ -153,8 +154,11 @@ function ChartBlock({
                 {s.iconType === 'account' && (
                   <AccountIcon value={s.icon} size={20} shape="rectangle" />
                 )}
+                {s.iconType === 'category' && (
+                  <CategoryIcon value={s.icon} size={20} />
+                )}
                 <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
-                  {s.iconType !== 'account' && s.icon ? `${s.icon} ` : ''}{s.name}
+                  {s.name}
                 </span>
               </div>
               <span style={{ fontWeight: 500, color: isNegative ? 'var(--ion-color-danger)' : undefined }}>
@@ -284,12 +288,22 @@ export function DashboardPage() {
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
     .slice(0, 8)
-    .map((s) => ({ name: s.categoryName, icon: s.icon ?? undefined, amount: s.amount }))
+    .map((s) => ({
+      name: s.categoryName,
+      icon: s.icon ?? undefined,
+      iconType: 'category' as const,
+      amount: s.amount,
+    }))
 
   const incomePieData: DashboardPieEntry[] = byIncome
     .filter((s) => s.amount > 0)
     .slice(0, 8)
-    .map((s) => ({ name: s.categoryName, icon: s.icon ?? undefined, amount: s.amount }))
+    .map((s) => ({
+      name: s.categoryName,
+      icon: s.icon ?? undefined,
+      iconType: 'category' as const,
+      amount: s.amount,
+    }))
 
   const chartTitles: Record<ChartMode, string> = {
     balance: 'Баланс по счетам',

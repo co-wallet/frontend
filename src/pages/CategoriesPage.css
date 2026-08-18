@@ -1,0 +1,23 @@
+.category-parent-context {
+  margin-top: 8px;
+  --background: rgba(var(--ion-color-primary-rgb), 0.06);
+  --min-height: 64px;
+}
+
+.category-parent-context ion-label p {
+  margin-bottom: 3px;
+  color: var(--ion-color-medium-shade);
+  font-size: 12px;
+}
+
+.category-parent-context ion-label h2 {
+  color: var(--ion-text-color);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.category-page-error {
+  display: block;
+  padding: 4px 16px 80px;
+  font-size: 14px;
+}

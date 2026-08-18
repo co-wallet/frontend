@@ -1,0 +1,65 @@
+.category-tree-row {
+  --inner-padding-end: 4px;
+  --min-height: 60px;
+}
+
+.category-tree-row__leading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-end: 8px;
+}
+
+.category-tree-row__expand,
+.category-tree-row__expand-spacer {
+  width: 40px;
+  min-width: 40px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+
+.category-tree-row__expand {
+  --padding-end: 8px;
+  --padding-start: 8px;
+}
+
+.category-tree-row__expand-spacer {
+  display: block;
+}
+
+.category-tree-row__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-tree-row__actions {
+  flex: 0 0 auto;
+}
+
+.category-tree-row__actions ion-button {
+  width: 36px;
+  min-height: 44px;
+  margin: 0;
+  --padding-end: 6px;
+  --padding-start: 6px;
+}
+
+@media (max-width: 420px) {
+  .category-tree-row__leading {
+    gap: 4px;
+    margin-inline-end: 4px;
+  }
+
+  .category-tree-row__expand,
+  .category-tree-row__expand-spacer {
+    width: 36px;
+    min-width: 36px;
+  }
+
+  .category-tree-row__actions ion-button {
+    width: 34px;
+  }
+}

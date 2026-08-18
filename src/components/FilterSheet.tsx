@@ -22,6 +22,7 @@ import {
 import { closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
@@ -223,7 +224,8 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                     outline={!categoryIds.includes(c.id)}
                     onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
                   >
-                    {c.icon ? `${c.icon} ` : ''}{c.name}
+                    <CategoryIcon value={c.icon} type={c.type} size={22} />
+                    {c.name}
                   </IonChip>
                 ))}
               </div>
