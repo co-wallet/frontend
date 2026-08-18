@@ -252,11 +252,18 @@ interface AccountIconCSSProperties extends CSSProperties {
 }
 
 function accountIconStyle(resolved: ResolvedAccountIcon, size: number): AccountIconCSSProperties {
+  const foreground = resolved.foreground === 'yellow'
+    ? 'var(--account-icon-foreground-yellow)'
+    : `var(--account-icon-color-${resolved.foreground})`
+  const foregroundRgb = resolved.foreground === 'yellow'
+    ? 'var(--account-icon-foreground-yellow-rgb)'
+    : `var(--account-icon-color-${resolved.foreground}-rgb)`
+
   return {
     width: size,
     height: size,
-    '--account-icon-foreground': `var(--account-icon-color-${resolved.foreground})`,
-    '--account-icon-foreground-rgb': `var(--account-icon-color-${resolved.foreground}-rgb)`,
+    '--account-icon-foreground': foreground,
+    '--account-icon-foreground-rgb': foregroundRgb,
     '--account-icon-border': resolved.border === 'none'
       ? 'transparent'
       : `var(--account-icon-color-${resolved.border})`,

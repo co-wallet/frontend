@@ -69,4 +69,13 @@ describe('AccountIcon', () => {
       'preset:cash|yellow|yellow',
     )
   })
+
+  it('uses a dedicated readable foreground for yellow while preserving its border color', () => {
+    const markup = renderToStaticMarkup(
+      <AccountIcon value="preset:cash|yellow|yellow" />,
+    )
+
+    expect(markup).toContain('--account-icon-foreground:var(--account-icon-foreground-yellow)')
+    expect(markup).toContain('--account-icon-border:var(--account-icon-color-yellow)')
+  })
 })

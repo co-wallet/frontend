@@ -81,6 +81,8 @@
   --account-icon-color-green-rgb: 21, 128, 61;
   --account-icon-color-yellow: #ffdd2d;
   --account-icon-color-yellow-rgb: 255, 221, 45;
+  --account-icon-foreground-yellow: #8a7400;
+  --account-icon-foreground-yellow-rgb: 138, 116, 0;
   --account-icon-color-graphite: #374151;
   --account-icon-color-graphite-rgb: 55, 65, 81;
 }
@@ -174,6 +176,8 @@ body.dark {
   --account-icon-color-green-rgb: 74, 222, 128;
   --account-icon-color-yellow: #ffdd2d;
   --account-icon-color-yellow-rgb: 255, 221, 45;
+  --account-icon-foreground-yellow: #ffdd2d;
+  --account-icon-foreground-yellow-rgb: 255, 221, 45;
   --account-icon-color-graphite: #d1d5db;
   --account-icon-color-graphite-rgb: 209, 213, 219;
 }
