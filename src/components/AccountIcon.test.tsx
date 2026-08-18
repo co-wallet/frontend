@@ -58,9 +58,15 @@ describe('AccountIcon', () => {
   })
 
   it('preserves appearance while normalizing a custom label within the database limit', () => {
-    const normalized = normalizeAccountIconValue('custom: Alfa |teal|graphite')
+    const normalized = normalizeAccountIconValue('custom: Alfa |yellow|graphite')
 
-    expect(normalized).toBe('custom:Alfa|teal|graphite')
+    expect(normalized).toBe('custom:Alfa|yellow|graphite')
     expect(normalized.length).toBeLessThanOrEqual(50)
+  })
+
+  it('migrates saved teal appearance values to yellow', () => {
+    expect(normalizeAccountIconValue('preset:cash|teal|teal')).toBe(
+      'preset:cash|yellow|yellow',
+    )
   })
 })

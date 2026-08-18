@@ -79,8 +79,8 @@
   --account-icon-color-orange-rgb: 194, 65, 12;
   --account-icon-color-green: #15803d;
   --account-icon-color-green-rgb: 21, 128, 61;
-  --account-icon-color-teal: #0f766e;
-  --account-icon-color-teal-rgb: 15, 118, 110;
+  --account-icon-color-yellow: #a16207;
+  --account-icon-color-yellow-rgb: 161, 98, 7;
   --account-icon-color-graphite: #374151;
   --account-icon-color-graphite-rgb: 55, 65, 81;
 }
@@ -172,8 +172,8 @@ body.dark {
   --account-icon-color-orange-rgb: 251, 146, 60;
   --account-icon-color-green: #4ade80;
   --account-icon-color-green-rgb: 74, 222, 128;
-  --account-icon-color-teal: #2dd4bf;
-  --account-icon-color-teal-rgb: 45, 212, 191;
+  --account-icon-color-yellow: #facc15;
+  --account-icon-color-yellow-rgb: 250, 204, 21;
   --account-icon-color-graphite: #d1d5db;
   --account-icon-color-graphite-rgb: 209, 213, 219;
 }

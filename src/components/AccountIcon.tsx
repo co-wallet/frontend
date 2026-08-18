@@ -37,7 +37,7 @@ export type AccountIconColorId =
   | 'red'
   | 'orange'
   | 'green'
-  | 'teal'
+  | 'yellow'
   | 'graphite'
 
 export type AccountIconBorderColorId = AccountIconColorId | 'none'
@@ -55,7 +55,7 @@ export const ACCOUNT_ICON_COLORS: readonly AccountIconColor[] = [
   { id: 'red', label: 'Красный' },
   { id: 'orange', label: 'Оранжевый', shortLabel: 'Оранжев.' },
   { id: 'green', label: 'Зелёный' },
-  { id: 'teal', label: 'Бирюза' },
+  { id: 'yellow', label: 'Жёлтый' },
   { id: 'graphite', label: 'Графит' },
 ] as const
 
@@ -129,11 +129,13 @@ function resolveAccountIcon(value?: string | null): ResolvedAccountIcon {
     APPEARANCE_SEPARATOR,
     3,
   )
-  const foreground = accountIconColorIds.has(foregroundValue as AccountIconColorId)
-    ? foregroundValue as AccountIconColorId
+  const foregroundCandidate = foregroundValue === 'teal' ? 'yellow' : foregroundValue
+  const borderCandidate = borderValue === 'teal' ? 'yellow' : borderValue
+  const foreground = accountIconColorIds.has(foregroundCandidate as AccountIconColorId)
+    ? foregroundCandidate as AccountIconColorId
     : DEFAULT_FOREGROUND_COLOR
-  const border = borderValue === 'none' || accountIconColorIds.has(borderValue as AccountIconColorId)
-    ? borderValue as AccountIconBorderColorId
+  const border = borderCandidate === 'none' || accountIconColorIds.has(borderCandidate as AccountIconColorId)
+    ? borderCandidate as AccountIconBorderColorId
     : DEFAULT_BORDER_COLOR
 
   if (baseValue.startsWith(PRESET_PREFIX)) {
