@@ -1,0 +1,61 @@
+.account-form-section {
+  margin: 0;
+  padding: 0;
+}
+
+.account-form-section + .account-form-section {
+  margin-top: 16px;
+}
+
+.account-form-section__header {
+  min-height: 32px;
+  color: var(--ion-color-medium-shade);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+
+.account-form-row--compact {
+  --min-height: 64px;
+}
+
+.account-form-row--stacked {
+  --min-height: 72px;
+}
+
+.account-form-row--compact ion-input,
+.account-form-row--compact ion-select,
+.account-form-row--compact ion-toggle {
+  min-height: 64px;
+}
+
+.account-form-row--stacked ion-input {
+  min-height: 72px;
+}
+
+.account-form-readonly-value,
+.account-form-input-suffix {
+  color: var(--ion-color-medium-shade);
+  font-size: 16px;
+}
+
+.account-form-type-warning {
+  display: block;
+  padding: 8px 16px 12px;
+  color: var(--ion-color-medium-shade);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.account-form-error {
+  margin: 12px 16px 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.account-form-delete {
+  min-height: 44px;
+  margin-top: 24px;
+  margin-bottom: 8px;
+}

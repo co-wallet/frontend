@@ -12,15 +12,14 @@ export function AccountIconSettings({
   sessionKey: string
 }) {
   return (
-    <IonAccordionGroup key={sessionKey}>
+    <IonAccordionGroup key={sessionKey} className="account-icon-settings">
       <IonAccordion value="account-icon-settings">
-        <IonItem slot="header">
+        <IonItem slot="header" className="account-icon-settings__header">
           <span slot="start">
-            <AccountIcon value={value} size={38} />
+            <AccountIcon value={value} size={32} />
           </span>
           <IonLabel>
             <h2>Иконка и оформление</h2>
-            <p>Нажмите, чтобы выбрать и настроить</p>
           </IonLabel>
         </IonItem>
         <div slot="content">

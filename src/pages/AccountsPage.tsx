@@ -9,6 +9,7 @@ import {
   IonTitle,
   IonContent,
   IonList,
+  IonListHeader,
   IonItem,
   IonLabel,
   IonNote,
@@ -42,11 +43,18 @@ import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
 import { shouldShowPersonalTypeWarning } from '@/lib/accountType'
 import {
+  hasAccountFormChanges,
+  initialBalanceInputValue,
+  type AccountFormState,
+} from '@/lib/accountForm'
+import {
   AccountIcon,
   DEFAULT_ACCOUNT_ICON,
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
+
+import './AccountsPage.css'
 
 function fmtCurrency(amount: number, currency: string): string {
   try {
@@ -87,19 +95,43 @@ function AccountFormModal({
   error?: string
   title: string
 }) {
-  const [name, setName] = useState(initial?.name ?? '')
-  const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
-  const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency)
-  const [icon, setIcon] = useState(normalizeAccountIconValue(initial?.icon))
-  const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
-  const [initialBalance, setInitialBalance] = useState(
-    initial?.initialBalance ? String(initial.initialBalance) : ''
-  )
-  const [initialBalanceDate, setInitialBalanceDate] = useState(
-    initial?.initialBalanceDate
-      ? initial.initialBalanceDate.slice(0, 10)
-      : new Date().toISOString().slice(0, 10)
-  )
+  const today = new Date().toISOString().slice(0, 10)
+  const initialName = initial?.name ?? ''
+  const initialType = initial?.type ?? 'personal'
+  const initialCurrency = initial?.currency ?? defaultCurrency
+  const initialIcon = normalizeAccountIconValue(initial?.icon)
+  const initialIncludeInBalance = initial?.includeInBalance ?? true
+  const initialBalanceValue = initialBalanceInputValue(initial?.initialBalance)
+  const initialBalanceDateValue = initial?.initialBalanceDate
+    ? initial.initialBalanceDate.slice(0, 10)
+    : today
+
+  const [name, setName] = useState(initialName)
+  const [type, setType] = useState<'personal' | 'shared'>(initialType)
+  const [currency, setCurrency] = useState(initialCurrency)
+  const [icon, setIcon] = useState(initialIcon)
+  const [includeInBalance, setIncludeInBalance] = useState(initialIncludeInBalance)
+  const [initialBalance, setInitialBalance] = useState(initialBalanceValue)
+  const [initialBalanceDate, setInitialBalanceDate] = useState(initialBalanceDateValue)
+
+  const initialFormState: AccountFormState = {
+    name: initialName,
+    type: initialType,
+    currency: initialCurrency,
+    icon: initialIcon,
+    includeInBalance: initialIncludeInBalance,
+    initialBalance: initialBalanceValue,
+    initialBalanceDate: initialBalanceDateValue,
+  }
+  const isDirty = hasAccountFormChanges(initialFormState, {
+    name,
+    type,
+    currency,
+    icon,
+    includeInBalance,
+    initialBalance,
+    initialBalanceDate,
+  })
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', currency],
@@ -120,17 +152,13 @@ function AccountFormModal({
   }
 
   const resetForm = () => {
-    setName(initial?.name ?? '')
-    setType(initial?.type ?? 'personal')
-    setCurrency(initial?.currency ?? defaultCurrency)
-    setIcon(normalizeAccountIconValue(initial?.icon))
-    setIncludeInBalance(initial?.includeInBalance ?? true)
-    setInitialBalance(initial?.initialBalance ? String(initial.initialBalance) : '')
-    setInitialBalanceDate(
-      initial?.initialBalanceDate
-        ? initial.initialBalanceDate.slice(0, 10)
-        : new Date().toISOString().slice(0, 10)
-    )
+    setName(initialName)
+    setType(initialType)
+    setCurrency(initialCurrency)
+    setIcon(initialIcon)
+    setIncludeInBalance(initialIncludeInBalance)
+    setInitialBalance(initialBalanceValue)
+    setInitialBalanceDate(initialBalanceDateValue)
   }
 
   return (
@@ -142,15 +170,23 @@ function AccountFormModal({
           </IonButtons>
           <IonTitle>{title}</IonTitle>
           <IonButtons slot="end">
-            <IonButton strong onClick={handleSubmit} disabled={loading || !name.trim()}>
+            <IonButton
+              strong
+              onClick={handleSubmit}
+              disabled={loading || !name.trim() || (isEditing && !isDirty)}
+            >
               {loading ? <IonSpinner name="dots" /> : 'Сохранить'}
             </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <IonList>
-          <IonItem>
+      <IonContent className="ion-padding account-form-content">
+        <IonList className="account-form-section">
+          <IonListHeader className="account-form-section__header">
+            <IonLabel>Основное</IonLabel>
+          </IonListHeader>
+
+          <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
               label="Название"
               labelPlacement="floating"
@@ -168,10 +204,10 @@ function AccountFormModal({
           />
 
           {(!isEditing || canChangeType) && (
-            <IonItem>
+            <IonItem className="account-form-row account-form-row--compact">
               <IonSelect
                 label="Тип"
-                labelPlacement="floating"
+                labelPlacement="fixed"
                 value={type}
                 onIonChange={(e) => setType(e.detail.value)}
               >
@@ -181,25 +217,25 @@ function AccountFormModal({
             </IonItem>
           )}
           {isEditing && !canChangeType && (
-            <IonItem>
+            <IonItem className="account-form-row account-form-row--compact">
               <IonLabel>Тип</IonLabel>
-              <IonNote slot="end">
-                {type === 'personal' ? 'Личный' : 'Совместный'} · меняет владелец
+              <IonNote slot="end" className="account-form-readonly-value">
+                {type === 'personal' ? 'Личный' : 'Совместный'}
               </IonNote>
             </IonItem>
           )}
 
           {isEditing && canChangeType && shouldShowPersonalTypeWarning(initial?.type, type) && (
-            <IonNote style={{ display: 'block', padding: '8px 16px 4px', lineHeight: 1.4 }}>
+            <IonNote className="account-form-type-warning">
               Совместный счёт можно сделать личным только без других участников и транзакций.
             </IonNote>
           )}
 
           {!isEditing && (
-            <IonItem>
+            <IonItem className="account-form-row account-form-row--compact">
               <IonSelect
                 label="Валюта"
-                labelPlacement="floating"
+                labelPlacement="fixed"
                 value={currency}
                 onIonChange={(e) => setCurrency(e.detail.value)}
               >
@@ -216,13 +252,31 @@ function AccountFormModal({
             </IonItem>
           )}
           {isEditing && (
-            <IonItem>
+            <IonItem className="account-form-row account-form-row--compact">
               <IonLabel>Валюта</IonLabel>
-              <IonNote slot="end">{currency}</IonNote>
+              <IonNote slot="end" className="account-form-readonly-value">{currency}</IonNote>
             </IonItem>
           )}
 
-          <IonItem>
+          {isEditing && initial?.type === 'shared' && onManageMembers && (
+            <IonItem
+              button
+              detail
+              className="account-form-row account-form-row--compact"
+              onClick={onManageMembers}
+            >
+              <IonIcon icon={peopleOutline} slot="start" color="medium" />
+              <IonLabel>Участники и доли</IonLabel>
+            </IonItem>
+          )}
+        </IonList>
+
+        <IonList className="account-form-section">
+          <IonListHeader className="account-form-section__header">
+            <IonLabel>Стартовый баланс</IonLabel>
+          </IonListHeader>
+
+          <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
               label="Начальный баланс"
               labelPlacement="floating"
@@ -231,20 +285,22 @@ function AccountFormModal({
               value={initialBalance}
               onIonInput={(e) => setInitialBalance(filterDecimalInput(e.detail.value ?? ''))}
               placeholder="0"
-            />
+            >
+              <IonNote slot="end" className="account-form-input-suffix">{currency}</IonNote>
+            </IonInput>
           </IonItem>
 
-          <IonItem>
+          <IonItem className="account-form-row account-form-row--compact">
             <IonInput
               label="Дата баланса"
-              labelPlacement="floating"
+              labelPlacement="fixed"
               type="date"
               value={initialBalanceDate}
               onIonInput={(e) => setInitialBalanceDate(e.detail.value ?? '')}
             />
           </IonItem>
 
-          <IonItem>
+          <IonItem className="account-form-row account-form-row--compact">
             <IonToggle
               checked={includeInBalance}
               onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
@@ -252,23 +308,22 @@ function AccountFormModal({
               Учитывать в общем балансе
             </IonToggle>
           </IonItem>
-
-          {isEditing && initial?.type === 'shared' && onManageMembers && (
-            <IonItem button detail onClick={onManageMembers}>
-              <IonIcon icon={peopleOutline} slot="start" color="medium" />
-              <IonLabel>Участники и доли</IonLabel>
-            </IonItem>
-          )}
         </IonList>
 
         {error && (
           <IonText color="danger">
-            <p style={{ padding: '0 16px', fontSize: '0.875rem' }}>{error}</p>
+            <p className="account-form-error">{error}</p>
           </IonText>
         )}
 
         {isEditing && onDelete && (
-          <IonButton expand="block" fill="clear" color="danger" onClick={onDelete}>
+          <IonButton
+            expand="block"
+            fill="clear"
+            color="danger"
+            className="account-form-delete"
+            onClick={onDelete}
+          >
             <IonIcon icon={trashOutline} slot="start" />
             Удалить счёт
           </IonButton>

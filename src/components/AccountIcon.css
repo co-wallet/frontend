@@ -129,6 +129,10 @@
   opacity: 1;
 }
 
+.account-icon-settings__header {
+  --min-height: 64px;
+}
+
 .account-icon-appearance {
   margin-top: 16px;
   padding-top: 16px;

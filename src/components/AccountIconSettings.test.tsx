@@ -16,6 +16,7 @@ describe('AccountIconSettings', () => {
     expect(markup).toContain('<ion-accordion-group>')
     expect(markup).toContain('value="account-icon-settings"')
     expect(markup).toContain('Иконка и оформление')
+    expect(markup).not.toContain('Нажмите, чтобы выбрать и настроить')
     expect(markup).not.toContain('Цвет иконки и обводки настраиваются независимо')
   })
 })
