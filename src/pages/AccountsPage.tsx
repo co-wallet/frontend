@@ -20,7 +20,6 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
-  IonToggle,
   IonButton,
   IonButtons,
   IonSpinner,
@@ -53,6 +52,7 @@ import {
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
+import { BalanceInclusionToggle } from '@/components/BalanceInclusionToggle'
 
 import './AccountsPage.css'
 
@@ -273,12 +273,12 @@ function AccountFormModal({
 
         <IonList className="account-form-section">
           <IonListHeader className="account-form-section__header">
-            <IonLabel>Стартовый баланс</IonLabel>
+            <IonLabel>Баланс</IonLabel>
           </IonListHeader>
 
           <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
-              label="Начальный баланс"
+              label="Стартовый баланс"
               labelPlacement="floating"
               type="text"
               inputMode="decimal"
@@ -290,25 +290,22 @@ function AccountFormModal({
             </IonInput>
           </IonItem>
 
-          <IonItem className="account-form-row account-form-row--compact">
+          <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
               className="account-form-date-input"
-              label="Дата баланса"
-              labelPlacement="start"
+              label="Дата стартового баланса"
+              labelPlacement="stacked"
               type="date"
               value={initialBalanceDate}
               onIonInput={(e) => setInitialBalanceDate(e.detail.value ?? '')}
             />
           </IonItem>
 
-          <IonItem className="account-form-row account-form-row--compact">
-            <IonToggle
-              checked={includeInBalance}
-              onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
-            >
-              Учитывать в общем балансе
-            </IonToggle>
-          </IonItem>
+          <BalanceInclusionToggle
+            className="account-form-row account-form-row--compact"
+            checked={includeInBalance}
+            onChange={setIncludeInBalance}
+          />
         </IonList>
 
         {error && (
