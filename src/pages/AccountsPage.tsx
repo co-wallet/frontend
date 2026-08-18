@@ -40,6 +40,7 @@ import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
+import { shouldShowSharedTypeHint } from '@/lib/accountType'
 import {
   AccountIcon,
   AccountIconPicker,
@@ -184,9 +185,10 @@ function AccountFormModal({
             </IonItem>
           )}
 
-          {isEditing && canChangeType && (
+          {isEditing && canChangeType && shouldShowSharedTypeHint(initial?.type, type) && (
             <IonNote style={{ display: 'block', padding: '8px 16px 4px', lineHeight: 1.4 }}>
-              Совместный счёт можно сделать личным только без других участников и транзакций.
+              После сохранения владелец будет единственным участником с долей 100%.
+              Других участников и их доли можно добавить отдельно.
             </IonNote>
           )}
 
