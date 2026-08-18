@@ -5,7 +5,6 @@ import { LoginPage } from '@/pages/LoginPage'
 import { InvitePage } from '@/pages/InvitePage'
 import { DashboardPage } from '@/pages/DashboardPage'
 import { AccountsPage } from '@/pages/AccountsPage'
-import { AccountDetailPage } from '@/pages/AccountDetailPage'
 import { AccountMembersPage } from '@/pages/AccountMembersPage'
 import CategoriesPage from '@/pages/CategoriesPage'
 import { TransactionsPage } from '@/pages/TransactionsPage'
@@ -35,11 +34,11 @@ function App() {
         <Route exact path="/accounts">
           <ProtectedRoute><AccountsPage /></ProtectedRoute>
         </Route>
-        <Route exact path="/accounts/:accountID">
-          <ProtectedRoute><AccountDetailPage /></ProtectedRoute>
-        </Route>
         <Route exact path="/accounts/:accountID/members">
           <ProtectedRoute><AccountMembersPage /></ProtectedRoute>
+        </Route>
+        <Route exact path="/accounts/:accountID">
+          <Redirect to="/accounts" />
         </Route>
         <Route exact path="/categories">
           <ProtectedRoute><CategoriesPage /></ProtectedRoute>

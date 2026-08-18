@@ -1,5 +1,7 @@
 import { useState } from 'react'
+import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
 import {
   IonPage,
   IonHeader,
@@ -7,6 +9,7 @@ import {
   IonTitle,
   IonContent,
   IonList,
+  IonListHeader,
   IonItem,
   IonLabel,
   IonNote,
@@ -17,7 +20,6 @@ import {
   IonInput,
   IonSelect,
   IonSelectOption,
-  IonToggle,
   IonButton,
   IonButtons,
   IonSpinner,
@@ -31,7 +33,6 @@ import {
 import {
   addOutline,
   walletOutline,
-  createOutline,
   trashOutline,
   peopleOutline,
 } from 'ionicons/icons'
@@ -39,12 +40,21 @@ import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
+import { shouldShowPersonalTypeWarning } from '@/lib/accountType'
+import {
+  hasAccountFormChanges,
+  initialBalanceInputValue,
+  type AccountFormState,
+} from '@/lib/accountForm'
 import {
   AccountIcon,
-  AccountIconPicker,
   DEFAULT_ACCOUNT_ICON,
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
+import { AccountIconSettings } from '@/components/AccountIconSettings'
+import { BalanceInclusionToggle } from '@/components/BalanceInclusionToggle'
+
+import './AccountsPage.css'
 
 function fmtCurrency(amount: number, currency: string): string {
   try {
@@ -66,6 +76,10 @@ function AccountFormModal({
   onSubmit,
   loading,
   isEditing = false,
+  canChangeType = false,
+  onManageMembers,
+  onDelete,
+  error,
   title,
 }: {
   isOpen: boolean
@@ -75,21 +89,49 @@ function AccountFormModal({
   onSubmit: (dto: CreateAccountDto) => void
   loading: boolean
   isEditing?: boolean
+  canChangeType?: boolean
+  onManageMembers?: () => void
+  onDelete?: () => void
+  error?: string
   title: string
 }) {
-  const [name, setName] = useState(initial?.name ?? '')
-  const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
-  const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency)
-  const [icon, setIcon] = useState(normalizeAccountIconValue(initial?.icon))
-  const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
-  const [initialBalance, setInitialBalance] = useState(
-    initial?.initialBalance ? String(initial.initialBalance) : ''
-  )
-  const [initialBalanceDate, setInitialBalanceDate] = useState(
-    initial?.initialBalanceDate
-      ? initial.initialBalanceDate.slice(0, 10)
-      : new Date().toISOString().slice(0, 10)
-  )
+  const today = new Date().toISOString().slice(0, 10)
+  const initialName = initial?.name ?? ''
+  const initialType = initial?.type ?? 'personal'
+  const initialCurrency = initial?.currency ?? defaultCurrency
+  const initialIcon = normalizeAccountIconValue(initial?.icon)
+  const initialIncludeInBalance = initial?.includeInBalance ?? true
+  const initialBalanceValue = initialBalanceInputValue(initial?.initialBalance)
+  const initialBalanceDateValue = initial?.initialBalanceDate
+    ? initial.initialBalanceDate.slice(0, 10)
+    : today
+
+  const [name, setName] = useState(initialName)
+  const [type, setType] = useState<'personal' | 'shared'>(initialType)
+  const [currency, setCurrency] = useState(initialCurrency)
+  const [icon, setIcon] = useState(initialIcon)
+  const [includeInBalance, setIncludeInBalance] = useState(initialIncludeInBalance)
+  const [initialBalance, setInitialBalance] = useState(initialBalanceValue)
+  const [initialBalanceDate, setInitialBalanceDate] = useState(initialBalanceDateValue)
+
+  const initialFormState: AccountFormState = {
+    name: initialName,
+    type: initialType,
+    currency: initialCurrency,
+    icon: initialIcon,
+    includeInBalance: initialIncludeInBalance,
+    initialBalance: initialBalanceValue,
+    initialBalanceDate: initialBalanceDateValue,
+  }
+  const isDirty = hasAccountFormChanges(initialFormState, {
+    name,
+    type,
+    currency,
+    icon,
+    includeInBalance,
+    initialBalance,
+    initialBalanceDate,
+  })
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', currency],
@@ -110,17 +152,13 @@ function AccountFormModal({
   }
 
   const resetForm = () => {
-    setName(initial?.name ?? '')
-    setType(initial?.type ?? 'personal')
-    setCurrency(initial?.currency ?? defaultCurrency)
-    setIcon(normalizeAccountIconValue(initial?.icon))
-    setIncludeInBalance(initial?.includeInBalance ?? true)
-    setInitialBalance(initial?.initialBalance ? String(initial.initialBalance) : '')
-    setInitialBalanceDate(
-      initial?.initialBalanceDate
-        ? initial.initialBalanceDate.slice(0, 10)
-        : new Date().toISOString().slice(0, 10)
-    )
+    setName(initialName)
+    setType(initialType)
+    setCurrency(initialCurrency)
+    setIcon(initialIcon)
+    setIncludeInBalance(initialIncludeInBalance)
+    setInitialBalance(initialBalanceValue)
+    setInitialBalanceDate(initialBalanceDateValue)
   }
 
   return (
@@ -132,15 +170,23 @@ function AccountFormModal({
           </IonButtons>
           <IonTitle>{title}</IonTitle>
           <IonButtons slot="end">
-            <IonButton strong onClick={handleSubmit} disabled={loading || !name.trim()}>
+            <IonButton
+              strong
+              onClick={handleSubmit}
+              disabled={loading || !name.trim() || (isEditing && !isDirty)}
+            >
               {loading ? <IonSpinner name="dots" /> : 'Сохранить'}
             </IonButton>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <IonList>
-          <IonItem>
+      <IonContent className="ion-padding account-form-content">
+        <IonList className="account-form-section">
+          <IonListHeader className="account-form-section__header">
+            <IonLabel>Основное</IonLabel>
+          </IonListHeader>
+
+          <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
               label="Название"
               labelPlacement="floating"
@@ -151,13 +197,17 @@ function AccountFormModal({
             />
           </IonItem>
 
-          <AccountIconPicker value={icon} onChange={setIcon} />
+          <AccountIconSettings
+            value={icon}
+            onChange={setIcon}
+            sessionKey={isOpen ? 'open' : 'closed'}
+          />
 
-          {!isEditing && (
-            <IonItem>
+          {(!isEditing || canChangeType) && (
+            <IonItem className="account-form-row account-form-row--compact">
               <IonSelect
                 label="Тип"
-                labelPlacement="floating"
+                labelPlacement="fixed"
                 value={type}
                 onIonChange={(e) => setType(e.detail.value)}
               >
@@ -166,18 +216,26 @@ function AccountFormModal({
               </IonSelect>
             </IonItem>
           )}
-          {isEditing && (
-            <IonItem>
+          {isEditing && !canChangeType && (
+            <IonItem className="account-form-row account-form-row--compact">
               <IonLabel>Тип</IonLabel>
-              <IonNote slot="end">{type === 'personal' ? 'Личный' : 'Совместный'}</IonNote>
+              <IonNote slot="end" className="account-form-readonly-value">
+                {type === 'personal' ? 'Личный' : 'Совместный'}
+              </IonNote>
             </IonItem>
           )}
 
+          {isEditing && canChangeType && shouldShowPersonalTypeWarning(initial?.type, type) && (
+            <IonNote className="account-form-type-warning">
+              Совместный счёт можно сделать личным только без других участников и транзакций.
+            </IonNote>
+          )}
+
           {!isEditing && (
-            <IonItem>
+            <IonItem className="account-form-row account-form-row--compact">
               <IonSelect
                 label="Валюта"
-                labelPlacement="floating"
+                labelPlacement="fixed"
                 value={currency}
                 onIonChange={(e) => setCurrency(e.detail.value)}
               >
@@ -194,43 +252,80 @@ function AccountFormModal({
             </IonItem>
           )}
           {isEditing && (
-            <IonItem>
+            <IonItem className="account-form-row account-form-row--compact">
               <IonLabel>Валюта</IonLabel>
-              <IonNote slot="end">{currency}</IonNote>
+              <IonNote slot="end" className="account-form-readonly-value">{currency}</IonNote>
             </IonItem>
           )}
 
-          <IonItem>
+          {isEditing && initial?.type === 'shared' && onManageMembers && (
+            <IonItem
+              button
+              detail
+              className="account-form-row account-form-row--compact"
+              onClick={onManageMembers}
+            >
+              <IonIcon icon={peopleOutline} slot="start" color="medium" />
+              <IonLabel>Участники и доли</IonLabel>
+            </IonItem>
+          )}
+        </IonList>
+
+        <IonList className="account-form-section">
+          <IonListHeader className="account-form-section__header">
+            <IonLabel>Баланс</IonLabel>
+          </IonListHeader>
+
+          <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
-              label="Начальный баланс"
+              label="Стартовый баланс"
               labelPlacement="floating"
               type="text"
               inputMode="decimal"
               value={initialBalance}
               onIonInput={(e) => setInitialBalance(filterDecimalInput(e.detail.value ?? ''))}
               placeholder="0"
-            />
+            >
+              <IonNote slot="end" className="account-form-input-suffix">{currency}</IonNote>
+            </IonInput>
           </IonItem>
 
-          <IonItem>
+          <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
-              label="Дата баланса"
-              labelPlacement="floating"
+              className="account-form-date-input"
+              label="Дата стартового баланса"
+              labelPlacement="stacked"
               type="date"
               value={initialBalanceDate}
               onIonInput={(e) => setInitialBalanceDate(e.detail.value ?? '')}
             />
           </IonItem>
 
-          <IonItem>
-            <IonToggle
-              checked={includeInBalance}
-              onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
-            >
-              Учитывать в общем балансе
-            </IonToggle>
-          </IonItem>
+          <BalanceInclusionToggle
+            className="account-form-row account-form-row--compact"
+            checked={includeInBalance}
+            onChange={setIncludeInBalance}
+          />
         </IonList>
+
+        {error && (
+          <IonText color="danger">
+            <p className="account-form-error">{error}</p>
+          </IonText>
+        )}
+
+        {isEditing && onDelete && (
+          <IonButton
+            expand="block"
+            fill="clear"
+            color="danger"
+            className="account-form-delete"
+            onClick={onDelete}
+          >
+            <IonIcon icon={trashOutline} slot="start" />
+            Удалить счёт
+          </IonButton>
+        )}
       </IonContent>
     </IonModal>
   )
@@ -238,6 +333,7 @@ function AccountFormModal({
 
 export function AccountsPage() {
   const qc = useQueryClient()
+  const history = useHistory()
   const user = useAuthStore((s) => s.user)
   const defaultCurrency = user?.defaultCurrency ?? 'USD'
   const [showCreateModal, setShowCreateModal] = useState(false)
@@ -261,6 +357,7 @@ export function AccountsPage() {
     mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
       accountsApi.update(id, {
         name: dto.name,
+        type: dto.type,
         icon: dto.icon,
         includeInBalance: dto.includeInBalance,
         initialBalance: dto.initialBalance,
@@ -276,6 +373,17 @@ export function AccountsPage() {
     mutationFn: accountsApi.delete,
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   })
+
+  const updateError = updateMutation.error
+    ? axios.isAxiosError<{ error?: string }>(updateMutation.error) && updateMutation.error.response?.status === 409
+      ? 'Совместный счёт можно сделать личным только без других участников и транзакций.'
+      : 'Не удалось сохранить счёт. Проверьте данные и попробуйте ещё раз.'
+    : undefined
+
+  const openEditor = (account: Account) => {
+    updateMutation.reset()
+    setEditingAccount(account)
+  }
 
   return (
     <IonPage>
@@ -306,7 +414,8 @@ export function AccountsPage() {
               return (
                 <IonItemSliding key={account.id}>
                   <IonItem
-                    routerLink={`/accounts/${account.id}`}
+                    button
+                    onClick={() => openEditor(account)}
                     detail={false}
                   >
                     <span slot="start">
@@ -346,12 +455,6 @@ export function AccountsPage() {
                         <IonIcon slot="icon-only" icon={peopleOutline} />
                       </IonItemOption>
                     )}
-                    <IonItemOption
-                      color="primary"
-                      onClick={() => setEditingAccount(account)}
-                    >
-                      <IonIcon slot="icon-only" icon={createOutline} />
-                    </IonItemOption>
                     {isOwner && (
                       <IonItemOption
                         color="danger"
@@ -391,6 +494,16 @@ export function AccountsPage() {
             onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
             loading={updateMutation.isPending}
             isEditing
+            canChangeType={editingAccount.ownerId === user?.id}
+            onManageMembers={editingAccount.type === 'shared' ? () => {
+              setEditingAccount(null)
+              history.push(`/accounts/${editingAccount.id}/members`)
+            } : undefined}
+            onDelete={editingAccount.ownerId === user?.id ? () => {
+              setEditingAccount(null)
+              setDeleteAccountId(editingAccount.id)
+            } : undefined}
+            error={updateError}
             title="Редактировать счёт"
           />
         )}

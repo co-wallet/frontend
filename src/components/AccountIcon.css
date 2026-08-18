@@ -129,6 +129,42 @@
   opacity: 1;
 }
 
+.account-icon-settings__header {
+  --min-height: 64px;
+}
+
+.account-icon-settings {
+  position: relative;
+}
+
+.account-icon-settings::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 16px;
+  height: 0.55px;
+  background: var(
+    --ion-item-border-color,
+    var(
+      --ion-border-color,
+      var(--ion-color-step-250, var(--ion-background-color-step-250, #c8c7cc))
+    )
+  );
+  content: '';
+  pointer-events: none;
+}
+
+.md .account-icon-settings::after {
+  height: 1px;
+  background: var(
+    --ion-item-border-color,
+    var(
+      --ion-border-color,
+      var(--ion-color-step-150, var(--ion-background-color-step-150, rgba(0, 0, 0, 0.13)))
+    )
+  );
+}
+
 .account-icon-appearance {
   margin-top: 16px;
   padding-top: 16px;
@@ -144,13 +180,6 @@
   color: var(--ion-text-color);
   font-size: 15px;
   font-weight: 600;
-  line-height: 1.35;
-}
-
-.account-icon-appearance__header p {
-  margin: 3px 0 0;
-  color: var(--ion-color-medium-shade);
-  font-size: 13px;
   line-height: 1.35;
 }
 
