@@ -134,10 +134,24 @@
 }
 
 .account-icon-settings {
-  border-bottom: 0.55px solid var(
+  position: relative;
+}
+
+.account-icon-settings::after {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 16px;
+  height: 0.55px;
+  background: var(
     --ion-item-border-color,
-    var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.14))
+    var(
+      --ion-border-color,
+      var(--ion-color-step-250, var(--ion-background-color-step-250, #c8c7cc))
+    )
   );
+  content: '';
+  pointer-events: none;
 }
 
 .account-icon-appearance {
