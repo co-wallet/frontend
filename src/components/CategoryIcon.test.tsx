@@ -37,7 +37,7 @@ describe('CategoryIcon', () => {
     const purpleIcon = updateCategoryIconAppearance('preset:cafe', { foreground: 'purple' })
     const borderlessIcon = updateCategoryIconAppearance(purpleIcon, { border: 'none' })
 
-    expect(purpleIcon).toBe('preset:cafe|purple|blue')
+    expect(purpleIcon).toBe('preset:cafe|purple|orange')
     expect(borderlessIcon).toBe('preset:cafe|purple|none')
   })
 
@@ -58,6 +58,25 @@ describe('CategoryIcon', () => {
     expect(markup).not.toContain('Своя')
     expect(markup).toContain('Цвет иконки')
     expect(markup).toContain('Цвет обводки')
+  })
+
+  it('uses varied stable colors for preset previews', () => {
+    const markup = renderToStaticMarkup(
+      <CategoryIconPicker
+        value="preset:groceries"
+        type="expense"
+        onChange={vi.fn()}
+      />,
+    )
+
+    for (const color of ['blue', 'purple', 'pink', 'red', 'orange', 'green', 'graphite']) {
+      expect(markup).toContain(
+        `--account-icon-foreground:var(--account-icon-color-${color})`,
+      )
+    }
+    expect(markup).toContain(
+      '--account-icon-foreground:var(--account-icon-foreground-yellow)',
+    )
   })
 
   it('includes the extended screenshot-inspired presets in the correct category tabs', () => {
@@ -105,6 +124,71 @@ describe('CategoryIcon', () => {
       'Монеты',
     ]) {
       expect(incomeMarkup).toContain(`Иконка «${label}»`)
+    }
+  })
+
+  it('includes the additional available icons from the reference screenshots', () => {
+    const markup = renderToStaticMarkup(
+      <CategoryIconPicker
+        value="preset:baby"
+        type="expense"
+        onChange={vi.fn()}
+      />,
+    )
+
+    for (const label of [
+      'Ребёнок',
+      'Коляска',
+      'Сердце',
+      'Кресло',
+      'Мебель',
+      'Рыба',
+      'Готовая еда',
+      'Повар',
+      'Духовка',
+      'Готовка',
+      'Пиво',
+      'Вино',
+      'Коктейли',
+      'Мороженое',
+      'Кинотеатр',
+      'Фото',
+      'Настроение',
+      'Гитара',
+      'Музыкальные инструменты',
+      'Чтение',
+      'Футболка',
+      'Гардероб',
+      'Верхняя одежда',
+      'Туфли',
+      'Цветы',
+      'Температура',
+      'Лошадь',
+      'Кошка',
+      'Собака',
+      'Лодка',
+      'Интернет',
+      'Отпуск',
+      'Мотоцикл',
+      'Скутер',
+      'Велосипед',
+      'Штрафы',
+      'Шины',
+      'Баскетбол',
+      'Теннис',
+      'Американский футбол',
+      'Лыжи',
+      'Покраска',
+      'Малярные работы',
+      'Инструменты',
+      'Мелкий ремонт',
+      'Мастерская',
+      'Магазин',
+      'Расчёты',
+      'Комплектующие',
+      'Электричество',
+    ]) {
+      expect(markup).toContain(`Иконка «${label}»`)
     }
   })
 })

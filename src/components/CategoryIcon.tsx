@@ -2,35 +2,58 @@ import { useId } from 'react'
 import type { Icon as PhosphorIcon } from '@phosphor-icons/react'
 import {
   Airplane,
+  Armchair,
+  Baby,
+  BabyCarriage,
   Bank,
   Barbell,
   Basket,
+  Basketball,
   Beanie,
   BeerBottle,
+  BeerStein,
+  Boat,
+  BookOpen,
   Books,
+  BowlFood,
   Brain,
   Briefcase,
   Broom,
   Buildings,
   Bus,
+  Calculator,
   Campfire,
+  Camera,
   Car,
+  Cat,
   ChartLineUp,
+  ChefHat,
   Cigarette,
+  CoatHanger,
   Coffee,
   Coins,
+  CookingPot,
+  Couch,
   CreditCard,
+  Cpu,
   DeviceMobile,
   Devices,
   Dress,
+  Dog,
   Eyeglasses,
+  FilmReel,
   FilmSlate,
+  Fish,
   FirstAidKit,
+  Flower,
+  Football,
   ForkKnife,
   GameController,
   GasPump,
   Gift,
+  Globe,
   GraduationCap,
+  Guitar,
   Hamburger,
   Hammer,
   HandCoins,
@@ -39,45 +62,72 @@ import {
   Handshake,
   HandSoap,
   HandWithdraw,
+  Heart,
+  HighHeel,
+  Horse,
   Hospital,
   House,
   HouseLine,
+  IceCream,
+  Island,
   Laptop,
+  Lightning,
   Lightbulb,
   Money,
+  Moped,
+  Motorcycle,
   MusicNote,
+  MusicNotes,
+  Martini,
+  Oven,
   Package,
+  PaintBrush,
+  PaintRoller,
   PawPrint,
   Percent,
+  PersonSimpleBike,
   PersonSimpleRun,
+  PersonSimpleSki,
   Phone,
   PiggyBank,
   Pill,
   Pizza,
   Plant,
+  PoliceCar,
   Receipt,
   Rocket,
   SealPercent,
   Scissors,
+  Screwdriver,
   ShoppingBag,
   ShoppingCart,
+  ShirtFolded,
   Sneaker,
+  Smiley,
   SoccerBall,
   Sparkle,
   SprayBottle,
+  Storefront,
   Syringe,
   Tag,
   Target,
   Taxi,
+  TennisBall,
+  Thermometer,
   Ticket,
+  Tire,
+  Toolbox,
   Tooth,
   Train,
   Trophy,
+  TShirt,
   User,
   Users,
   UsersThree,
   WashingMachine,
   Watch,
+  Wine,
+  Wrench,
 } from '@phosphor-icons/react'
 
 import type { CategoryType } from '@/api/categories'
@@ -94,7 +144,6 @@ import {
 const PRESET_PREFIX = 'preset:'
 const APPEARANCE_SEPARATOR = '|'
 const DEFAULT_FOREGROUND_COLOR: AccountIconColorId = 'blue'
-const DEFAULT_BORDER_COLOR: AccountIconBorderColorId = 'blue'
 
 interface CategoryIconPreset {
   id: string
@@ -166,6 +215,56 @@ export const CATEGORY_ICON_PRESETS: readonly CategoryIconPreset[] = [
   { id: 'family', label: 'Семья', icon: UsersThree, types: EXPENSE_TYPES },
   { id: 'people', label: 'Люди', icon: Users, types: ALL_TYPES },
   { id: 'debt-return', label: 'Возврат долга', icon: HandDeposit, types: ALL_TYPES },
+  { id: 'baby', label: 'Ребёнок', icon: Baby, types: EXPENSE_TYPES },
+  { id: 'baby-carriage', label: 'Коляска', icon: BabyCarriage, types: EXPENSE_TYPES },
+  { id: 'heart', label: 'Сердце', icon: Heart, types: EXPENSE_TYPES },
+  { id: 'armchair', label: 'Кресло', icon: Armchair, types: EXPENSE_TYPES },
+  { id: 'couch', label: 'Мебель', icon: Couch, types: EXPENSE_TYPES },
+  { id: 'fish', label: 'Рыба', icon: Fish, types: EXPENSE_TYPES },
+  { id: 'bowl-food', label: 'Готовая еда', icon: BowlFood, types: EXPENSE_TYPES },
+  { id: 'chef', label: 'Повар', icon: ChefHat, types: EXPENSE_TYPES },
+  { id: 'oven', label: 'Духовка', icon: Oven, types: EXPENSE_TYPES },
+  { id: 'cooking-pot', label: 'Готовка', icon: CookingPot, types: EXPENSE_TYPES },
+  { id: 'beer-stein', label: 'Пиво', icon: BeerStein, types: EXPENSE_TYPES },
+  { id: 'wine', label: 'Вино', icon: Wine, types: EXPENSE_TYPES },
+  { id: 'cocktail', label: 'Коктейли', icon: Martini, types: EXPENSE_TYPES },
+  { id: 'ice-cream', label: 'Мороженое', icon: IceCream, types: EXPENSE_TYPES },
+  { id: 'film-reel', label: 'Кинотеатр', icon: FilmReel, types: EXPENSE_TYPES },
+  { id: 'camera', label: 'Фото', icon: Camera, types: EXPENSE_TYPES },
+  { id: 'smiley', label: 'Настроение', icon: Smiley, types: EXPENSE_TYPES },
+  { id: 'guitar', label: 'Гитара', icon: Guitar, types: EXPENSE_TYPES },
+  { id: 'music-notes', label: 'Музыкальные инструменты', icon: MusicNotes, types: EXPENSE_TYPES },
+  { id: 'book-open', label: 'Чтение', icon: BookOpen, types: EXPENSE_TYPES },
+  { id: 't-shirt', label: 'Футболка', icon: TShirt, types: EXPENSE_TYPES },
+  { id: 'shirt-folded', label: 'Гардероб', icon: ShirtFolded, types: EXPENSE_TYPES },
+  { id: 'coat-hanger', label: 'Верхняя одежда', icon: CoatHanger, types: EXPENSE_TYPES },
+  { id: 'high-heel', label: 'Туфли', icon: HighHeel, types: EXPENSE_TYPES },
+  { id: 'flower', label: 'Цветы', icon: Flower, types: EXPENSE_TYPES },
+  { id: 'thermometer', label: 'Температура', icon: Thermometer, types: EXPENSE_TYPES },
+  { id: 'horse', label: 'Лошадь', icon: Horse, types: EXPENSE_TYPES },
+  { id: 'cat', label: 'Кошка', icon: Cat, types: EXPENSE_TYPES },
+  { id: 'dog', label: 'Собака', icon: Dog, types: EXPENSE_TYPES },
+  { id: 'boat', label: 'Лодка', icon: Boat, types: EXPENSE_TYPES },
+  { id: 'globe', label: 'Интернет', icon: Globe, types: EXPENSE_TYPES },
+  { id: 'island', label: 'Отпуск', icon: Island, types: EXPENSE_TYPES },
+  { id: 'motorcycle', label: 'Мотоцикл', icon: Motorcycle, types: EXPENSE_TYPES },
+  { id: 'moped', label: 'Скутер', icon: Moped, types: EXPENSE_TYPES },
+  { id: 'bicycle', label: 'Велосипед', icon: PersonSimpleBike, types: EXPENSE_TYPES },
+  { id: 'police', label: 'Штрафы', icon: PoliceCar, types: EXPENSE_TYPES },
+  { id: 'tire', label: 'Шины', icon: Tire, types: EXPENSE_TYPES },
+  { id: 'basketball', label: 'Баскетбол', icon: Basketball, types: EXPENSE_TYPES },
+  { id: 'tennis', label: 'Теннис', icon: TennisBall, types: EXPENSE_TYPES },
+  { id: 'football', label: 'Американский футбол', icon: Football, types: EXPENSE_TYPES },
+  { id: 'skiing', label: 'Лыжи', icon: PersonSimpleSki, types: EXPENSE_TYPES },
+  { id: 'paint-brush', label: 'Покраска', icon: PaintBrush, types: EXPENSE_TYPES },
+  { id: 'paint-roller', label: 'Малярные работы', icon: PaintRoller, types: EXPENSE_TYPES },
+  { id: 'wrench', label: 'Инструменты', icon: Wrench, types: EXPENSE_TYPES },
+  { id: 'screwdriver', label: 'Мелкий ремонт', icon: Screwdriver, types: EXPENSE_TYPES },
+  { id: 'toolbox', label: 'Мастерская', icon: Toolbox, types: EXPENSE_TYPES },
+  { id: 'storefront', label: 'Магазин', icon: Storefront, types: ALL_TYPES },
+  { id: 'calculator', label: 'Расчёты', icon: Calculator, types: ALL_TYPES },
+  { id: 'cpu', label: 'Комплектующие', icon: Cpu, types: EXPENSE_TYPES },
+  { id: 'lightning', label: 'Электричество', icon: Lightning, types: EXPENSE_TYPES },
   { id: 'work', label: 'Работа', icon: Briefcase, types: INCOME_TYPES },
   { id: 'savings', label: 'Накопления', icon: PiggyBank, types: INCOME_TYPES },
   { id: 'cash', label: 'Наличные', icon: Money, types: INCOME_TYPES },
@@ -191,6 +290,22 @@ export const CATEGORY_ICON_PRESETS: readonly CategoryIconPreset[] = [
 const presetsById = new Map(CATEGORY_ICON_PRESETS.map((preset) => [preset.id, preset]))
 const iconColorIds = new Set<AccountIconColorId>(
   ACCOUNT_ICON_COLORS.map((color) => color.id),
+)
+const CATEGORY_ICON_COLOR_CYCLE: readonly AccountIconColorId[] = [
+  'blue',
+  'purple',
+  'pink',
+  'red',
+  'orange',
+  'green',
+  'yellow',
+  'graphite',
+]
+const presetColorsById = new Map(
+  CATEGORY_ICON_PRESETS.map((preset, index) => [
+    preset.id,
+    CATEGORY_ICON_COLOR_CYCLE[index % CATEGORY_ICON_COLOR_CYCLE.length],
+  ]),
 )
 
 const legacyIconPresets: Record<string, string> = {
@@ -268,12 +383,21 @@ function presetValue(id: string): string {
   return `${PRESET_PREFIX}${id}`
 }
 
+function presetDefaultColor(id: string): AccountIconColorId {
+  return presetColorsById.get(id) ?? DEFAULT_FOREGROUND_COLOR
+}
+
 function serializeCategoryIcon(
   baseValue: string,
   foreground: AccountIconColorId,
   border: AccountIconBorderColorId,
 ): string {
-  if (foreground === DEFAULT_FOREGROUND_COLOR && border === DEFAULT_BORDER_COLOR) {
+  const presetId = baseValue.startsWith(PRESET_PREFIX)
+    ? baseValue.slice(PRESET_PREFIX.length)
+    : ''
+  const defaultColor = presetDefaultColor(presetId)
+
+  if (foreground === defaultColor && border === defaultColor) {
     return baseValue
   }
 
@@ -288,15 +412,6 @@ function resolveCategoryIcon(
     APPEARANCE_SEPARATOR,
     3,
   )
-  const foregroundCandidate = foregroundValue === 'teal' ? 'yellow' : foregroundValue
-  const borderCandidate = borderValue === 'teal' ? 'yellow' : borderValue
-  const foreground = iconColorIds.has(foregroundCandidate as AccountIconColorId)
-    ? foregroundCandidate as AccountIconColorId
-    : DEFAULT_FOREGROUND_COLOR
-  const border = borderCandidate === 'none' || iconColorIds.has(borderCandidate as AccountIconColorId)
-    ? borderCandidate as AccountIconBorderColorId
-    : DEFAULT_BORDER_COLOR
-
   const storedPresetId = baseValue.startsWith(PRESET_PREFIX)
     ? baseValue.slice(PRESET_PREFIX.length)
     : baseValue === '🎁' && type === 'income'
@@ -304,17 +419,17 @@ function resolveCategoryIcon(
       : legacyIconPresets[baseValue]
   const fallbackPresetId = type ? DEFAULT_CATEGORY_PRESETS[type] : 'other'
   const preset = presetsById.get(storedPresetId) ?? presetsById.get(fallbackPresetId)!
+  const defaultColor = presetDefaultColor(preset.id)
+  const foregroundCandidate = foregroundValue === 'teal' ? 'yellow' : foregroundValue
+  const borderCandidate = borderValue === 'teal' ? 'yellow' : borderValue
+  const foreground = iconColorIds.has(foregroundCandidate as AccountIconColorId)
+    ? foregroundCandidate as AccountIconColorId
+    : defaultColor
+  const border = borderCandidate === 'none' || iconColorIds.has(borderCandidate as AccountIconColorId)
+    ? borderCandidate as AccountIconBorderColorId
+    : defaultColor
 
   return { preset, foreground, border }
-}
-
-function replaceCategoryIconBase(value: string, presetId: string): string {
-  const resolved = resolveCategoryIcon(value)
-  return serializeCategoryIcon(
-    presetValue(presetId),
-    resolved.foreground,
-    resolved.border,
-  )
 }
 
 export function defaultCategoryIconValue(type: CategoryType): string {
@@ -403,7 +518,10 @@ export function CategoryIconPicker({
 
       <div className="account-icon-picker__grid">
         {availablePresets.map((preset) => {
-          const optionValue = replaceCategoryIconBase(value, preset.id)
+          const selected = resolved.preset.id === preset.id
+          const optionValue = selected
+            ? normalizeCategoryIconValue(value, type)
+            : presetValue(preset.id)
 
           return (
             <button
@@ -411,7 +529,7 @@ export function CategoryIconPicker({
               type="button"
               key={preset.id}
               aria-label={`Иконка «${preset.label}»`}
-              aria-pressed={resolved.preset.id === preset.id}
+              aria-pressed={selected}
               title={preset.label}
               onClick={() => onChange(optionValue)}
             >
