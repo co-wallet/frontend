@@ -6,3 +6,44 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-tap-highlight-color: transparent;
 }
+
+body.dark {
+  color-scheme: dark;
+}
+
+body.dark ion-alert,
+body.dark ion-action-sheet,
+body.dark ion-modal,
+body.dark ion-popover {
+  --background: var(--ion-card-background, #202238);
+  --color: var(--ion-text-color);
+}
+
+body.dark ion-alert .alert-wrapper,
+body.dark ion-action-sheet .action-sheet-group {
+  background: var(--ion-card-background, #202238);
+  color: var(--ion-text-color);
+}
+
+body.dark ion-alert .alert-title,
+body.dark ion-alert .alert-sub-title,
+body.dark ion-alert .alert-message,
+body.dark ion-alert .alert-radio-label,
+body.dark ion-alert .alert-checkbox-label,
+body.dark ion-action-sheet .action-sheet-title,
+body.dark ion-action-sheet .action-sheet-sub-title,
+body.dark ion-action-sheet .action-sheet-button {
+  color: var(--ion-text-color);
+}
+
+body.dark ion-alert .alert-radio-group,
+body.dark ion-alert .alert-checkbox-group,
+body.dark ion-alert .alert-button-group,
+body.dark ion-action-sheet .action-sheet-group {
+  border-color: var(--ion-border-color);
+}
+
+body.dark ion-popover::part(content) {
+  background: var(--ion-card-background, #202238);
+  color: var(--ion-text-color);
+}

@@ -1,25 +1,24 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
   IonList, IonItem, IonLabel, IonIcon,
-  IonItemSliding, IonItemOptions, IonItemOption,
   IonMenuButton, IonButtons, IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton,
   IonSegment, IonSegmentButton, IonFab, IonFabButton,
-  IonSelect, IonSelectOption,
 } from '@ionic/react';
 import {
-  folderOutline, addOutline, createOutline, trashOutline,
-  chevronForwardOutline, chevronDownOutline,
+  folderOpenOutline, folderOutline, addOutline,
 } from 'ionicons/icons';
 import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
+import { CategoryTree } from '../components/CategoryTree';
 import {
-  CategoryIcon,
   defaultCategoryIconValue,
   normalizeCategoryIconValue,
 } from '../components/CategoryIcon';
 import { CategoryIconSettings } from '../components/CategoryIconSettings';
+
+import './CategoriesPage.css';
 
 function emptyFormData(type: CategoryType) {
   return {
@@ -36,9 +35,9 @@ export default function CategoriesPage() {
   const [formData, setFormData] = useState<{ name: string; parentId: string; icon: string }>(
     emptyFormData('expense'),
   );
-  const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
+  const [parentName, setParentName] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<CategoryNode | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
-  const slidingRef = useRef<HTMLIonItemSlidingElement | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -61,10 +60,18 @@ export default function CategoriesPage() {
     setExpanded(ids);
   }, [categories]);
 
+  function invalidateCategoryConsumers() {
+    queryClient.invalidateQueries({ queryKey: ['categories'] });
+    queryClient.invalidateQueries({ queryKey: ['analytics'] });
+  }
+
   const createMutation = useMutation({
     mutationFn: (req: CreateCategoryReq) => categoriesApi.create(req),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories', activeTab] });
+    onSuccess: (_, variables) => {
+      invalidateCategoryConsumers();
+      if (variables.parentId) {
+        setExpanded((current) => new Set(current).add(variables.parentId!));
+      }
       resetForm();
     },
   });
@@ -73,31 +80,47 @@ export default function CategoriesPage() {
     mutationFn: ({ id, name, icon }: { id: string; name: string; icon: string }) =>
       categoriesApi.update(id, { name, icon: icon || null }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories', activeTab] });
+      invalidateCategoryConsumers();
       resetForm();
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => categoriesApi.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['categories', activeTab] }),
+    onSuccess: invalidateCategoryConsumers,
   });
 
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
+    setParentName(null);
     setFormData(emptyFormData(activeTab));
+  }
+
+  function handleCreate(parent?: CategoryNode) {
+    setEditingId(null);
+    setParentName(parent?.name ?? null);
+    setFormData({
+      ...emptyFormData(activeTab),
+      parentId: parent?.id ?? '',
+    });
+    setShowForm(true);
   }
 
   function handleEdit(cat: CategoryNode) {
     setEditingId(cat.id);
+    setParentName(null);
     setFormData({
       name: cat.name,
       parentId: cat.parentId ?? '',
       icon: normalizeCategoryIconValue(cat.icon, cat.type),
     });
     setShowForm(true);
-    if (slidingRef.current) slidingRef.current.close();
+  }
+
+  function handleDelete(category: CategoryNode) {
+    deleteMutation.reset();
+    setDeleteTarget(category);
   }
 
   function handleSubmit() {
@@ -126,64 +149,6 @@ export default function CategoriesPage() {
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
-    });
-  }
-
-  const flatList: CategoryNode[] = [];
-  function flatten(nodes: CategoryNode[]) {
-    for (const n of nodes) {
-      flatList.push(n);
-      if (n.children?.length) flatten(n.children);
-    }
-  }
-  flatten(categories);
-
-  function renderTree(nodes: CategoryNode[], depth: number) {
-    return nodes.map(node => {
-      const hasChildren = !!(node.children?.length);
-      const isExpanded = expanded.has(node.id);
-
-      return (
-        <div key={node.id}>
-          <IonItemSliding ref={(el) => { slidingRef.current = el }}>
-            <IonItem
-              style={{ '--padding-start': `${16 + depth * 20}px` } as React.CSSProperties}
-              onClick={hasChildren ? () => toggleExpand(node.id) : undefined}
-              button={hasChildren}
-            >
-              {hasChildren && (
-                <IonIcon
-                  icon={isExpanded ? chevronDownOutline : chevronForwardOutline}
-                  slot="start"
-                  style={{ fontSize: '14px', marginRight: '4px' }}
-                />
-              )}
-              {!hasChildren && (
-                <span slot="start" style={{ width: '18px' }} />
-              )}
-              <span slot="start" style={{ marginRight: '8px' }}>
-                <CategoryIcon value={node.icon} type={node.type} size={32} />
-              </span>
-              <IonLabel>{node.name}</IonLabel>
-            </IonItem>
-            <IonItemOptions side="end">
-              <IonItemOption color="primary" onClick={() => handleEdit(node)}>
-                <IonIcon slot="icon-only" icon={createOutline} />
-              </IonItemOption>
-              <IonItemOption
-                color="danger"
-                onClick={() => {
-                  setDeleteTarget({ id: node.id, name: node.name });
-                  if (slidingRef.current) slidingRef.current.close();
-                }}
-              >
-                <IonIcon slot="icon-only" icon={trashOutline} />
-              </IonItemOption>
-            </IonItemOptions>
-          </IonItemSliding>
-          {hasChildren && isExpanded && renderTree(node.children, depth + 1)}
-        </div>
-      );
     });
   }
 
@@ -220,12 +185,25 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <IonList>
-            {renderTree(categories, 0)}
+            <CategoryTree
+              nodes={categories}
+              expanded={expanded}
+              onToggle={toggleExpand}
+              onAddChild={handleCreate}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
           </IonList>
         )}
 
+        {deleteMutation.error && (
+          <IonText color="danger" className="category-page-error">
+            <p>Не удалось удалить категорию. Попробуйте ещё раз.</p>
+          </IonText>
+        )}
+
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => { setEditingId(null); setFormData(emptyFormData(activeTab)); setShowForm(true); }}>
+          <IonFabButton aria-label="Добавить корневую категорию" onClick={() => handleCreate()}>
             <IonIcon icon={addOutline} />
           </IonFabButton>
         </IonFab>
@@ -234,7 +212,13 @@ export default function CategoriesPage() {
         <IonModal isOpen={showForm} onDidDismiss={resetForm}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>{editingId ? 'Изменить категорию' : 'Новая категория'}</IonTitle>
+              <IonTitle>
+                {editingId
+                  ? 'Изменить категорию'
+                  : parentName
+                    ? 'Новая подкатегория'
+                    : 'Новая категория'}
+              </IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={resetForm}>Отмена</IonButton>
               </IonButtons>
@@ -250,22 +234,13 @@ export default function CategoriesPage() {
                   onIonInput={e => setFormData(f => ({ ...f, name: e.detail.value ?? '' }))}
                 />
               </IonItem>
-              {!editingId && (
-                <IonItem>
-                  <IonSelect
-                    label="Родительская категория"
-                    labelPlacement="floating"
-                    value={formData.parentId || undefined}
-                    onIonChange={e => setFormData(f => ({ ...f, parentId: e.detail.value ?? '' }))}
-                    placeholder="Без родительской"
-                  >
-                    <IonSelectOption value="">Без родительской</IonSelectOption>
-                    {flatList.map(c => (
-                      <IonSelectOption key={c.id} value={c.id}>
-                        {c.name}
-                      </IonSelectOption>
-                    ))}
-                  </IonSelect>
+              {!editingId && parentName && (
+                <IonItem className="category-parent-context">
+                  <IonIcon slot="start" icon={folderOpenOutline} color="primary" />
+                  <IonLabel>
+                    <p>Родительская категория</p>
+                    <h2>{parentName}</h2>
+                  </IonLabel>
                 </IonItem>
               )}
             </IonList>
@@ -299,10 +274,15 @@ export default function CategoriesPage() {
 
         {/* Delete Confirmation Alert */}
         <IonAlert
+          cssClass="app-alert"
           isOpen={!!deleteTarget}
           onDidDismiss={() => setDeleteTarget(null)}
           header="Удалить категорию?"
-          message={`Удалить категорию "${deleteTarget?.name}"?`}
+          message={
+            deleteTarget?.children?.length
+              ? `Категория "${deleteTarget.name}" будет удалена. Её подкатегории останутся и станут корневыми.`
+              : `Удалить категорию "${deleteTarget?.name}"?`
+          }
           buttons={[
             { text: 'Отмена', role: 'cancel' },
             { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },
