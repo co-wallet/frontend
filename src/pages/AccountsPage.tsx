@@ -43,10 +43,10 @@ import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
 import { shouldShowPersonalTypeWarning } from '@/lib/accountType'
 import {
   AccountIcon,
-  AccountIconPicker,
   DEFAULT_ACCOUNT_ICON,
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
+import { AccountIconSettings } from '@/components/AccountIconSettings'
 
 function fmtCurrency(amount: number, currency: string): string {
   try {
@@ -161,7 +161,11 @@ function AccountFormModal({
             />
           </IonItem>
 
-          <AccountIconPicker value={icon} onChange={setIcon} />
+          <AccountIconSettings
+            value={icon}
+            onChange={setIcon}
+            sessionKey={isOpen ? 'open' : 'closed'}
+          />
 
           {(!isEditing || canChangeType) && (
             <IonItem>

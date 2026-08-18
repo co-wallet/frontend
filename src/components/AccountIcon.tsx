@@ -454,7 +454,6 @@ export function AccountIconPicker({
       <div className="account-icon-appearance">
         <div className="account-icon-appearance__header">
           <h3>Оформление</h3>
-          <p>Цвет иконки и обводки настраиваются независимо</p>
         </div>
 
         <AccountIconColorGroup
