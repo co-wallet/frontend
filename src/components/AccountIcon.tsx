@@ -105,7 +105,7 @@ const legacyIconPresets: Record<string, string> = {
   '✈️': 'travel',
 }
 
-interface AccountIconAppearance {
+export interface AccountIconAppearance {
   foreground: AccountIconColorId
   border: AccountIconBorderColorId
 }
@@ -249,7 +249,7 @@ function rectangularCustomLabelFontSize(label: string, size: number): number {
   return Math.round(size * (label.length <= 5 ? 0.4 : 0.3))
 }
 
-type AccountIconShape = 'square' | 'rectangle'
+export type AccountIconShape = 'square' | 'rectangle'
 
 interface AccountIconCSSProperties extends CSSProperties {
   '--account-icon-foreground': string
@@ -258,8 +258,8 @@ interface AccountIconCSSProperties extends CSSProperties {
   '--account-icon-border-radius': string
 }
 
-function accountIconStyle(
-  resolved: ResolvedAccountIcon,
+export function accountIconStyle(
+  resolved: AccountIconAppearance,
   size: number,
   shape: AccountIconShape,
 ): AccountIconCSSProperties {
@@ -394,6 +394,39 @@ function AccountIconColorGroup({
   )
 }
 
+export function IconAppearanceControls({
+  foreground,
+  border,
+  onForegroundChange,
+  onBorderChange,
+}: {
+  foreground: AccountIconColorId
+  border: AccountIconBorderColorId
+  onForegroundChange: (foreground: AccountIconColorId) => void
+  onBorderChange: (border: AccountIconBorderColorId) => void
+}) {
+  return (
+    <div className="account-icon-appearance">
+      <div className="account-icon-appearance__header">
+        <h3>Оформление</h3>
+      </div>
+
+      <AccountIconColorGroup
+        legend="Цвет иконки"
+        kind="foreground"
+        value={foreground}
+        onChange={(value) => onForegroundChange(value as AccountIconColorId)}
+      />
+      <AccountIconColorGroup
+        legend="Цвет обводки"
+        kind="border"
+        value={border}
+        onChange={onBorderChange}
+      />
+    </div>
+  )
+}
+
 export function AccountIconPicker({
   value,
   onChange,
@@ -474,27 +507,15 @@ export function AccountIconPicker({
         </div>
       )}
 
-      <div className="account-icon-appearance">
-        <div className="account-icon-appearance__header">
-          <h3>Оформление</h3>
-        </div>
-
-        <AccountIconColorGroup
-          legend="Цвет иконки"
-          kind="foreground"
-          value={resolved.foreground}
-          onChange={(foreground) => onChange(updateAccountIconAppearance(
-            value,
-            { foreground: foreground as AccountIconColorId },
-          ))}
-        />
-        <AccountIconColorGroup
-          legend="Цвет обводки"
-          kind="border"
-          value={resolved.border}
-          onChange={(border) => onChange(updateAccountIconAppearance(value, { border }))}
-        />
-      </div>
+      <IconAppearanceControls
+        foreground={resolved.foreground}
+        border={resolved.border}
+        onForegroundChange={(foreground) => onChange(updateAccountIconAppearance(
+          value,
+          { foreground },
+        ))}
+        onBorderChange={(border) => onChange(updateAccountIconAppearance(value, { border }))}
+      />
     </section>
   )
 }

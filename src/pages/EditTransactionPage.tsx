@@ -377,7 +377,7 @@ export function EditTransactionPage() {
                 >
                   {flatCategories.map((c) => (
                     <IonSelectOption key={c.id} value={c.id}>
-                      {c.icon ? `${c.icon} ` : ''}{c.name}
+                      {c.name}
                     </IonSelectOption>
                   ))}
                 </IonSelect>

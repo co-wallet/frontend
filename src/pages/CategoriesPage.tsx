@@ -14,32 +14,28 @@ import {
   chevronForwardOutline, chevronDownOutline,
 } from 'ionicons/icons';
 import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
+import {
+  CategoryIcon,
+  defaultCategoryIconValue,
+  normalizeCategoryIconValue,
+} from '../components/CategoryIcon';
+import { CategoryIconSettings } from '../components/CategoryIconSettings';
 
-const EXPENSE_ICONS = [
-  '🛒', '🍔', '🍕', '☕', '🍺', '🍽️',
-  '🚗', '⛽', '🚌', '✈️', '🚕', '🚂',
-  '🏠', '💡', '📱', '💻', '🛠️', '🧹',
-  '👗', '👟', '💄', '🛍️', '👒', '⌚',
-  '💊', '🏥', '💉', '🧴', '🦷', '👓',
-  '🎬', '🎮', '🎵', '📚', '🏋️', '⚽',
-  '🐾', '🌿', '🎁', '✂️', '🧺', '📦',
-];
-
-const INCOME_ICONS = [
-  '💼', '💰', '💵', '💳', '📈', '🏦',
-  '🤝', '🎓', '👔', '🏢', '💹', '🪙',
-  '🏡', '🚀', '🎯', '🎪', '🎁', '🏆',
-];
+function emptyFormData(type: CategoryType) {
+  return {
+    name: '',
+    parentId: '',
+    icon: defaultCategoryIconValue(type),
+  };
+}
 
 export default function CategoriesPage() {
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<{ name: string; parentId: string; icon: string }>({
-    name: '',
-    parentId: '',
-    icon: '',
-  });
+  const [formData, setFormData] = useState<{ name: string; parentId: string; icon: string }>(
+    emptyFormData('expense'),
+  );
   const [deleteTarget, setDeleteTarget] = useState<{ id: string; name: string } | null>(null);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   const slidingRef = useRef<HTMLIonItemSlidingElement | null>(null);
@@ -90,12 +86,16 @@ export default function CategoriesPage() {
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
-    setFormData({ name: '', parentId: '', icon: '' });
+    setFormData(emptyFormData(activeTab));
   }
 
   function handleEdit(cat: CategoryNode) {
     setEditingId(cat.id);
-    setFormData({ name: cat.name, parentId: cat.parentId ?? '', icon: cat.icon ?? '' });
+    setFormData({
+      name: cat.name,
+      parentId: cat.parentId ?? '',
+      icon: normalizeCategoryIconValue(cat.icon, cat.type),
+    });
     setShowForm(true);
     if (slidingRef.current) slidingRef.current.close();
   }
@@ -161,9 +161,9 @@ export default function CategoriesPage() {
               {!hasChildren && (
                 <span slot="start" style={{ width: '18px' }} />
               )}
-              {node.icon && (
-                <span slot="start" style={{ fontSize: '20px', marginRight: '8px' }}>{node.icon}</span>
-              )}
+              <span slot="start" style={{ marginRight: '8px' }}>
+                <CategoryIcon value={node.icon} type={node.type} size={32} />
+              </span>
               <IonLabel>{node.name}</IonLabel>
             </IonItem>
             <IonItemOptions side="end">
@@ -225,7 +225,7 @@ export default function CategoriesPage() {
         )}
 
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => { setEditingId(null); setFormData({ name: '', parentId: '', icon: '' }); setShowForm(true); }}>
+          <IonFabButton onClick={() => { setEditingId(null); setFormData(emptyFormData(activeTab)); setShowForm(true); }}>
             <IonIcon icon={addOutline} />
           </IonFabButton>
         </IonFab>
@@ -262,7 +262,7 @@ export default function CategoriesPage() {
                     <IonSelectOption value="">Без родительской</IonSelectOption>
                     {flatList.map(c => (
                       <IonSelectOption key={c.id} value={c.id}>
-                        {c.icon ? `${c.icon} ` : ''}{c.name}
+                        {c.name}
                       </IonSelectOption>
                     ))}
                   </IonSelect>
@@ -270,32 +270,12 @@ export default function CategoriesPage() {
               )}
             </IonList>
 
-            <div style={{ padding: '16px 0' }}>
-              <IonText color="medium"><p style={{ marginBottom: '8px', fontSize: '14px' }}>Иконка</p></IonText>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                {(activeTab === 'expense' ? EXPENSE_ICONS : INCOME_ICONS).map(icon => (
-                  <button
-                    key={icon}
-                    type="button"
-                    onClick={() => setFormData(f => ({ ...f, icon: f.icon === icon ? '' : icon }))}
-                    style={{
-                      width: '40px',
-                      height: '40px',
-                      borderRadius: '8px',
-                      border: formData.icon === icon ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-border-color, #e0e0e0)',
-                      background: formData.icon === icon ? 'var(--ion-color-primary-tint)' : 'transparent',
-                      fontSize: '20px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    {icon}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <CategoryIconSettings
+              value={formData.icon}
+              type={activeTab}
+              sessionKey={editingId ?? `new-${activeTab}`}
+              onChange={(icon) => setFormData((current) => ({ ...current, icon }))}
+            />
 
             {(createMutation.error || updateMutation.error) && (
               <IonText color="danger">

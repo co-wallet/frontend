@@ -24,6 +24,7 @@ import { transactionsApi, type Transaction, type TransactionFilter } from '@/api
 import { accountsApi, type Account } from '@/api/accounts'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { FilterSheet } from '@/components/FilterSheet'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange, periodLabel } from '@/store/periodStore'
 import { EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
@@ -401,8 +402,13 @@ export function TransactionsPage() {
                               background: chartColors[i % chartColors.length],
                             }}
                           />
+                          <CategoryIcon
+                            value={s.icon}
+                            type={chartMode === 'expenses' ? 'expense' : 'income'}
+                            size={20}
+                          />
                           <span style={{ color: chartTheme.legendColor, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {s.icon ? `${s.icon} ` : ''}{s.categoryName}
+                            {s.categoryName}
                           </span>
                         </div>
                         <span style={{ fontWeight: 500 }}>{formatAmt(s.amount)} {defaultCurrency}</span>
