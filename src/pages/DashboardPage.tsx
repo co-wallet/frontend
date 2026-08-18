@@ -50,6 +50,7 @@ import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
+import { AccountIcon } from '@/components/AccountIcon'
 
 type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'balance' | 'all' | 'custom'
@@ -66,6 +67,7 @@ interface PieEntry {
   name: string
   amount: number
   icon?: string
+  iconType?: 'account' | 'category'
 }
 
 const LEGEND_PAGE_SIZE = 5
@@ -140,8 +142,11 @@ function ChartBlock({
                     background: isNegative ? '#f87171' : colors[i % colors.length],
                   }}
                 />
+                {s.iconType === 'account' && (
+                  <AccountIcon value={s.icon} size={20} framed={false} />
+                )}
                 <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
-                  {s.icon ? `${s.icon} ` : ''}{s.name}
+                  {s.iconType !== 'account' && s.icon ? `${s.icon} ` : ''}{s.name}
                 </span>
               </div>
               <span style={{ fontWeight: 500, color: isNegative ? 'var(--ion-color-danger)' : undefined }}>
@@ -254,7 +259,12 @@ export function DashboardPage() {
 
   const balancePieData: PieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
-    .map((a) => ({ name: a.name, icon: a.icon ?? undefined, amount: a.balance!.display }))
+    .map((a) => ({
+      name: a.name,
+      icon: a.icon ?? undefined,
+      iconType: 'account' as const,
+      amount: a.balance!.display,
+    }))
 
   const expensePieData: PieEntry[] = byExpense
     .filter((s) => s.amount > 0)
@@ -430,7 +440,8 @@ export function DashboardPage() {
                             prev.includes(a.id) ? prev.filter((id) => id !== a.id) : [...prev, a.id]
                           )}
                         >
-                          <IonLabel>{a.icon ? `${a.icon} ` : ''}{a.name}</IonLabel>
+                          <AccountIcon value={a.icon} size={20} framed={false} />
+                          <IonLabel>{a.name}</IonLabel>
                         </IonChip>
                       )
                     })}

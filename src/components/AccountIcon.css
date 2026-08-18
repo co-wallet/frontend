@@ -1,0 +1,272 @@
+.account-icon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: var(--account-icon-foreground, var(--ion-color-primary));
+  background: rgba(var(--account-icon-foreground-rgb, var(--ion-color-primary-rgb)), 0.1);
+  border: 1.5px solid var(--account-icon-border, var(--ion-color-primary));
+  border-radius: 12px;
+  line-height: 1;
+}
+
+.account-icon--unframed {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+}
+
+.account-icon--custom {
+  padding-inline: 3px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  white-space: nowrap;
+}
+
+.account-icon-picker {
+  padding: 16px;
+  border-bottom: 1px solid var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.12));
+}
+
+.account-icon-picker__header {
+  margin-bottom: 12px;
+}
+
+.account-icon-picker__header h2 {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.account-icon-picker__header p {
+  margin: 3px 0 0;
+  color: var(--ion-color-medium-shade);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.account-icon-picker__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(70px, 1fr));
+  gap: 8px;
+}
+
+.account-icon-option {
+  min-width: 0;
+  min-height: 76px;
+  padding: 7px 4px 6px;
+  appearance: none;
+  color: var(--ion-text-color);
+  background: transparent;
+  border: 1px solid var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.14));
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 120ms ease;
+}
+
+.account-icon-option .account-icon {
+  margin-inline: auto;
+}
+
+.account-icon-option > span:last-child {
+  display: flex;
+  min-height: 24px;
+  min-width: 0;
+  margin-top: 3px;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-icon-option[aria-pressed='true'] {
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  border-color: var(--ion-color-primary);
+  box-shadow: inset 0 0 0 1px var(--ion-color-primary);
+  color: var(--ion-color-primary-shade);
+}
+
+.account-icon-option:active {
+  opacity: 0.7;
+}
+
+.account-icon-option:focus-visible {
+  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+.account-icon-picker__custom {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(var(--ion-color-primary-rgb), 0.06);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.16);
+  border-radius: 12px;
+}
+
+.account-icon-picker__custom-field ion-input {
+  min-height: 64px;
+  --background: var(--ion-background-color);
+  --border-color: var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.18));
+  --border-color-focused: var(--ion-color-primary);
+  --border-radius: 10px;
+  --highlight-color-focused: var(--ion-color-primary);
+}
+
+.account-icon-picker__custom-field ion-input::part(helper-text) {
+  color: var(--ion-color-medium);
+  opacity: 1;
+}
+
+.account-icon-appearance {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.12));
+}
+
+.account-icon-appearance__header {
+  margin-bottom: 12px;
+}
+
+.account-icon-appearance__header h3 {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.account-icon-appearance__header p {
+  margin: 3px 0 0;
+  color: var(--ion-color-medium-shade);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.account-icon-color-group {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.account-icon-color-group + .account-icon-color-group {
+  margin-top: 14px;
+}
+
+.account-icon-color-group legend {
+  margin-bottom: 7px;
+  padding: 0;
+  color: var(--ion-text-color);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.account-icon-color-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.account-icon-color-option {
+  position: relative;
+  display: flex;
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 3px 5px;
+  appearance: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--ion-text-color);
+  background: transparent;
+  border: 1px solid var(--ion-border-color, rgba(var(--ion-text-color-rgb), 0.14));
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+  transition: background-color 180ms ease, border-color 180ms ease, box-shadow 180ms ease, opacity 120ms ease;
+}
+
+.account-icon-color-option > span:last-of-type {
+  display: block;
+  max-width: 100%;
+  margin-top: 3px;
+  overflow: hidden;
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-icon-color-option[aria-checked='true'] {
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
+  border-color: var(--ion-color-primary);
+  box-shadow: inset 0 0 0 1px var(--ion-color-primary);
+}
+
+.account-icon-color-option:active {
+  opacity: 0.7;
+}
+
+.account-icon-color-option:focus-visible {
+  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+.account-icon-color-swatch {
+  position: relative;
+  display: block;
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  background: var(--account-icon-swatch);
+  border: 1px solid rgba(var(--ion-text-color-rgb), 0.16);
+  border-radius: 50%;
+}
+
+.account-icon-color-swatch--border {
+  background: transparent;
+  border: 3px solid var(--account-icon-swatch);
+}
+
+.account-icon-color-swatch--none {
+  background: transparent;
+  border: 1px solid var(--ion-color-medium);
+}
+
+.account-icon-color-swatch--none::after {
+  position: absolute;
+  top: 8px;
+  left: 1px;
+  width: 16px;
+  height: 2px;
+  background: var(--ion-color-medium);
+  content: '';
+  transform: rotate(-45deg);
+}
+
+.account-icon-color-check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: var(--ion-color-primary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-icon-option,
+  .account-icon-color-option {
+    transition: none;
+  }
+}

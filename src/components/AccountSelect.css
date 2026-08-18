@@ -1,0 +1,52 @@
+.account-select-trigger {
+  --min-height: 72px;
+}
+
+.account-select-icon {
+  display: inline-flex;
+  margin-inline-end: 12px;
+}
+
+.account-select-trigger__label p {
+  margin-bottom: 3px;
+  color: var(--ion-color-medium-shade);
+  font-size: 12px;
+}
+
+.account-select-trigger__label h2 {
+  color: var(--ion-text-color);
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.account-select-modal {
+  --border-radius: 18px 18px 0 0;
+}
+
+.account-select-modal__list {
+  margin-top: 12px;
+}
+
+.account-select-option {
+  --min-height: 64px;
+}
+
+.account-select-option[aria-current='true'] {
+  --background: rgba(var(--ion-color-primary-rgb), 0.08);
+}
+
+.account-select-option ion-label h2 {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.account-select-option ion-label p {
+  margin-top: 3px;
+  font-size: 13px;
+}
+
+.account-select-modal__empty {
+  margin: 40px 16px;
+  color: var(--ion-color-medium-shade);
+  text-align: center;
+}

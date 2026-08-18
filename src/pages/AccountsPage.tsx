@@ -39,8 +39,12 @@ import { accountsApi, type CreateAccountDto, type Account } from '@/api/accounts
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
-
-const ICONS = ['💳', '💵', '🏦', '💰', '📈', '🏠', '🚗', '✈️']
+import {
+  AccountIcon,
+  AccountIconPicker,
+  DEFAULT_ACCOUNT_ICON,
+  normalizeAccountIconValue,
+} from '@/components/AccountIcon'
 
 function fmtCurrency(amount: number, currency: string): string {
   try {
@@ -76,7 +80,7 @@ function AccountFormModal({
   const [name, setName] = useState(initial?.name ?? '')
   const [type, setType] = useState<'personal' | 'shared'>(initial?.type ?? 'personal')
   const [currency, setCurrency] = useState(initial?.currency ?? defaultCurrency)
-  const [icon, setIcon] = useState(initial?.icon ?? '💳')
+  const [icon, setIcon] = useState(normalizeAccountIconValue(initial?.icon))
   const [includeInBalance, setIncludeInBalance] = useState(initial?.includeInBalance ?? true)
   const [initialBalance, setInitialBalance] = useState(
     initial?.initialBalance ? String(initial.initialBalance) : ''
@@ -98,7 +102,7 @@ function AccountFormModal({
       name,
       type,
       currency,
-      icon,
+      icon: normalizeAccountIconValue(icon),
       includeInBalance,
       initialBalance: parseDecimal(initialBalance),
       initialBalanceDate,
@@ -109,7 +113,7 @@ function AccountFormModal({
     setName(initial?.name ?? '')
     setType(initial?.type ?? 'personal')
     setCurrency(initial?.currency ?? defaultCurrency)
-    setIcon(initial?.icon ?? '💳')
+    setIcon(normalizeAccountIconValue(initial?.icon))
     setIncludeInBalance(initial?.includeInBalance ?? true)
     setInitialBalance(initial?.initialBalance ? String(initial.initialBalance) : '')
     setInitialBalanceDate(
@@ -147,32 +151,7 @@ function AccountFormModal({
             />
           </IonItem>
 
-          <IonItem>
-            <IonLabel>Иконка</IonLabel>
-            <div slot="end" style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', padding: '8px 0' }}>
-              {ICONS.map((i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => setIcon(i)}
-                  style={{
-                    width: '36px',
-                    height: '36px',
-                    fontSize: '18px',
-                    border: icon === i ? '2px solid var(--ion-color-primary)' : '1px solid var(--ion-border-color, #ccc)',
-                    borderRadius: '8px',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  {i}
-                </button>
-              ))}
-            </div>
-          </IonItem>
+          <AccountIconPicker value={icon} onChange={setIcon} />
 
           {!isEditing && (
             <IonItem>
@@ -330,8 +309,8 @@ export function AccountsPage() {
                     routerLink={`/accounts/${account.id}`}
                     detail={false}
                   >
-                    <span slot="start" style={{ fontSize: '24px' }}>
-                      {account.icon ?? '💳'}
+                    <span slot="start">
+                      <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
                     </span>
                     <IonLabel>
                       <h2>{account.name}</h2>
