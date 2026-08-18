@@ -34,6 +34,10 @@
   min-height: 72px;
 }
 
+.account-form-date-input::part(native) {
+  text-align: right;
+}
+
 .account-form-readonly-value,
 .account-form-input-suffix {
   color: var(--ion-color-medium-shade);

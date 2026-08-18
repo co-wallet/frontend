@@ -292,8 +292,9 @@ function AccountFormModal({
 
           <IonItem className="account-form-row account-form-row--compact">
             <IonInput
+              className="account-form-date-input"
               label="Дата баланса"
-              labelPlacement="fixed"
+              labelPlacement="start"
               type="date"
               value={initialBalanceDate}
               onIonInput={(e) => setInitialBalanceDate(e.detail.value ?? '')}
