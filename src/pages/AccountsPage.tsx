@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -46,7 +46,12 @@ import {
 } from '@/api/accounts'
 import { currenciesApi } from '@/api/currencies'
 import { useAuthStore } from '@/store/authStore'
-import { parseDecimal, filterDecimalInput } from '@/lib/decimal'
+import {
+  filterSignedDecimalInput,
+  isValidDecimal,
+  parseDecimal,
+  toggleDecimalSign,
+} from '@/lib/decimal'
 import { shouldShowPersonalAccessModeWarning } from '@/lib/accountAccessMode'
 import { accountKindShortLabel } from '@/lib/accountKind'
 import {
@@ -121,6 +126,7 @@ function AccountFormModal({
   const [icon, setIcon] = useState(initialIcon)
   const [initialBalance, setInitialBalance] = useState(initialBalanceValue)
   const [initialBalanceDate, setInitialBalanceDate] = useState(initialBalanceDateValue)
+  const initialBalanceInputRef = useRef<HTMLIonInputElement>(null)
 
   const initialFormState: AccountFormState = {
     name: initialName,
@@ -181,7 +187,12 @@ function AccountFormModal({
             <IonButton
               strong
               onClick={handleSubmit}
-              disabled={loading || !name.trim() || (isEditing && !isDirty)}
+              disabled={
+                loading
+                || !name.trim()
+                || !isValidDecimal(initialBalance)
+                || (isEditing && !isDirty)
+              }
             >
               {loading ? <IonSpinner name="dots" /> : 'Сохранить'}
             </IonButton>
@@ -293,14 +304,30 @@ function AccountFormModal({
 
           <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
+              ref={initialBalanceInputRef}
               label="Стартовый баланс"
               labelPlacement="floating"
               type="text"
               inputMode="decimal"
               value={initialBalance}
-              onIonInput={(e) => setInitialBalance(filterDecimalInput(e.detail.value ?? ''))}
+              onIonInput={(e) => setInitialBalance(
+                filterSignedDecimalInput(e.detail.value ?? ''),
+              )}
               placeholder="0"
             >
+              <IonButton
+                slot="start"
+                type="button"
+                fill="clear"
+                className="account-form-sign-button"
+                aria-label="Изменить знак стартового баланса"
+                onClick={() => {
+                  setInitialBalance((value) => toggleDecimalSign(value))
+                  requestAnimationFrame(() => initialBalanceInputRef.current?.setFocus())
+                }}
+              >
+                <span aria-hidden="true">±</span>
+              </IonButton>
               <IonNote slot="end" className="account-form-input-suffix">{currency}</IonNote>
             </IonInput>
           </IonItem>

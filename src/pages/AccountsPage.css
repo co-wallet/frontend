@@ -38,6 +38,15 @@
   text-align: right;
 }
 
+.account-form-sign-button {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  font-size: 20px;
+  --padding-start: 8px;
+  --padding-end: 8px;
+}
+
 .account-form-readonly-value,
 .account-form-input-suffix {
   color: var(--ion-color-medium-shade);
