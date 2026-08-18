@@ -1,11 +1,11 @@
-import type { AccountType } from '@/api/accounts'
+import type { AccountAccessMode, AccountKind } from '@/api/accounts'
 
 export interface AccountFormState {
   name: string
-  type: AccountType
+  accessMode: AccountAccessMode
+  kind: AccountKind
   currency: string
   icon: string
-  includeInBalance: boolean
   initialBalance: string
   initialBalanceDate: string
 }
@@ -19,10 +19,10 @@ export function hasAccountFormChanges(
   current: AccountFormState,
 ): boolean {
   return initial.name !== current.name
-    || initial.type !== current.type
+    || initial.accessMode !== current.accessMode
+    || initial.kind !== current.kind
     || initial.currency !== current.currency
     || initial.icon !== current.icon
-    || initial.includeInBalance !== current.includeInBalance
     || initial.initialBalance !== current.initialBalance
     || initial.initialBalanceDate !== current.initialBalanceDate
 }

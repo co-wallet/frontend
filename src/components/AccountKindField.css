@@ -1,4 +1,4 @@
-.balance-inclusion-help-trigger {
+.account-kind-help__trigger {
   display: inline-flex;
   min-width: 0;
   min-height: 44px;
@@ -12,57 +12,72 @@
   border: 0;
   cursor: pointer;
   font: inherit;
-  line-height: 1.35;
   text-align: start;
   touch-action: manipulation;
   transition: opacity 150ms ease;
 }
 
-.balance-inclusion-help-trigger span {
-  min-width: 0;
-}
-
-.balance-inclusion-help-trigger ion-icon {
+.account-kind-help__trigger ion-icon {
   width: 18px;
   height: 18px;
   flex: 0 0 auto;
   color: var(--ion-color-medium-shade);
 }
 
-.balance-inclusion-help-trigger:active {
+.account-kind-help__trigger:active {
   opacity: 0.65;
 }
 
-.balance-inclusion-help-trigger:focus-visible {
+.account-kind-help__trigger:focus-visible {
   border-radius: 6px;
   outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
   outline-offset: 2px;
 }
 
-.balance-inclusion-popover {
-  --width: min(300px, calc(100vw - 32px));
+.account-kind-field__select {
+  max-width: 58%;
 }
 
-.balance-inclusion-popover__content {
+.account-kind-help {
+  --width: min(320px, calc(100vw - 32px));
+}
+
+.account-kind-help__content {
   padding: 16px;
   color: var(--ion-text-color);
 }
 
-.balance-inclusion-popover__content h2 {
-  margin: 0 0 8px;
+.account-kind-help__content h2 {
+  margin: 0 0 12px;
   font-size: 16px;
   font-weight: 600;
   line-height: 1.35;
 }
 
-.balance-inclusion-popover__content p {
+.account-kind-help__content dl,
+.account-kind-help__content dd {
   margin: 0;
+}
+
+.account-kind-help__content dl > div + div {
+  margin-top: 12px;
+}
+
+.account-kind-help__content dt {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.account-kind-help__content dd {
+  margin-top: 2px;
+  color: var(--ion-color-medium-shade);
   font-size: 14px;
   line-height: 1.5;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .balance-inclusion-help-trigger {
+  .account-kind-help__trigger {
     transition: none;
   }
 }
