@@ -12,6 +12,7 @@ import {
   IonIcon,
   IonSegment,
   IonSegmentButton,
+  IonLabel,
   IonNote,
   IonFooter,
 } from '@ionic/react'
@@ -184,15 +185,22 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             <section className="filter-sheet-section" aria-labelledby="filter-tags-title">
               <div className="filter-sheet-section__heading">
                 <IonNote id="filter-tags-title" className="filter-sheet-section__title">Теги</IonNote>
-                <IonSegment
-                  value={tagMode}
-                  onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
-                  className="filter-sheet-tag-mode"
-                  aria-label="Режим объединения тегов"
-                >
-                  <IonSegmentButton value="or">ИЛИ</IonSegmentButton>
-                  <IonSegmentButton value="and">И</IonSegmentButton>
-                </IonSegment>
+                <div className="filter-sheet-tag-mode-control">
+                  <span className="filter-sheet-tag-mode__label">Совпадение</span>
+                  <IonSegment
+                    value={tagMode}
+                    onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
+                    className="filter-sheet-tag-mode"
+                    aria-label="Совпадение выбранных тегов"
+                  >
+                    <IonSegmentButton value="or" aria-label="Любой выбранный тег">
+                      <IonLabel>Любой</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="and" aria-label="Все выбранные теги">
+                      <IonLabel>Все</IonLabel>
+                    </IonSegmentButton>
+                  </IonSegment>
+                </div>
               </div>
               <div className="filter-sheet-options">
                 {tags.map((t) => {
