@@ -1,4 +1,4 @@
-import { useHistory } from 'react-router-dom'
+import { useHistory, useLocation } from 'react-router-dom'
 import {
   IonMenu,
   IonHeader,
@@ -29,6 +29,9 @@ import {
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { useThemeStore } from '@/store/themeStore'
+import { isMenuPathActive } from '@/lib/navigation'
+
+import './AppMenu.css'
 
 const mainItems = [
   { label: 'Главная', icon: homeOutline, path: '/dashboard' },
@@ -39,7 +42,7 @@ const mainItems = [
 ]
 
 const adminItems = [
-  { label: 'Админ-панель', icon: shieldCheckmarkOutline, path: '/admin' },
+  { label: 'Админ-панель', icon: shieldCheckmarkOutline, path: '/admin', exact: true },
   { label: 'Пользователи', icon: peopleOutline, path: '/admin/users' },
   { label: 'Валюты', icon: cashOutline, path: '/admin/currencies' },
   { label: 'Приглашения', icon: mailOutline, path: '/admin/invites' },
@@ -55,6 +58,7 @@ export function AppMenu() {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const history = useHistory()
+  const location = useLocation()
   const themeMode = useThemeStore((s) => s.mode)
   const setThemeMode = useThemeStore((s) => s.setMode)
 
@@ -80,14 +84,23 @@ export function AppMenu() {
       </IonHeader>
       <IonContent>
         <IonList lines="none">
-          {mainItems.map((item) => (
-            <IonMenuToggle key={item.path} autoHide={false}>
-              <IonItem routerLink={item.path} routerDirection="root" detail={false}>
-                <IonIcon slot="start" icon={item.icon} />
-                <IonLabel>{item.label}</IonLabel>
-              </IonItem>
-            </IonMenuToggle>
-          ))}
+          {mainItems.map((item) => {
+            const active = isMenuPathActive(location.pathname, item.path)
+            return (
+              <IonMenuToggle key={item.path} autoHide={false}>
+                <IonItem
+                  routerLink={item.path}
+                  routerDirection="root"
+                  detail={false}
+                  className={`app-menu-item${active ? ' app-menu-item--active' : ''}`}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <IonIcon slot="start" icon={item.icon} />
+                  <IonLabel>{item.label}</IonLabel>
+                </IonItem>
+              </IonMenuToggle>
+            )
+          })}
         </IonList>
 
         {user?.isAdmin && (
@@ -96,14 +109,23 @@ export function AppMenu() {
               <IonLabel>Администрирование</IonLabel>
             </IonItemDivider>
             <IonList lines="none">
-              {adminItems.map((item) => (
-                <IonMenuToggle key={item.path} autoHide={false}>
-                  <IonItem routerLink={item.path} routerDirection="root" detail={false}>
-                    <IonIcon slot="start" icon={item.icon} />
-                    <IonLabel>{item.label}</IonLabel>
-                  </IonItem>
-                </IonMenuToggle>
-              ))}
+              {adminItems.map((item) => {
+                const active = isMenuPathActive(location.pathname, item.path, item.exact)
+                return (
+                  <IonMenuToggle key={item.path} autoHide={false}>
+                    <IonItem
+                      routerLink={item.path}
+                      routerDirection="root"
+                      detail={false}
+                      className={`app-menu-item${active ? ' app-menu-item--active' : ''}`}
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <IonIcon slot="start" icon={item.icon} />
+                      <IonLabel>{item.label}</IonLabel>
+                    </IonItem>
+                  </IonMenuToggle>
+                )
+              })}
             </IonList>
           </>
         )}
