@@ -14,7 +14,6 @@ import {
   IonSegmentButton,
   IonLabel,
   IonNote,
-  IonFooter,
 } from '@ionic/react'
 import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
@@ -226,20 +225,16 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
               </div>
             </section>
           )}
-        </IonContent>
 
-        <IonFooter>
-          <IonToolbar>
-            <div className="filter-sheet-actions">
-              <IonButton expand="block" fill="outline" onClick={reset}>
-                Сбросить
-              </IonButton>
-              <IonButton expand="block" onClick={apply}>
-                Применить
-              </IonButton>
-            </div>
-          </IonToolbar>
-        </IonFooter>
+          <div slot="fixed" className="filter-sheet-actions">
+            <IonButton expand="block" fill="outline" onClick={reset}>
+              Сбросить
+            </IonButton>
+            <IonButton expand="block" onClick={apply}>
+              Применить
+            </IonButton>
+          </div>
+        </IonContent>
       </IonModal>
     </>
   )
