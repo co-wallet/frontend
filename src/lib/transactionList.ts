@@ -111,7 +111,7 @@ export function formatPeriodControlLabel(
 ): string {
   const from = new Date(`${dateFrom}T12:00:00`)
 
-  if (period === 'day') return formatNumericDate(dateFrom)
+  if (period === 'day') return formatCompactPeriodDate(dateFrom)
   if (period === 'month') {
     const label = from
       .toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
@@ -123,8 +123,7 @@ export function formatPeriodControlLabel(
   }
   if (period === 'year') return String(from.getFullYear())
 
-  const crossesYear = dateFrom.slice(0, 4) !== dateTo.slice(0, 4)
-  return `${formatNumericDate(dateFrom, crossesYear)}–${formatNumericDate(dateTo)}`
+  return `${formatCompactPeriodDate(dateFrom)} - ${formatCompactPeriodDate(dateTo)}`
 }
 
 export function groupTransactionsByDate(
@@ -195,7 +194,7 @@ function localDateKey(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`
 }
 
-function formatNumericDate(date: string, includeYear = true): string {
+function formatCompactPeriodDate(date: string): string {
   const [year, month, day] = date.split('-')
-  return includeYear ? `${day}.${month}.${year}` : `${day}.${month}`
+  return `${day}.${month}.${year.slice(-2)}`
 }

@@ -108,12 +108,12 @@ describe('transaction list helpers', () => {
   })
 
   it('formats period controls compactly without hiding the selected range', () => {
-    expect(formatPeriodControlLabel('day', '2026-09-02', '2026-09-02')).toBe('02.09.2026')
-    expect(formatPeriodControlLabel('week', '2026-08-31', '2026-09-06')).toBe('31.08–06.09.2026')
+    expect(formatPeriodControlLabel('day', '2026-09-02', '2026-09-02')).toBe('02.09.26')
+    expect(formatPeriodControlLabel('week', '2026-08-31', '2026-09-06')).toBe('31.08.26 - 06.09.26')
     expect(formatPeriodControlLabel('month', '2026-08-01', '2026-08-31')).toBe('Август 2026')
     expect(formatPeriodControlLabel('quarter', '2026-07-01', '2026-09-30')).toBe('3 квартал 2026')
     expect(formatPeriodControlLabel('year', '2026-01-01', '2026-12-31')).toBe('2026')
-    expect(formatPeriodControlLabel('custom', '2025-12-29', '2026-01-04')).toBe('29.12.2025–04.01.2026')
+    expect(formatPeriodControlLabel('custom', '2025-12-29', '2026-01-04')).toBe('29.12.25 - 04.01.26')
   })
 
   it('groups newest dates first and calculates a signed daily total', () => {
