@@ -42,9 +42,7 @@
 .transactions-period-selector__value {
   min-width: 0;
   flex: 1 1 auto;
-  overflow: hidden;
   text-align: right;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -78,17 +76,28 @@
   font-weight: 600;
 }
 
-.transactions-active-filters {
+.transactions-filter-status {
   display: flex;
-  overflow-x: auto;
+  min-height: 32px;
+  align-items: center;
   gap: 8px;
-  margin: 0 -4px 12px;
-  padding: 0 4px 4px;
-  scrollbar-width: none;
+  margin-bottom: 12px;
+  color: var(--transaction-secondary-text);
+  font-size: 0.8125rem;
 }
 
-.transactions-active-filters::-webkit-scrollbar {
-  display: none;
+.transactions-filter-status__label {
+  flex: 0 0 auto;
+  color: var(--ion-text-color);
+  font-weight: 650;
+}
+
+.transactions-active-filters {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .transactions-active-filters ion-button {
@@ -254,6 +263,10 @@
 
 .transactions-date-divider ion-label {
   display: flex;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  flex: 1 1 100%;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
@@ -261,6 +274,17 @@
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
   font-weight: 650;
+}
+
+.transactions-date-divider__date {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.transactions-date-divider__total {
+  flex: 0 0 auto;
+  margin-inline-start: 16px;
+  white-space: nowrap;
 }
 
 .transactions-state {
@@ -339,6 +363,12 @@
   .transactions-period-selector {
     gap: 4px;
     padding-inline: 4px;
+    font-size: 0.8125rem;
+  }
+
+  .transactions-period-selector ion-select {
+    max-width: 76px;
+    font-size: 0.8125rem;
   }
 
   .transactions-summary__item {

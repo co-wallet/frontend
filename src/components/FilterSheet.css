@@ -81,6 +81,11 @@
   gap: 8px;
 }
 
+.filter-sheet-option__check {
+  flex: 0 0 auto;
+  font-size: 18px;
+}
+
 .filter-sheet-tag-mode {
   width: 136px;
   min-height: 40px;

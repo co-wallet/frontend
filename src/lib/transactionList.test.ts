@@ -5,6 +5,7 @@ import type { Transaction } from '@/api/transactions'
 import {
   buildTransactionAnalyticsParams,
   formatCurrencyAmount,
+  formatPeriodControlLabel,
   formatTransactionAmount,
   formatTransactionDate,
   groupTransactionsByDate,
@@ -104,6 +105,12 @@ describe('transaction list helpers', () => {
     expect(formatTransactionDate('2026-09-02', now)).toBe('Сегодня, 2 сентября')
     expect(formatTransactionDate('2026-09-01', now)).toBe('Вчера, 1 сентября')
     expect(formatTransactionDate('2026-08-18', now)).toBe('Вторник, 18 августа')
+  })
+
+  it('formats period controls compactly without hiding the selected range', () => {
+    expect(formatPeriodControlLabel('week', '2026-08-31', '2026-09-06')).toBe('31.08–06.09.2026')
+    expect(formatPeriodControlLabel('quarter', '2026-07-01', '2026-09-30')).toBe('3 кв. 2026')
+    expect(formatPeriodControlLabel('year', '2026-01-01', '2026-12-31')).toBe('2026')
   })
 
   it('groups newest dates first and calculates a signed daily total', () => {

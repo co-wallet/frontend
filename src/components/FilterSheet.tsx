@@ -15,7 +15,7 @@ import {
   IonNote,
   IonFooter,
 } from '@ionic/react'
-import { closeOutline, funnelOutline } from 'ionicons/icons'
+import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
 import { CategoryIcon } from '@/components/CategoryIcon'
@@ -130,20 +130,24 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             <section className="filter-sheet-section" aria-labelledby="filter-accounts-title">
               <IonNote id="filter-accounts-title" className="filter-sheet-section__title">Счета</IonNote>
               <div className="filter-sheet-options">
-                {accounts.map((a) => (
-                  <IonButton
-                    key={a.id}
-                    fill={accountIds.includes(a.id) ? 'solid' : 'outline'}
-                    className="filter-sheet-option"
-                    onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
-                    aria-pressed={accountIds.includes(a.id)}
-                  >
-                    <span className="filter-sheet-option__content">
-                      <AccountIcon value={a.icon} size={22} />
-                      <span>{a.name}</span>
-                    </span>
-                  </IonButton>
-                ))}
+                {accounts.map((a) => {
+                  const selected = accountIds.includes(a.id)
+                  return (
+                    <IonButton
+                      key={a.id}
+                      fill={selected ? 'solid' : 'outline'}
+                      className="filter-sheet-option"
+                      onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
+                      aria-pressed={selected}
+                    >
+                      <span className="filter-sheet-option__content">
+                        <AccountIcon value={a.icon} size={22} />
+                        <span>{a.name}</span>
+                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                      </span>
+                    </IonButton>
+                  )
+                })}
               </div>
             </section>
           )}
@@ -153,20 +157,24 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             <section className="filter-sheet-section" aria-labelledby="filter-categories-title">
               <IonNote id="filter-categories-title" className="filter-sheet-section__title">Категории</IonNote>
               <div className="filter-sheet-options">
-                {allCategories.map((c) => (
-                  <IonButton
-                    key={c.id}
-                    fill={categoryIds.includes(c.id) ? 'solid' : 'outline'}
-                    className="filter-sheet-option"
-                    onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
-                    aria-pressed={categoryIds.includes(c.id)}
-                  >
-                    <span className="filter-sheet-option__content">
-                      <CategoryIcon value={c.icon} type={c.type} size={22} />
-                      <span>{c.name}</span>
-                    </span>
-                  </IonButton>
-                ))}
+                {allCategories.map((c) => {
+                  const selected = categoryIds.includes(c.id)
+                  return (
+                    <IonButton
+                      key={c.id}
+                      fill={selected ? 'solid' : 'outline'}
+                      className="filter-sheet-option"
+                      onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
+                      aria-pressed={selected}
+                    >
+                      <span className="filter-sheet-option__content">
+                        <CategoryIcon value={c.icon} type={c.type} size={22} />
+                        <span>{c.name}</span>
+                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                      </span>
+                    </IonButton>
+                  )
+                })}
               </div>
             </section>
           )}
@@ -187,17 +195,23 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                 </IonSegment>
               </div>
               <div className="filter-sheet-options">
-                {tags.map((t) => (
-                  <IonButton
-                    key={t.id}
-                    fill={tagIds.includes(t.id) ? 'solid' : 'outline'}
-                    className="filter-sheet-option"
-                    onClick={() => setTagIds((prev) => toggle(prev, t.id))}
-                    aria-pressed={tagIds.includes(t.id)}
-                  >
-                    #{t.name}
-                  </IonButton>
-                ))}
+                {tags.map((t) => {
+                  const selected = tagIds.includes(t.id)
+                  return (
+                    <IonButton
+                      key={t.id}
+                      fill={selected ? 'solid' : 'outline'}
+                      className="filter-sheet-option"
+                      onClick={() => setTagIds((prev) => toggle(prev, t.id))}
+                      aria-pressed={selected}
+                    >
+                      <span className="filter-sheet-option__content">
+                        <span>#{t.name}</span>
+                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                      </span>
+                    </IonButton>
+                  )
+                })}
               </div>
             </section>
           )}

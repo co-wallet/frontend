@@ -57,6 +57,7 @@ import { flattenCategories } from '@/lib/categories'
 import {
   buildTransactionAnalyticsParams,
   formatCurrencyAmount,
+  formatPeriodControlLabel,
   groupTransactionsByDate,
   hasTransactionFilters,
   transactionDefaultCurrencyAmount,
@@ -66,7 +67,6 @@ import { useAuthStore } from '@/store/authStore'
 import {
   computeDateRange,
   PERIOD_LABELS,
-  periodLabel,
   type Period,
   usePeriodStore,
 } from '@/store/periodStore'
@@ -256,7 +256,7 @@ export function TransactionsPage() {
 
             <div className="transactions-period-selector">
               <span className="transactions-period-selector__value">
-                {periodLabel(period, periodOffset, customFrom, customTo)}
+                {formatPeriodControlLabel(period, dateFrom, dateTo)}
               </span>
               <span aria-hidden="true">·</span>
               <IonSelect
@@ -323,8 +323,10 @@ export function TransactionsPage() {
             </div>
           )}
 
-          {hasFilters && (
-            <div className="transactions-active-filters" aria-label="Активные фильтры">
+          <div className="transactions-filter-status" aria-live="polite">
+            <span className="transactions-filter-status__label">Фильтры:</span>
+            {hasFilters ? (
+              <div className="transactions-active-filters" aria-label="Активные фильтры">
               {filter.accountIds?.map((id) => (
                 <IonButton
                   key={`account-${id}`}
@@ -364,8 +366,11 @@ export function TransactionsPage() {
               <IonButton fill="clear" size="small" onClick={() => setFilter({})}>
                 Сбросить все
               </IonButton>
-            </div>
-          )}
+              </div>
+            ) : (
+              <span>все счета, категории и теги</span>
+            )}
+          </div>
 
           <section className="transactions-summary" aria-label="Сводка за период">
             <div className="transactions-summary__item">
@@ -540,9 +545,9 @@ export function TransactionsPage() {
                 <IonItemGroup key={dateKey}>
                   <IonItemDivider sticky className="transactions-date-divider">
                     <IonLabel role="heading" aria-level={2}>
-                      <span>{label}</span>
+                      <span className="transactions-date-divider__date">{label}</span>
                       {total != null && (
-                        <span className={total < 0 ? 'is-expense' : total > 0 ? 'is-income' : ''}>
+                        <span className={`transactions-date-divider__total ${total < 0 ? 'is-expense' : total > 0 ? 'is-income' : ''}`}>
                           {formatCurrencyAmount(total, defaultCurrency, 2)}
                         </span>
                       )}
