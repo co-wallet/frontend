@@ -75,8 +75,10 @@
   --color: #ffffff;
 }
 
-.filter-sheet-option::part(native) {
-  gap: 6px;
+.filter-sheet-option__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .filter-sheet-tag-mode {

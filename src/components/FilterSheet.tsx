@@ -138,8 +138,10 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                     onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
                     aria-pressed={accountIds.includes(a.id)}
                   >
-                    <AccountIcon value={a.icon} size={22} />
-                    {a.name}
+                    <span className="filter-sheet-option__content">
+                      <AccountIcon value={a.icon} size={22} />
+                      <span>{a.name}</span>
+                    </span>
                   </IonButton>
                 ))}
               </div>
@@ -159,8 +161,10 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                     onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
                     aria-pressed={categoryIds.includes(c.id)}
                   >
-                    <CategoryIcon value={c.icon} type={c.type} size={22} />
-                    {c.name}
+                    <span className="filter-sheet-option__content">
+                      <CategoryIcon value={c.icon} type={c.type} size={22} />
+                      <span>{c.name}</span>
+                    </span>
                   </IonButton>
                 ))}
               </div>
