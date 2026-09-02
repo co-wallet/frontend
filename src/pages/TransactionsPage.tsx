@@ -50,10 +50,13 @@ import { analyticsApi } from '@/api/analytics'
 import { categoriesApi } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
 import { transactionsApi, type TransactionFilter } from '@/api/transactions'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import {
+  categoryIconForegroundColor,
+  CategoryIcon,
+  UNCATEGORIZED_CATEGORY_ICON,
+} from '@/components/CategoryIcon'
 import { FilterSheet } from '@/components/FilterSheet'
 import { TransactionItem } from '@/components/TransactionItem'
-import { EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 import { flattenCategories } from '@/lib/categories'
 import {
   buildTransactionAnalyticsParams,
@@ -212,11 +215,21 @@ export function TransactionsPage() {
   ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data])
 
   const chartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
+  const chartCategoryType = chartMode === 'expenses' ? 'expense' : 'income'
   const chartData = (chartQuery.data ?? [])
     .filter((stat) => stat.amount > 0)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10)
-  const chartColors = chartMode === 'expenses' ? EXPENSE_COLORS : INCOME_COLORS
+    .map((stat) => {
+      const icon = stat.categoryId === 'uncategorized'
+        ? UNCATEGORIZED_CATEGORY_ICON
+        : stat.icon
+      return {
+        ...stat,
+        icon,
+        color: categoryIconForegroundColor(icon, chartCategoryType),
+      }
+    })
   const hasFilters = hasTransactionFilters(filter)
 
   function removeFilter(kind: 'accountIds' | 'categoryIds' | 'tagIds', id: string) {
@@ -461,10 +474,10 @@ export function TransactionsPage() {
                           outerRadius={70}
                           innerRadius={35}
                         >
-                          {chartData.map((stat, index) => (
+                          {chartData.map((stat) => (
                             <Cell
                               key={stat.categoryId}
-                              fill={chartColors[index % chartColors.length]}
+                              fill={stat.color}
                             />
                           ))}
                         </Pie>
@@ -475,18 +488,19 @@ export function TransactionsPage() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="transactions-chart-legend">
-                      {chartData.map((stat, index) => (
+                      {chartData.map((stat) => (
                         <div key={stat.categoryId} className="transactions-chart-legend__item">
                           <div className="transactions-chart-legend__label">
                             <span
                               className="transactions-chart-legend__dot"
-                              style={{ background: chartColors[index % chartColors.length] }}
+                              style={{ background: stat.color }}
                               aria-hidden="true"
                             />
                             <CategoryIcon
                               value={stat.icon}
-                              type={chartMode === 'expenses' ? 'expense' : 'income'}
+                              type={chartCategoryType}
                               size={20}
+                              ariaLabel={stat.categoryId === 'uncategorized' ? 'Без категории' : undefined}
                             />
                             <span style={{ color: chartTheme.legendColor }}>{stat.categoryName}</span>
                           </div>

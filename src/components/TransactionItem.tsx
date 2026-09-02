@@ -10,7 +10,6 @@ import {
 import {
   createOutline,
   peopleOutline,
-  pricetagOutline,
   swapHorizontalOutline,
   trashOutline,
 } from 'ionicons/icons'
@@ -18,7 +17,10 @@ import {
 import type { Account } from '@/api/accounts'
 import type { CategoryNode } from '@/api/categories'
 import type { Transaction } from '@/api/transactions'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import {
+  CategoryIcon,
+  UNCATEGORIZED_CATEGORY_ICON,
+} from '@/components/CategoryIcon'
 import {
   formatTransactionAmount,
   isSharedTransaction,
@@ -90,7 +92,12 @@ export function TransactionItem({
           ) : category ? (
             <CategoryIcon value={category.icon} type={category.type} size={24} />
           ) : (
-            <IonIcon icon={pricetagOutline} aria-hidden="true" />
+            <CategoryIcon
+              value={UNCATEGORIZED_CATEGORY_ICON}
+              type={tx.type === 'income' ? 'income' : 'expense'}
+              size={24}
+              ariaLabel="Без категории"
+            />
           )}
         </div>
 

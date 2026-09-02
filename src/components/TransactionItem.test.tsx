@@ -123,4 +123,20 @@ describe('TransactionItem', () => {
     expect(markup).toContain('−25 $')
     expect(markup).toContain('≈ −2 000 ₽')
   })
+
+  it('uses the shared uncategorized icon preset when a category is missing', () => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem
+        tx={transaction({ categoryId: null, description: null })}
+        account={account}
+        defaultCurrency="RUB"
+        onEdit={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('<h2>Без категории</h2>')
+    expect(markup).toContain('aria-label="Без категории"')
+    expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
+  })
 })
