@@ -256,14 +256,11 @@ export function TransactionsPage() {
             </IonButton>
 
             <div className="transactions-period-selector">
-              <span className="transactions-period-selector__value">
-                {formatPeriodControlLabel(period, dateFrom, dateTo)}
-              </span>
-              <span aria-hidden="true">·</span>
               <IonSelect
-                aria-label="Тип периода"
+                aria-label={`Выбранный период: ${formatPeriodControlLabel(dateFrom, dateTo)}`}
                 interface="popover"
                 value={period}
+                selectedText={formatPeriodControlLabel(dateFrom, dateTo)}
                 onIonChange={(event) => setPeriod(event.detail.value as Period)}
               >
                 {(Object.keys(PERIOD_SELECT_LABELS) as Period[]).map((option) => (

@@ -25,13 +25,8 @@
 }
 
 .transactions-period-selector {
-  display: flex;
   min-width: 0;
   height: 44px;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding-inline: 6px;
   border-radius: 12px;
   background: rgba(var(--ion-color-primary-rgb), 0.07);
   color: var(--ion-text-color);
@@ -39,21 +34,25 @@
   font-weight: 600;
 }
 
-.transactions-period-selector__value {
-  min-width: 0;
-  flex: 1 1 auto;
-  text-align: right;
-  white-space: nowrap;
-}
-
 .transactions-period-selector ion-select {
-  flex: 0 0 auto;
-  width: auto;
+  width: 100%;
   min-width: 0;
-  max-width: 88px;
   min-height: 44px;
   font-size: 0.875rem;
   font-weight: 600;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+.transactions-period-selector ion-select::part(container) {
+  width: 100%;
+  justify-content: center;
+}
+
+.transactions-period-selector ion-select::part(text) {
+  flex: 0 1 auto;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .transactions-custom-period {
@@ -358,13 +357,10 @@
   }
 
   .transactions-period-selector {
-    gap: 4px;
-    padding-inline: 4px;
     font-size: 0.8125rem;
   }
 
   .transactions-period-selector ion-select {
-    max-width: 76px;
     font-size: 0.8125rem;
   }
 
