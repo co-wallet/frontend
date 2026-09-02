@@ -14,6 +14,8 @@ import {
   IonSegmentButton,
   IonLabel,
   IonNote,
+  IonFooter,
+  IonPage,
 } from '@ionic/react'
 import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
@@ -111,23 +113,25 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
       </div>
 
       <IonModal
+        className="filter-sheet-modal"
         isOpen={open}
         onDidDismiss={() => setOpen(false)}
-        breakpoints={[0, 0.75, 1]}
-        initialBreakpoint={0.75}
+        breakpoints={[0, 1]}
+        initialBreakpoint={1}
       >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Фильтры</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setOpen(false)} aria-label="Закрыть фильтры">
-                <IonIcon icon={closeOutline} slot="icon-only" />
-              </IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
+        <IonPage>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Фильтры</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setOpen(false)} aria-label="Закрыть фильтры">
+                  <IonIcon icon={closeOutline} slot="icon-only" />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
 
-        <IonContent className="ion-padding filter-sheet-content">
+          <IonContent className="ion-padding filter-sheet-content">
           {/* Accounts */}
           {accounts.length > 0 && (
             <section className="filter-sheet-section" aria-labelledby="filter-accounts-title">
@@ -226,15 +230,19 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             </section>
           )}
 
-          <div slot="fixed" className="filter-sheet-actions">
-            <IonButton expand="block" fill="outline" onClick={reset}>
-              Сбросить
-            </IonButton>
-            <IonButton expand="block" onClick={apply}>
-              Применить
-            </IonButton>
-          </div>
-        </IonContent>
+          </IonContent>
+
+          <IonFooter className="filter-sheet-footer">
+            <div className="filter-sheet-footer-actions">
+              <IonButton expand="block" fill="outline" onClick={reset}>
+                Сбросить
+              </IonButton>
+              <IonButton expand="block" onClick={apply}>
+                Применить
+              </IonButton>
+            </div>
+          </IonFooter>
+        </IonPage>
       </IonModal>
     </>
   )

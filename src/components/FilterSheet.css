@@ -40,8 +40,12 @@
   pointer-events: none;
 }
 
+.filter-sheet-modal {
+  --height: 75%;
+}
+
 .filter-sheet-content {
-  --padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  --padding-bottom: 24px;
 }
 
 .filter-sheet-section + .filter-sheet-section {
@@ -136,26 +140,31 @@
   --indicator-box-shadow: none;
 }
 
-.filter-sheet-actions {
-  position: absolute;
-  z-index: 10;
-  inset-inline: 0;
-  bottom: 0;
+.filter-sheet-footer {
+  background: var(--ion-card-background, var(--ion-background-color));
+}
+
+.filter-sheet-footer-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
   padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   border-top: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
-  background: var(--ion-card-background, var(--ion-background-color));
   box-shadow: 0 -8px 20px rgba(15, 23, 42, 0.08);
 }
 
-.filter-sheet-actions ion-button {
+.filter-sheet-footer-actions ion-button {
   min-height: 44px;
   margin: 0;
 }
 
-.filter-sheet-actions ion-button:last-child {
+.filter-sheet-footer-actions ion-button:last-child {
   --background: var(--transaction-action-background);
   --color: #ffffff;
+}
+
+@media (orientation: landscape) {
+  .filter-sheet-modal {
+    --height: 92%;
+  }
 }
