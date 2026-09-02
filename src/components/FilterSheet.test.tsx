@@ -41,6 +41,8 @@ describe('FilterSheet', () => {
     )
 
     expect(markup).toContain('aria-label="Фильтры, активно: 3"')
+    expect(markup).toContain('slot="icon-only"')
+    expect(markup).not.toContain('filter-sheet-trigger__label')
     expect(markup).not.toContain('Период с')
     expect(markup).not.toContain('Период по')
   })

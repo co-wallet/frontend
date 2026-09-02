@@ -10,7 +10,7 @@
 
 .transactions-controls {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px auto;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;

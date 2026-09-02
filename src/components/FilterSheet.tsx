@@ -95,18 +95,21 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
 
   return (
     <>
-      <IonButton
-        fill={activeCount > 0 ? 'solid' : 'outline'}
-        className="filter-sheet-trigger"
-        onClick={() => setOpen(true)}
-        aria-label={activeCount > 0 ? `Фильтры, активно: ${activeCount}` : 'Фильтры'}
-      >
-        <IonIcon icon={funnelOutline} slot="start" />
-        <span className="filter-sheet-trigger__label">Фильтры</span>
+      <div className="filter-sheet-trigger-wrapper">
+        <IonButton
+          fill={activeCount > 0 ? 'solid' : 'outline'}
+          className="filter-sheet-trigger"
+          onClick={() => setOpen(true)}
+          aria-label={activeCount > 0 ? `Фильтры, активно: ${activeCount}` : 'Фильтры'}
+        >
+          <IonIcon icon={funnelOutline} slot="icon-only" />
+        </IonButton>
         {activeCount > 0 && (
-          <IonBadge className="filter-sheet-trigger__badge">{activeCount}</IonBadge>
+          <IonBadge className="filter-sheet-trigger__badge" aria-hidden="true">
+            {activeCount}
+          </IonBadge>
         )}
-      </IonButton>
+      </div>
 
       <IonModal
         isOpen={open}
