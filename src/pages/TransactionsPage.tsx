@@ -257,10 +257,10 @@ export function TransactionsPage() {
 
             <div className="transactions-period-selector">
               <IonSelect
-                aria-label={`Выбранный период: ${formatPeriodControlLabel(dateFrom, dateTo)}`}
+                aria-label={`Выбранный период: ${formatPeriodControlLabel(period, dateFrom, dateTo)}`}
                 interface="popover"
                 value={period}
-                selectedText={formatPeriodControlLabel(dateFrom, dateTo)}
+                selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
                 onIonChange={(event) => setPeriod(event.detail.value as Period)}
               >
                 {(Object.keys(PERIOD_SELECT_LABELS) as Period[]).map((option) => (

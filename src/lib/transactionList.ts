@@ -1,6 +1,7 @@
 import type { Account } from '@/api/accounts'
 import type { AnalyticsParams } from '@/api/analytics'
 import type { Transaction, TransactionFilter, TransactionType } from '@/api/transactions'
+import type { Period } from '@/store/periodStore'
 
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   expense: 'Расход',
@@ -103,8 +104,25 @@ export function formatTransactionDate(dateKey: string, now = new Date()): string
   return `${weekday.charAt(0).toUpperCase()}${weekday.slice(1)}, ${dateText}`
 }
 
-export function formatPeriodControlLabel(dateFrom: string, dateTo: string): string {
-  if (dateFrom === dateTo) return formatNumericDate(dateFrom)
+export function formatPeriodControlLabel(
+  period: Period,
+  dateFrom: string,
+  dateTo: string,
+): string {
+  const from = new Date(`${dateFrom}T12:00:00`)
+
+  if (period === 'day') return formatNumericDate(dateFrom)
+  if (period === 'month') {
+    const label = from
+      .toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+      .replace(/\s*г\.$/, '')
+    return `${label.charAt(0).toUpperCase()}${label.slice(1)}`
+  }
+  if (period === 'quarter') {
+    return `${Math.floor(from.getMonth() / 3) + 1} квартал ${from.getFullYear()}`
+  }
+  if (period === 'year') return String(from.getFullYear())
+
   const crossesYear = dateFrom.slice(0, 4) !== dateTo.slice(0, 4)
   return `${formatNumericDate(dateFrom, crossesYear)}–${formatNumericDate(dateTo)}`
 }

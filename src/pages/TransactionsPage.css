@@ -45,14 +45,26 @@
 }
 
 .transactions-period-selector ion-select::part(container) {
+  position: relative;
   width: 100%;
-  justify-content: center;
 }
 
 .transactions-period-selector ion-select::part(text) {
-  flex: 0 1 auto;
+  width: 100%;
+  min-width: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  padding-inline: 28px;
+  box-sizing: border-box;
   text-align: center;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.transactions-period-selector ion-select::part(icon) {
+  position: absolute;
+  inset-inline-end: 0;
+  margin: 0;
 }
 
 .transactions-custom-period {
