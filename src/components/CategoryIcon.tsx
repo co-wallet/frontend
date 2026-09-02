@@ -145,6 +145,8 @@ const PRESET_PREFIX = 'preset:'
 const APPEARANCE_SEPARATOR = '|'
 const DEFAULT_FOREGROUND_COLOR: AccountIconColorId = 'blue'
 
+export const UNCATEGORIZED_CATEGORY_ICON = 'preset:other|red|none'
+
 interface CategoryIconPreset {
   id: string
   label: string
@@ -460,18 +462,30 @@ export function updateCategoryIconAppearance(
   )
 }
 
+export function categoryIconForegroundColor(
+  value?: string | null,
+  type?: CategoryType,
+): string {
+  const { foreground } = resolveCategoryIcon(value, type)
+  return foreground === 'yellow'
+    ? 'var(--account-icon-foreground-yellow)'
+    : `var(--account-icon-color-${foreground})`
+}
+
 export function CategoryIcon({
   value,
   type,
   size = 44,
   framed = true,
   shape = 'square',
+  ariaLabel,
 }: {
   value?: string | null
   type?: CategoryType
   size?: number
   framed?: boolean
   shape?: AccountIconShape
+  ariaLabel?: string
 }) {
   const resolved = resolveCategoryIcon(value, type)
   const PresetIcon = resolved.preset.icon
@@ -486,7 +500,7 @@ export function CategoryIcon({
       className={className}
       style={accountIconStyle(resolved, size, shape)}
       role="img"
-      aria-label={resolved.preset.label}
+      aria-label={ariaLabel ?? resolved.preset.label}
     >
       <PresetIcon size={Math.round(size * 0.58)} weight="regular" aria-hidden="true" />
     </span>

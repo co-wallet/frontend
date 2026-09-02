@@ -24,6 +24,9 @@ export interface AnalyticsParams {
   date_to?: string
   account_ids?: string
   account_kinds?: string
+  category_ids?: string
+  tag_ids?: string
+  tag_mode?: 'or' | 'and'
   currency?: string
   type?: string
 }
