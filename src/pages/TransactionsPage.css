@@ -262,14 +262,7 @@
 }
 
 .transactions-date-divider ion-label {
-  display: flex;
-  width: 100%;
   min-width: 0;
-  max-width: none;
-  flex: 1 1 100%;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
   margin: 0;
   font-size: 0.875rem;
   font-variant-numeric: tabular-nums;
@@ -282,8 +275,12 @@
 }
 
 .transactions-date-divider__total {
-  flex: 0 0 auto;
+  margin-block: 0;
   margin-inline-start: 16px;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
   white-space: nowrap;
 }
 

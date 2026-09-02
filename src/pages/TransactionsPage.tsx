@@ -22,6 +22,7 @@ import {
   IonList,
   IonMenuButton,
   IonModal,
+  IonNote,
   IonPage,
   IonSegment,
   IonSegmentButton,
@@ -546,12 +547,15 @@ export function TransactionsPage() {
                   <IonItemDivider sticky className="transactions-date-divider">
                     <IonLabel role="heading" aria-level={2}>
                       <span className="transactions-date-divider__date">{label}</span>
-                      {total != null && (
-                        <span className={`transactions-date-divider__total ${total < 0 ? 'is-expense' : total > 0 ? 'is-income' : ''}`}>
-                          {formatCurrencyAmount(total, defaultCurrency, 2)}
-                        </span>
-                      )}
                     </IonLabel>
+                    {total != null && (
+                      <IonNote
+                        slot="end"
+                        className={`transactions-date-divider__total ${total < 0 ? 'is-expense' : total > 0 ? 'is-income' : ''}`}
+                      >
+                        {formatCurrencyAmount(total, defaultCurrency, 2)}
+                      </IonNote>
+                    )}
                   </IonItemDivider>
                   {items.map((tx) => (
                     <TransactionItem
