@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
@@ -128,6 +128,8 @@ export function TransactionsPage() {
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
+  const customFromModalRef = useRef<HTMLIonModalElement>(null)
+  const customToModalRef = useRef<HTMLIonModalElement>(null)
   const chartTheme = useChartTheme()
 
   const isCustomPeriod = period === 'custom'
@@ -307,28 +309,32 @@ export function TransactionsPage() {
                 <span>По</span>
                 <IonDatetimeButton datetime="transactions-date-to" />
               </div>
-              <IonModal keepContentsMounted>
+              <IonModal ref={customFromModalRef} keepContentsMounted>
                 <IonDatetime
                   id="transactions-date-from"
                   presentation="date"
                   value={customFrom}
                   max={customTo}
-                  showDefaultButtons
-                  doneText="Готово"
-                  cancelText="Отмена"
-                  onIonChange={(event) => setCustomFrom(valueFromDatetime(event.detail.value))}
+                  onIonChange={(event) => {
+                    const value = valueFromDatetime(event.detail.value)
+                    if (!value) return
+                    setCustomFrom(value)
+                    void customFromModalRef.current?.dismiss()
+                  }}
                 />
               </IonModal>
-              <IonModal keepContentsMounted>
+              <IonModal ref={customToModalRef} keepContentsMounted>
                 <IonDatetime
                   id="transactions-date-to"
                   presentation="date"
                   value={customTo}
                   min={customFrom}
-                  showDefaultButtons
-                  doneText="Готово"
-                  cancelText="Отмена"
-                  onIonChange={(event) => setCustomTo(valueFromDatetime(event.detail.value))}
+                  onIonChange={(event) => {
+                    const value = valueFromDatetime(event.detail.value)
+                    if (!value) return
+                    setCustomTo(value)
+                    void customToModalRef.current?.dismiss()
+                  }}
                 />
               </IonModal>
             </div>

@@ -92,6 +92,29 @@
   font-weight: 600;
 }
 
+.transactions-custom-period ion-datetime-button {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.transactions-custom-period ion-datetime-button::part(native) {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.24);
+  border-radius: 10px;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.transactions-custom-period ion-datetime-button::part(native):focus-visible {
+  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  outline-offset: 2px;
+}
+
 .transactions-filter-status {
   display: flex;
   min-height: 32px;
