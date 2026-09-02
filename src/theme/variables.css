@@ -67,6 +67,14 @@
   --ion-text-color: #1f2937;
   --ion-text-color-rgb: 31, 41, 55;
 
+  /* Accessible semantic colors for transaction text on light surfaces. */
+  --transaction-expense-text: #b91c1c;
+  --transaction-income-text: #15803d;
+  --transaction-transfer-text: #1d4ed8;
+  --transaction-action-background: #1d4ed8;
+  --transaction-secondary-text: #667085;
+  --transaction-tag-text: #475467;
+
   --account-icon-color-blue: #1d4ed8;
   --account-icon-color-blue-rgb: 29, 78, 216;
   --account-icon-color-purple: #7e22ce;
@@ -161,6 +169,13 @@ body.dark {
   --ion-toolbar-background: #16213e;
   --ion-tab-bar-background: #16213e;
   --ion-border-color: #2a2a4a;
+
+  --transaction-expense-text: #fca5a5;
+  --transaction-income-text: #86efac;
+  --transaction-transfer-text: #93c5fd;
+  --transaction-action-background: #2563eb;
+  --transaction-secondary-text: #c4c8d0;
+  --transaction-tag-text: #d5d8de;
 
   --account-icon-color-blue: #60a5fa;
   --account-icon-color-blue-rgb: 96, 165, 250;
