@@ -14,19 +14,18 @@
   font-size: 22px;
 }
 
-.transaction-item__icon--expense {
-  color: var(--transaction-expense-text);
-  background: rgba(var(--ion-color-danger-rgb), 0.1);
-}
-
-.transaction-item__icon--income {
-  color: var(--transaction-income-text);
-  background: rgba(var(--ion-color-success-rgb), 0.1);
-}
-
 .transaction-item__icon--transfer {
   color: var(--transaction-transfer-text);
   background: rgba(var(--ion-color-primary-rgb), 0.1);
+}
+
+.transaction-item__category-icon {
+  display: inline-flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 40px;
 }
 
 .transaction-item__label {
@@ -112,10 +111,15 @@
     --inner-padding-end: 8px;
   }
 
-  .transaction-item__icon {
+  .transaction-item__icon,
+  .transaction-item__category-icon {
     width: 36px;
     height: 36px;
     flex-basis: 36px;
+  }
+
+  .transaction-item__category-icon .account-icon {
+    transform: scale(0.9);
   }
 
   .transaction-item__amount {

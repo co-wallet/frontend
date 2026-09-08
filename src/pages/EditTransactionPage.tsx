@@ -3,30 +3,20 @@ import { useHistory, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
-  IonBackButton, IonButton, IonList, IonItem, IonInput, IonSelect,
-  IonSelectOption, IonToggle, IonSpinner, IonText, IonNote, IonLabel,
+  IonBackButton, IonButton, IonList, IonItem, IonInput,
+  IonToggle, IonSpinner, IonText, IonNote, IonLabel,
   IonIcon, IonAlert,
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
 import { transactionsApi, type UpdateTransactionDto } from '@/api/transactions'
 import { accountsApi, type AccountMember } from '@/api/accounts'
-import { categoriesApi, type CategoryNode } from '@/api/categories'
+import { categoriesApi } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
+import { CategorySelect } from '@/components/CategorySelect'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
-
-function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
-  const result: CategoryNode[] = []
-  function walk(items: CategoryNode[]) {
-    for (const n of items) {
-      result.push(n)
-      if (n.children?.length) walk(n.children)
-    }
-  }
-  walk(nodes)
-  return result
-}
+import { flattenCategories } from '@/lib/categories'
 
 function roundCents(v: number): number {
   return Math.round(v * 100) / 100
@@ -367,21 +357,12 @@ export function EditTransactionPage() {
 
             {/* Category (not for transfer) */}
             {tx.type !== 'transfer' && (
-              <IonItem>
-                <IonSelect
-                  label="Категория"
-                  labelPlacement="floating"
-                  value={categoryId || undefined}
-                  onIonChange={(e) => setCategoryId(e.detail.value ?? '')}
-                  interface="action-sheet"
-                >
-                  {flatCategories.map((c) => (
-                    <IonSelectOption key={c.id} value={c.id}>
-                      {c.name}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
-              </IonItem>
+              <CategorySelect
+                categories={flatCategories}
+                type={catType}
+                value={categoryId}
+                onChange={setCategoryId}
+              />
             )}
 
             {/* Date */}

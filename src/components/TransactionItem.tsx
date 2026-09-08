@@ -86,20 +86,24 @@ export function TransactionItem({
         onClick={() => onEdit(tx.id)}
         aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}`}
       >
-        <div slot="start" className={`transaction-item__icon transaction-item__icon--${tx.type}`}>
-          {tx.type === 'transfer' ? (
+        {tx.type === 'transfer' ? (
+          <div slot="start" className="transaction-item__icon transaction-item__icon--transfer">
             <IonIcon icon={swapHorizontalOutline} aria-hidden="true" />
-          ) : category ? (
-            <CategoryIcon value={category.icon} type={category.type} size={24} />
-          ) : (
-            <CategoryIcon
-              value={UNCATEGORIZED_CATEGORY_ICON}
-              type={tx.type === 'income' ? 'income' : 'expense'}
-              size={24}
-              ariaLabel="Без категории"
-            />
-          )}
-        </div>
+          </div>
+        ) : (
+          <span slot="start" className="transaction-item__category-icon">
+            {category ? (
+              <CategoryIcon value={category.icon} type={category.type} size={40} />
+            ) : (
+              <CategoryIcon
+                value={UNCATEGORIZED_CATEGORY_ICON}
+                type={tx.type === 'income' ? 'income' : 'expense'}
+                size={40}
+                ariaLabel="Без категории"
+              />
+            )}
+          </span>
+        )}
 
         <IonLabel className="transaction-item__label">
           <h2>{title}</h2>
