@@ -310,68 +310,6 @@ const presetColorsById = new Map(
   ]),
 )
 
-const legacyIconPresets: Record<string, string> = {
-  '🛒': 'groceries',
-  '🍔': 'fast-food',
-  '🍕': 'pizza',
-  '☕': 'cafe',
-  '🍺': 'drinks',
-  '🍽️': 'restaurants',
-  '🚗': 'car',
-  '⛽': 'fuel',
-  '🚌': 'bus',
-  '✈️': 'travel',
-  '🚕': 'taxi',
-  '🚂': 'train',
-  '🏠': 'home',
-  '💡': 'utilities',
-  '📱': 'mobile',
-  '💻': 'electronics',
-  '🛠️': 'repairs',
-  '🧹': 'cleaning',
-  '👗': 'clothes',
-  '👟': 'shoes',
-  '💄': 'beauty',
-  '🛍️': 'shopping',
-  '👒': 'accessories',
-  '⌚': 'watch',
-  '💊': 'medicine',
-  '🏥': 'health',
-  '💉': 'medical',
-  '🧴': 'care',
-  '🦷': 'dentistry',
-  '👓': 'glasses',
-  '🎬': 'movies',
-  '🎮': 'games',
-  '🎵': 'music',
-  '📚': 'books',
-  '🏋️': 'fitness',
-  '⚽': 'sport',
-  '🐾': 'pets',
-  '🌿': 'garden',
-  '🎁': 'gifts',
-  '✂️': 'services',
-  '🧺': 'household',
-  '📦': 'delivery',
-  '💼': 'work',
-  '💰': 'savings',
-  '💵': 'cash',
-  '💳': 'card',
-  '📈': 'investments',
-  '🏦': 'bank',
-  '🤝': 'partnership',
-  '🎓': 'education',
-  '👔': 'salary',
-  '🏢': 'business',
-  '💹': 'investments',
-  '🪙': 'coins',
-  '🏡': 'rent',
-  '🚀': 'startup',
-  '🎯': 'bonus',
-  '🎪': 'events',
-  '🏆': 'award',
-}
-
 const DEFAULT_CATEGORY_PRESETS: Record<CategoryType, string> = {
   expense: 'groceries',
   income: 'work',
@@ -416,19 +354,15 @@ function resolveCategoryIcon(
   )
   const storedPresetId = baseValue.startsWith(PRESET_PREFIX)
     ? baseValue.slice(PRESET_PREFIX.length)
-    : baseValue === '🎁' && type === 'income'
-      ? 'gift-income'
-      : legacyIconPresets[baseValue]
+    : ''
   const fallbackPresetId = type ? DEFAULT_CATEGORY_PRESETS[type] : 'other'
   const preset = presetsById.get(storedPresetId) ?? presetsById.get(fallbackPresetId)!
   const defaultColor = presetDefaultColor(preset.id)
-  const foregroundCandidate = foregroundValue === 'teal' ? 'yellow' : foregroundValue
-  const borderCandidate = borderValue === 'teal' ? 'yellow' : borderValue
-  const foreground = iconColorIds.has(foregroundCandidate as AccountIconColorId)
-    ? foregroundCandidate as AccountIconColorId
+  const foreground = iconColorIds.has(foregroundValue as AccountIconColorId)
+    ? foregroundValue as AccountIconColorId
     : defaultColor
-  const border = borderCandidate === 'none' || iconColorIds.has(borderCandidate as AccountIconColorId)
-    ? borderCandidate as AccountIconBorderColorId
+  const border = borderValue === 'none' || iconColorIds.has(borderValue as AccountIconColorId)
+    ? borderValue as AccountIconBorderColorId
     : defaultColor
 
   return { preset, foreground, border }

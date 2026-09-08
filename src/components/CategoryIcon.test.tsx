@@ -12,6 +12,11 @@ import {
 } from './CategoryIcon'
 
 describe('CategoryIcon', () => {
+  it.each(['unprefixed-label', 'preset:unknown'])('uses category-type defaults for unsupported value %s', (value) => {
+    expect(normalizeCategoryIconValue(value, 'expense')).toBe('preset:groceries')
+    expect(normalizeCategoryIconValue(value, 'income')).toBe('preset:work')
+  })
+
   it('renders a category preset with the same frame and color mechanism as account icons', () => {
     const markup = renderToStaticMarkup(
       <CategoryIcon value="preset:groceries|green|orange" />,
@@ -35,19 +40,16 @@ describe('CategoryIcon', () => {
   it.each([
     [undefined, 'expense'],
     [undefined, 'income'],
-    ['🛒', 'expense'],
     ['preset:unknown|invalid|red', 'income'],
-  ] as const)('matches the rendered default or legacy icon %s for %s', (value, type) => {
+  ] as const)('matches the rendered default icon %s for %s', (value, type) => {
     const markup = renderToStaticMarkup(<CategoryIcon value={value} type={type} />)
     expect(markup).toContain(`--account-icon-foreground:${categoryIconChartColor(value, type)}`)
   })
 
-  it('uses bright yellow for legacy teal sectors while keeping icon text readable', () => {
-    expect(categoryIconChartColor('🎁', 'income'))
+  it('uses bright yellow for sectors while keeping icon text readable', () => {
+    expect(categoryIconChartColor('preset:cafe|yellow|none', 'expense'))
       .toBe('var(--account-icon-color-yellow)')
-    expect(categoryIconChartColor('preset:cafe|teal|none', 'expense'))
-      .toBe('var(--account-icon-color-yellow)')
-    expect(renderToStaticMarkup(<CategoryIcon value="preset:cafe|teal|none" />))
+    expect(renderToStaticMarkup(<CategoryIcon value="preset:cafe|yellow|none" />))
       .toContain('--account-icon-foreground:var(--account-icon-foreground-yellow)')
   })
 
@@ -62,12 +64,6 @@ describe('CategoryIcon', () => {
 
     expect(markup).toContain('aria-label="Без категории"')
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
-  })
-
-  it('normalizes legacy emoji icons to vector presets', () => {
-    expect(normalizeCategoryIconValue('🛒', 'expense')).toBe('preset:groceries')
-    expect(normalizeCategoryIconValue('💼', 'income')).toBe('preset:work')
-    expect(normalizeCategoryIconValue('🎁', 'income')).toBe('preset:gift-income')
   })
 
   it('provides category-type defaults and normalizes missing values', () => {

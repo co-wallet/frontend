@@ -12,12 +12,21 @@ import {
 } from './AccountIcon'
 
 describe('AccountIcon', () => {
+  it.each(['unprefixed-label', 'preset:unknown'])('uses the default preset for unsupported value %s', (value) => {
+    expect(normalizeAccountIconValue(value)).toBe(DEFAULT_ACCOUNT_ICON)
+    expect(renderToStaticMarkup(<AccountIcon value={value} />)).toContain('aria-label="Дебетовая"')
+    expect(renderToStaticMarkup(<AccountIcon value={value} />)).not.toContain(value)
+  })
+
+  it('falls back to default colors for unsupported appearance values', () => {
+    expect(normalizeAccountIconValue('preset:cash|invalid|invalid')).toBe('preset:cash')
+  })
+
   it('renders a preset as an accessible vector icon', () => {
     const markup = renderToStaticMarkup(<AccountIcon value="preset:piggy-bank" />)
 
     expect(markup).toContain('aria-label="Копилка"')
     expect(markup).toContain('<svg')
-    expect(markup).not.toContain('🐷')
   })
 
   it('scales the frame radius with the icon size', () => {
@@ -54,13 +63,6 @@ describe('AccountIcon', () => {
     expect(markup).not.toContain('custom:TBank|green|purple')
   })
 
-  it('maps old emoji values to the new preset collection', () => {
-    expect(normalizeAccountIconValue('💵')).toBe('preset:cash')
-    expect(normalizeAccountIconValue('📈')).toBe('preset:investments')
-    expect(normalizeAccountIconValue('🚗')).toBe('preset:car')
-    expect(normalizeAccountIconValue('✈️')).toBe('preset:travel')
-  })
-
   it('trims custom text and limits it to the supported length', () => {
     const longLabel = 'VeryLongBankName'
 
@@ -87,12 +89,6 @@ describe('AccountIcon', () => {
 
     expect(normalized).toBe('custom:Alfa|yellow|graphite')
     expect(normalized.length).toBeLessThanOrEqual(50)
-  })
-
-  it('migrates saved teal appearance values to yellow', () => {
-    expect(normalizeAccountIconValue('preset:cash|teal|teal')).toBe(
-      'preset:cash|yellow|yellow',
-    )
   })
 
   it('uses a dedicated readable foreground for yellow while preserving its border color', () => {

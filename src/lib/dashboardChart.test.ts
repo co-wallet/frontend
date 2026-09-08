@@ -6,8 +6,6 @@ describe('dashboard chart data', () => {
   it.each([
     ['preset:cash|green|purple', 'var(--account-icon-color-green)'],
     ['custom:TBank|yellow|none', 'var(--account-icon-color-yellow)'],
-    ['preset:cash|teal|red', 'var(--account-icon-color-yellow)'],
-    ['💵', 'var(--account-icon-color-blue)'],
     [undefined, 'var(--account-icon-color-blue)'],
     ['preset:cash|invalid|red', 'var(--account-icon-color-blue)'],
   ])('uses the icon foreground for account %s regardless of balance or position', (icon, color) => {
