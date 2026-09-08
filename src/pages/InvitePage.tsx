@@ -1,3 +1,4 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useParams, useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -6,7 +7,6 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -67,14 +67,14 @@ export function InvitePage() {
             <IonTitle>Приглашение</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding ion-text-center">
-          <div style={{ paddingTop: 64 }}>
+        <AppContent>
+          <div className="app-state">
             <IonSpinner name="crescent" />
             <IonText color="medium">
               <p>Проверяем ссылку...</p>
             </IonText>
           </div>
-        </IonContent>
+        </AppContent>
       </IonPage>
     )
   }
@@ -87,8 +87,8 @@ export function InvitePage() {
             <IonTitle>Приглашение</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding">
-          <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 32 }}>
+        <AppContent>
+          <div className="app-auth-intro">
             <IonCard>
               <IonCardHeader>
                 <IonCardTitle color="danger">Ссылка недействительна</IonCardTitle>
@@ -103,7 +103,7 @@ export function InvitePage() {
               </IonCardContent>
             </IonCard>
           </div>
-        </IonContent>
+        </AppContent>
       </IonPage>
     )
   }
@@ -115,8 +115,8 @@ export function InvitePage() {
           <IonTitle>Приглашение</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 16 }}>
+      <AppContent>
+        <div className="app-auth-intro">
           <IonCard>
             <IonCardHeader>
               <IonCardTitle>Создание аккаунта</IonCardTitle>
@@ -141,7 +141,7 @@ export function InvitePage() {
               <IonItem>
                 <IonInput
                   label="Имя пользователя"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   value={username}
                   onIonInput={(e) => setUsername(e.detail.value ?? '')}
                   required
@@ -151,7 +151,7 @@ export function InvitePage() {
               <IonItem>
                 <IonInput
                   label="Пароль"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   type="password"
                   value={password}
                   onIonInput={(e) => setPassword(e.detail.value ?? '')}
@@ -163,7 +163,7 @@ export function InvitePage() {
               <IonItem>
                 <IonSelect
                   label="Валюта по умолчанию"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   value={defaultCurrency}
                   onIonChange={(e) => setDefaultCurrency(e.detail.value)}
                 >
@@ -193,7 +193,7 @@ export function InvitePage() {
             </IonButton>
           </form>
         </div>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

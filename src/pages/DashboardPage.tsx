@@ -1,3 +1,4 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
@@ -7,7 +8,6 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonButtons,
   IonButton,
   IonIcon,
@@ -378,8 +378,16 @@ export function DashboardPage() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen className="ion-padding">
-        <div style={{ maxWidth: 480, margin: '0 auto' }}>
+      <AppContent fullscreen withFab
+        fixed={
+          <IonFab slot="fixed" vertical="bottom" horizontal="end">
+            <IonFabButton routerLink="/transactions/add">
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        }
+      >
+        <div>
           {/* Period switcher */}
           <IonList style={{ marginBottom: 8 }}>
             <IonItem>
@@ -624,12 +632,8 @@ export function DashboardPage() {
         </div>
 
         {/* FAB */}
-        <IonFab slot="fixed" vertical="bottom" horizontal="end">
-          <IonFabButton routerLink="/transactions/add">
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
-      </IonContent>
+
+      </AppContent>
     </IonPage>
   )
 }

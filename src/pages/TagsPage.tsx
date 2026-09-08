@@ -1,7 +1,8 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonPage, IonHeader, IonToolbar, IonTitle,
   IonList, IonItem, IonLabel, IonNote, IonIcon,
   IonItemSliding, IonItemOptions, IonItemOption,
   IonMenuButton, IonButtons, IonSpinner, IonText,
@@ -78,14 +79,14 @@ export function TagsPage() {
           <IonTitle>Теги</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <AppContent>
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+          <div className="app-state">
             <IonSpinner />
           </div>
         ) : tags.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <IonIcon icon={pricetagOutline} style={{ fontSize: '40px', opacity: 0.3, marginBottom: '12px' }} />
+          <div className="app-state">
+            <IonIcon icon={pricetagOutline} />
             <IonText color="medium">
               <p>Нет тегов. Добавьте теги к транзакциям.</p>
             </IonText>
@@ -133,12 +134,12 @@ export function TagsPage() {
               </IonButtons>
             </IonToolbar>
           </IonHeader>
-          <IonContent className="ion-padding">
+          <AppContent>
             <IonList>
               <IonItem>
                 <IonInput
                   label="Название"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   value={editName}
                   onIonInput={(e) => {
                     setEditName(e.detail.value ?? '')
@@ -160,7 +161,7 @@ export function TagsPage() {
             >
               {renameMutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
             </IonButton>
-          </IonContent>
+          </AppContent>
         </IonModal>
 
         {/* Delete Confirmation Alert */}
@@ -178,7 +179,7 @@ export function TagsPage() {
             { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },
           ]}
         />
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

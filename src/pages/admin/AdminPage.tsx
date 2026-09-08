@@ -1,9 +1,9 @@
+import { AppContent } from '@/components/layout/AppContent'
 import {
   IonPage,
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonCard,
   IonCardHeader,
   IonCardTitle,
@@ -25,7 +25,7 @@ export function AdminPage() {
           <IonTitle>Администрирование</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <AppContent>
         <IonCard routerLink="/admin/users" button>
           <IonCardHeader>
             <IonIcon icon={peopleOutline} style={{ fontSize: '2rem', color: 'var(--ion-color-primary)' }} />
@@ -55,7 +55,7 @@ export function AdminPage() {
             Создание и управление приглашениями
           </IonCardContent>
         </IonCard>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }
