@@ -1,7 +1,8 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonPage, IonHeader, IonToolbar, IonTitle,
   IonList, IonItem, IonLabel, IonIcon,
   IonMenuButton, IonButtons, IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton,
@@ -171,14 +172,22 @@ export default function CategoriesPage() {
           </IonSegment>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <AppContent withFab
+        fixed={
+          <IonFab vertical="bottom" horizontal="end" slot="fixed">
+            <IonFabButton aria-label="Добавить корневую категорию" onClick={() => handleCreate()}>
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        }
+      >
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem' }}>
+          <div className="app-state">
             <IonSpinner />
           </div>
         ) : categories.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '3rem' }}>
-            <IonIcon icon={folderOutline} style={{ fontSize: '40px', opacity: 0.3, marginBottom: '12px' }} />
+          <div className="app-state">
+            <IonIcon icon={folderOutline} />
             <IonText color="medium">
               <p>Нет категорий. Создайте первую!</p>
             </IonText>
@@ -202,11 +211,6 @@ export default function CategoriesPage() {
           </IonText>
         )}
 
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton aria-label="Добавить корневую категорию" onClick={() => handleCreate()}>
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
 
         {/* Add/Edit Modal */}
         <IonModal isOpen={showForm} onDidDismiss={resetForm}>
@@ -224,12 +228,12 @@ export default function CategoriesPage() {
               </IonButtons>
             </IonToolbar>
           </IonHeader>
-          <IonContent className="ion-padding">
+          <AppContent>
             <IonList>
               <IonItem>
                 <IonInput
                   label="Название"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   value={formData.name}
                   onIonInput={e => setFormData(f => ({ ...f, name: e.detail.value ?? '' }))}
                 />
@@ -269,7 +273,7 @@ export default function CategoriesPage() {
                 : editingId ? 'Сохранить' : 'Создать'
               }
             </IonButton>
-          </IonContent>
+          </AppContent>
         </IonModal>
 
         {/* Delete Confirmation Alert */}
@@ -288,7 +292,7 @@ export default function CategoriesPage() {
             { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },
           ]}
         />
-      </IonContent>
+      </AppContent>
     </IonPage>
   );
 }

@@ -1,7 +1,8 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
   IonBackButton, IonList, IonItem, IonLabel, IonBadge,
   IonButton, IonIcon, IonSpinner, IonText, IonFab, IonFabButton,
   IonModal, IonInput,
@@ -107,7 +108,15 @@ export function AdminInvitesPage() {
           <IonTitle>Приглашения</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <AppContent withFab
+        fixed={
+          <IonFab vertical="bottom" horizontal="end" slot="fixed">
+            <IonFabButton onClick={() => { setShowForm(true); setLastInviteURL(null); setApiError('') }}>
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        }
+      >
         {lastInviteURL && (
           <div className="ion-padding" style={{ background: 'var(--ion-color-success-tint)', borderBottom: '1px solid var(--ion-color-success-shade)' }}>
             <IonText color="success">
@@ -126,11 +135,11 @@ export function AdminInvitesPage() {
         )}
 
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: 48 }}>
+          <div className="app-state">
             <IonSpinner />
           </div>
         ) : invites.length === 0 ? (
-          <div className="ion-text-center ion-padding" style={{ paddingTop: 48 }}>
+          <div className="app-state">
             <IonIcon icon={mailOutline} style={{ fontSize: 48, color: 'var(--ion-color-medium)' }} />
             <IonText color="medium">
               <p>Нет приглашений</p>
@@ -142,11 +151,6 @@ export function AdminInvitesPage() {
           </IonList>
         )}
 
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => { setShowForm(true); setLastInviteURL(null); setApiError('') }}>
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
 
         <IonModal isOpen={showForm} onDidDismiss={() => setShowForm(false)} onWillPresent={() => { setEmail(''); setApiError('') }}>
           <IonHeader>
@@ -162,12 +166,12 @@ export function AdminInvitesPage() {
               </IonButtons>
             </IonToolbar>
           </IonHeader>
-          <IonContent className="ion-padding">
+          <AppContent>
             <IonList>
               <IonItem>
                 <IonInput
                   label="Email"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   type="email"
                   value={email}
                   placeholder="user@example.com"
@@ -182,9 +186,9 @@ export function AdminInvitesPage() {
                 </IonText>
               </div>
             )}
-          </IonContent>
+          </AppContent>
         </IonModal>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

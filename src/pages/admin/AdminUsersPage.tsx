@@ -1,7 +1,8 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
   IonBackButton, IonList, IonItem, IonLabel, IonBadge, IonItemSliding,
   IonItemOptions, IonItemOption, IonModal, IonInput, IonButton, IonSpinner,
   IonText, IonAlert, IonIcon,
@@ -35,13 +36,13 @@ function ResetPasswordModal({
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <AppContent>
         <IonList>
           <IonItem>
             <IonInput
               type="password"
               label="Новый пароль"
-              labelPlacement="floating"
+              labelPlacement="stacked"
               value={password}
               onIonInput={(e) => setPassword(e.detail.value ?? '')}
               minlength={4}
@@ -64,7 +65,7 @@ function ResetPasswordModal({
             {mutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
           </IonButton>
         </div>
-      </IonContent>
+      </AppContent>
     </IonModal>
   )
 }
@@ -102,9 +103,9 @@ export function AdminUsersPage() {
             <IonTitle>Пользователи</IonTitle>
           </IonToolbar>
         </IonHeader>
-        <IonContent className="ion-padding" style={{ textAlign: 'center' }}>
-          <IonSpinner name="crescent" />
-        </IonContent>
+        <AppContent>
+          <div className="app-state"><IonSpinner name="crescent" /></div>
+        </AppContent>
       </IonPage>
     )
   }
@@ -119,7 +120,7 @@ export function AdminUsersPage() {
           <IonTitle>Пользователи</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <AppContent>
         <IonList>
           {users.map((u) => (
             <IonItemSliding key={u.id}>
@@ -193,7 +194,7 @@ export function AdminUsersPage() {
             },
           ]}
         />
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

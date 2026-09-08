@@ -1,3 +1,4 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useHistory } from 'react-router-dom'
 import {
@@ -5,7 +6,6 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonList,
   IonItem,
   IonInput,
@@ -48,8 +48,8 @@ export function LoginPage() {
           <IonTitle>Вход</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
-        <div style={{ maxWidth: 400, margin: '0 auto', paddingTop: 32 }}>
+      <AppContent>
+        <div className="app-auth-intro">
           <h1 style={{ textAlign: 'center', fontSize: '1.5rem', fontWeight: 700, marginBottom: 24 }}>
             co-wallet
           </h1>
@@ -65,7 +65,7 @@ export function LoginPage() {
               <IonItem>
                 <IonInput
                   label="Email"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   type="email"
                   value={email}
                   onIonInput={(e) => setEmail(e.detail.value ?? '')}
@@ -76,7 +76,7 @@ export function LoginPage() {
               <IonItem>
                 <IonInput
                   label="Пароль"
-                  labelPlacement="floating"
+                  labelPlacement="stacked"
                   type="password"
                   value={password}
                   onIonInput={(e) => setPassword(e.detail.value ?? '')}
@@ -102,7 +102,7 @@ export function LoginPage() {
             </p>
           </IonText>
         </div>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

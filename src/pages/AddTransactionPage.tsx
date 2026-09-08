@@ -1,8 +1,9 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState, useEffect, useRef } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
   IonBackButton, IonButton, IonSegment, IonSegmentButton, IonLabel,
   IonList, IonItem, IonInput, IonToggle,
   IonSpinner, IonText, IonNote, IonIcon,
@@ -262,8 +263,8 @@ export function AddTransactionPage() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent>
-        <div className="ion-padding">
+      <AppContent>
+        <div>
           <IonList>
             {/* Account */}
             <AccountSelect
@@ -287,7 +288,7 @@ export function AddTransactionPage() {
             <IonItem>
               <IonInput
                 label={`Сумма${selectedAccount ? ` (${selectedAccount.currency})` : ''}`}
-                labelPlacement="floating"
+                labelPlacement="stacked"
                 type="text"
                 inputMode="decimal"
                 value={amount}
@@ -303,7 +304,7 @@ export function AddTransactionPage() {
                 <IonItem>
                   <IonInput
                     label={`Сумма на счёт (${toAccountCurrency})`}
-                    labelPlacement="floating"
+                    labelPlacement="stacked"
                     type="text"
                     inputMode="decimal"
                     value={toAmountStr}
@@ -337,7 +338,7 @@ export function AddTransactionPage() {
                 <IonItem>
                   <IonInput
                     label={`Сумма в ${userDefaultCurrency}`}
-                    labelPlacement="floating"
+                    labelPlacement="stacked"
                     type="text"
                     inputMode="decimal"
                     value={defaultCurrencyAmountStr}
@@ -383,7 +384,7 @@ export function AddTransactionPage() {
             <IonItem>
               <IonInput
                 label="Дата"
-                labelPlacement="floating"
+                labelPlacement="stacked"
                 type="date"
                 value={date}
                 onIonInput={(e) => setDate(e.detail.value ?? todayISO())}
@@ -394,7 +395,7 @@ export function AddTransactionPage() {
             <IonItem>
               <IonInput
                 label="Описание"
-                labelPlacement="floating"
+                labelPlacement="stacked"
                 type="text"
                 value={description}
                 placeholder="Необязательно"
@@ -525,7 +526,7 @@ export function AddTransactionPage() {
             </IonButton>
           </div>
         </div>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

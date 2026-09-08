@@ -1,3 +1,4 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { Link, useHistory } from 'react-router-dom'
 import {
@@ -5,7 +6,6 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonList,
   IonItem,
   IonInput,
@@ -51,7 +51,7 @@ export function RegisterPage() {
           <IonTitle>Регистрация</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding">
+      <AppContent>
         {error && (
           <IonText color="danger">
             <p style={{ margin: '0 0 16px' }}>{error}</p>
@@ -63,7 +63,7 @@ export function RegisterPage() {
             <IonItem>
               <IonInput
                 label="Имя пользователя"
-                labelPlacement="floating"
+                labelPlacement="stacked"
                 type="text"
                 value={username}
                 onIonInput={(e) => setUsername(e.detail.value ?? '')}
@@ -74,7 +74,7 @@ export function RegisterPage() {
             <IonItem>
               <IonInput
                 label="Email"
-                labelPlacement="floating"
+                labelPlacement="stacked"
                 type="email"
                 value={email}
                 onIonInput={(e) => setEmail(e.detail.value ?? '')}
@@ -85,7 +85,7 @@ export function RegisterPage() {
             <IonItem>
               <IonInput
                 label="Пароль"
-                labelPlacement="floating"
+                labelPlacement="stacked"
                 type="password"
                 value={password}
                 onIonInput={(e) => setPassword(e.detail.value ?? '')}
@@ -110,7 +110,7 @@ export function RegisterPage() {
             Войти
           </Link>
         </p>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

@@ -1,3 +1,4 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useRef, useState } from 'react'
 import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -7,7 +8,6 @@ import {
   IonHeader,
   IonToolbar,
   IonTitle,
-  IonContent,
   IonList,
   IonListHeader,
   IonItem,
@@ -199,7 +199,7 @@ function AccountFormModal({
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent className="ion-padding account-form-content">
+      <AppContent className="account-form-content">
         <IonList className="account-form-section">
           <IonListHeader className="account-form-section__header">
             <IonLabel>Основное</IonLabel>
@@ -208,7 +208,7 @@ function AccountFormModal({
           <IonItem className="account-form-row account-form-row--stacked">
             <IonInput
               label="Название"
-              labelPlacement="floating"
+              labelPlacement="stacked"
               value={name}
               onIonInput={(e) => setName(e.detail.value ?? '')}
               placeholder="Например: Карта Сбер"
@@ -306,7 +306,7 @@ function AccountFormModal({
             <IonInput
               ref={initialBalanceInputRef}
               label="Стартовый баланс"
-              labelPlacement="floating"
+              labelPlacement="stacked"
               type="text"
               inputMode="decimal"
               value={initialBalance}
@@ -363,7 +363,7 @@ function AccountFormModal({
             Удалить счёт
           </IonButton>
         )}
-      </IonContent>
+      </AppContent>
     </IonModal>
   )
 }
@@ -431,14 +431,22 @@ export function AccountsPage() {
           <IonTitle>Счета</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
+      <AppContent withFab
+        fixed={
+          <IonFab vertical="bottom" horizontal="end" slot="fixed">
+            <IonFabButton onClick={() => { setShowCreateModal(true); setEditingAccount(null) }}>
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        }
+      >
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '48px 0' }}>
+          <div className="app-state">
             <IonSpinner />
           </div>
         ) : accounts.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '48px 16px' }}>
-            <IonIcon icon={walletOutline} style={{ fontSize: '48px', opacity: 0.3 }} />
+          <div className="app-state">
+            <IonIcon icon={walletOutline} />
             <IonText>
               <p>Нет счетов. Создайте первый!</p>
             </IonText>
@@ -505,11 +513,6 @@ export function AccountsPage() {
           </IonList>
         )}
 
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => { setShowCreateModal(true); setEditingAccount(null) }}>
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
 
         <AccountFormModal
           isOpen={showCreateModal}
@@ -560,7 +563,7 @@ export function AccountsPage() {
           ]}
           onDidDismiss={() => setDeleteAccountId(null)}
         />
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

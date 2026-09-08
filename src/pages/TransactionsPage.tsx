@@ -1,3 +1,4 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -8,7 +9,6 @@ import {
   IonAlert,
   IonButton,
   IonButtons,
-  IonContent,
   IonDatetime,
   IonDatetimeButton,
   IonFab,
@@ -257,8 +257,16 @@ export function TransactionsPage() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent fullscreen className="ion-padding transactions-content">
-        <div className="transactions-shell">
+      <AppContent fullscreen withFab
+        fixed={
+          <IonFab slot="fixed" vertical="bottom" horizontal="end" className="transactions-fab">
+            <IonFabButton onClick={addTransaction} aria-label="Добавить транзакцию">
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        }
+      >
+        <div>
           <div className="transactions-controls" aria-label="Период и фильтры">
             <IonButton
               fill="clear"
@@ -456,7 +464,7 @@ export function TransactionsPage() {
                 {chartQuery.isLoading ? (
                   <IonSkeletonText animated className="transactions-chart-skeleton" />
                 ) : chartQuery.isError ? (
-                  <div className="transactions-state transactions-state--compact" role="alert">
+                  <div className="app-state transactions-state transactions-state--compact" role="alert">
                     <IonIcon icon={alertCircleOutline} aria-hidden="true" />
                     <p>Не удалось загрузить аналитику.</p>
                     <IonButton fill="outline" onClick={() => chartQuery.refetch()}>
@@ -536,7 +544,7 @@ export function TransactionsPage() {
               ))}
             </IonList>
           ) : transactionsQuery.isError ? (
-            <div className="transactions-state" role="alert">
+            <div className="app-state transactions-state" role="alert">
               <IonIcon icon={alertCircleOutline} aria-hidden="true" />
               <h2>Не удалось загрузить транзакции</h2>
               <p>Проверьте подключение и попробуйте ещё раз.</p>
@@ -545,7 +553,7 @@ export function TransactionsPage() {
               </IonButton>
             </div>
           ) : groupedTransactions.length === 0 ? (
-            <div className="transactions-state">
+            <div className="app-state transactions-state">
               <IonIcon icon={receiptOutline} aria-hidden="true" />
               <h2>{hasFilters ? 'Ничего не найдено' : 'За этот период транзакций нет'}</h2>
               <p>
@@ -593,11 +601,6 @@ export function TransactionsPage() {
           )}
         </div>
 
-        <IonFab slot="fixed" vertical="bottom" horizontal="end" className="transactions-fab">
-          <IonFabButton onClick={addTransaction} aria-label="Добавить транзакцию">
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
 
         <IonAlert
           isOpen={deleteAlertTxId !== null}
@@ -623,7 +626,7 @@ export function TransactionsPage() {
           duration={4000}
           onDidDismiss={() => deleteMutation.reset()}
         />
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

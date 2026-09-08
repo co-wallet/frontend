@@ -1,8 +1,9 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent,
+  IonPage, IonHeader, IonToolbar, IonTitle,
   IonButtons, IonBackButton, IonButton, IonIcon,
   IonList, IonItem, IonLabel, IonInput, IonNote,
   IonSpinner, IonText, IonModal, IonAlert,
@@ -208,9 +209,9 @@ export function AccountMembersPage() {
     return (
       <IonPage>
         <IonHeader><IonToolbar><IonTitle>Участники</IonTitle></IonToolbar></IonHeader>
-        <IonContent className="ion-padding" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-          <div style={{ textAlign: 'center', marginTop: '2rem' }}><IonSpinner /></div>
-        </IonContent>
+        <AppContent>
+          <div className="app-state"><IonSpinner /></div>
+        </AppContent>
       </IonPage>
     )
   }
@@ -226,7 +227,15 @@ export function AccountMembersPage() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent className="ion-padding">
+      <AppContent withFab={isOwner}
+        fixed={isOwner && (
+          <IonFab vertical="bottom" horizontal="end" slot="fixed">
+            <IonFabButton onClick={openAddForm}>
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        )}
+      >
         {account && (
           <IonNote style={{ display: 'block', marginBottom: '1rem' }}>
             Счёт: <strong>{account.name}</strong>
@@ -280,13 +289,6 @@ export function AccountMembersPage() {
           ))}
         </IonList>
 
-        {isOwner && (
-          <IonFab vertical="bottom" horizontal="end" slot="fixed">
-            <IonFabButton onClick={openAddForm}>
-              <IonIcon icon={addOutline} />
-            </IonFabButton>
-          </IonFab>
-        )}
 
         <IonAlert
           isOpen={showDeleteAlert}
@@ -316,7 +318,7 @@ export function AccountMembersPage() {
               </IonButtons>
             </IonToolbar>
           </IonHeader>
-          <IonContent className="ion-padding">
+          <AppContent>
             {error && (
               <IonText color="danger">
                 <p style={{ marginBottom: '0.5rem' }}>{error}</p>
@@ -383,9 +385,9 @@ export function AccountMembersPage() {
             >
               {addMutation.isPending ? <IonSpinner name="crescent" /> : 'Добавить'}
             </IonButton>
-          </IonContent>
+          </AppContent>
         </IonModal>
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }

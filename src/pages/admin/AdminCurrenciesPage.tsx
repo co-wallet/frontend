@@ -1,7 +1,8 @@
+import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
   IonBackButton, IonButton, IonIcon, IonList, IonItem, IonLabel,
   IonNote, IonToggle, IonSpinner, IonModal, IonInput, IonText,
   IonFab, IonFabButton, IonItemGroup, IonItemDivider,
@@ -53,8 +54,8 @@ function AddCurrencyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
           </IonButtons>
         </IonToolbar>
       </IonHeader>
-      <IonContent>
-        <IonList inset>
+      <AppContent>
+        <IonList>
           <IonItem>
             <IonInput
               label="Код (ISO)"
@@ -101,7 +102,7 @@ function AddCurrencyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
             </IonText>
           </div>
         )}
-      </IonContent>
+      </AppContent>
     </IonModal>
   )
 }
@@ -171,9 +172,17 @@ export function AdminCurrenciesPage() {
         </IonToolbar>
       </IonHeader>
 
-      <IonContent>
+      <AppContent withFab
+        fixed={
+          <IonFab vertical="bottom" horizontal="end" slot="fixed">
+            <IonFabButton onClick={() => setShowAdd(true)}>
+              <IonIcon icon={addOutline} />
+            </IonFabButton>
+          </IonFab>
+        }
+      >
         {isLoading ? (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '3rem 0' }}>
+          <div className="app-state">
             <IonSpinner />
           </div>
         ) : (
@@ -197,14 +206,9 @@ export function AdminCurrenciesPage() {
           </IonList>
         )}
 
-        <IonFab vertical="bottom" horizontal="end" slot="fixed">
-          <IonFabButton onClick={() => setShowAdd(true)}>
-            <IonIcon icon={addOutline} />
-          </IonFabButton>
-        </IonFab>
 
         <AddCurrencyModal isOpen={showAdd} onClose={() => setShowAdd(false)} />
-      </IonContent>
+      </AppContent>
     </IonPage>
   )
 }
