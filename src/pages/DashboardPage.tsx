@@ -59,6 +59,7 @@ import {
   toggleAccountKind,
 } from '@/lib/accountFilters'
 import {
+  dashboardEntryColor,
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
@@ -121,7 +122,7 @@ function ChartBlock({
               {chartEntries.map((entry, i) => (
                 <Cell
                   key={`${entry.name}-${i}`}
-                  fill={entry.amount < 0 ? 'var(--ion-color-danger)' : colors[i % colors.length]}
+                  fill={dashboardEntryColor(entry, colors[i % colors.length])}
                 />
               ))}
             </Pie>
@@ -148,7 +149,7 @@ function ChartBlock({
                     height: 10,
                     borderRadius: '50%',
                     flexShrink: 0,
-                    background: isNegative ? 'var(--ion-color-danger)' : colors[i % colors.length],
+                    background: dashboardEntryColor(s, colors[i % colors.length]),
                   }}
                 />
                 {s.iconType === 'account' && (

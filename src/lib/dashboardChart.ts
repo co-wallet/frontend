@@ -1,3 +1,5 @@
+import { getAccountIconColor } from '@/components/AccountIcon'
+
 export interface DashboardPieEntry {
   name: string
   amount: number
@@ -7,6 +9,11 @@ export interface DashboardPieEntry {
 
 export interface DashboardChartEntry extends DashboardPieEntry {
   chartAmount: number
+}
+
+export function dashboardEntryColor(entry: DashboardPieEntry, fallbackColor: string): string {
+  if (entry.iconType === 'account') return getAccountIconColor(entry.icon)
+  return entry.amount < 0 ? 'var(--ion-color-danger)' : fallbackColor
 }
 
 export function prepareDashboardChart(data: DashboardPieEntry[]): {

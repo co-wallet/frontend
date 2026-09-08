@@ -282,6 +282,10 @@ export function accountIconStyle(
   }
 }
 
+export function getAccountIconColor(value?: string | null): string {
+  return accountIconStyle(resolveAccountIcon(value), 44, 'square')['--account-icon-foreground']
+}
+
 export function AccountIcon({
   value,
   size = 44,
