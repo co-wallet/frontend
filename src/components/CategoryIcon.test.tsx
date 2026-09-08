@@ -4,8 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CategoryIcon,
   CategoryIconPicker,
+  categoryIconForegroundColor,
   defaultCategoryIconValue,
   normalizeCategoryIconValue,
+  UNCATEGORIZED_CATEGORY_ICON,
   updateCategoryIconAppearance,
 } from './CategoryIcon'
 
@@ -19,6 +21,28 @@ describe('CategoryIcon', () => {
     expect(markup).toContain('aria-label="Продукты"')
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-green)')
     expect(markup).toContain('--account-icon-border:var(--account-icon-color-orange)')
+  })
+
+  it('exposes the resolved foreground color for chart sectors', () => {
+    expect(categoryIconForegroundColor('preset:cafe|orange|none', 'expense'))
+      .toBe('var(--account-icon-color-orange)')
+    expect(categoryIconForegroundColor('preset:salary|yellow|none', 'income'))
+      .toBe('var(--account-icon-foreground-yellow)')
+    expect(categoryIconForegroundColor(UNCATEGORIZED_CATEGORY_ICON, 'expense'))
+      .toBe('var(--account-icon-color-red)')
+  })
+
+  it('renders the shared uncategorized preset with an explicit accessible label', () => {
+    const markup = renderToStaticMarkup(
+      <CategoryIcon
+        value={UNCATEGORIZED_CATEGORY_ICON}
+        type="expense"
+        ariaLabel="Без категории"
+      />,
+    )
+
+    expect(markup).toContain('aria-label="Без категории"')
+    expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
   })
 
   it('normalizes legacy emoji icons to vector presets', () => {

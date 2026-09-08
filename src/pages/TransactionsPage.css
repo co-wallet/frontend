@@ -1,0 +1,421 @@
+.transactions-content {
+  --padding-bottom: calc(104px + env(safe-area-inset-bottom));
+}
+
+.transactions-shell {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+}
+
+.transactions-controls {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.transactions-period-arrow {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+
+.transactions-period-selector {
+  min-width: 0;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-primary-rgb), 0.07);
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.transactions-period-selector ion-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+.transactions-period-selector ion-select::part(container) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: auto;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 36px;
+  box-sizing: border-box;
+}
+
+.transactions-period-selector ion-select::part(text) {
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactions-period-selector ion-select::part(icon) {
+  position: absolute;
+  inset-inline-end: 12px;
+  margin: 0;
+}
+
+.transactions-custom-period {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
+  border-radius: 12px;
+}
+
+.transactions-custom-period__field {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--transaction-secondary-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.transactions-custom-period ion-datetime-button {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.transactions-custom-period ion-datetime-button::part(native) {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.24);
+  border-radius: 10px;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.transactions-custom-period ion-datetime-button::part(native):focus-visible {
+  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+.transactions-filter-status {
+  display: flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--transaction-secondary-text);
+  font-size: 0.8125rem;
+}
+
+.transactions-filter-status__label {
+  flex: 0 0 auto;
+  color: var(--ion-text-color);
+  font-weight: 650;
+}
+
+.transactions-active-filters {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.transactions-active-filters ion-button {
+  min-width: max-content;
+  min-height: 44px;
+  margin: 0;
+  text-transform: none;
+  --border-color: var(--transaction-transfer-text);
+  --border-radius: 999px;
+  --color: var(--transaction-transfer-text);
+}
+
+.transactions-summary {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  overflow: hidden;
+  margin-bottom: 8px;
+  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
+  border-radius: 12px;
+  background: var(--ion-border-color, rgba(0, 0, 0, 0.13));
+}
+
+.transactions-summary__item {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--ion-card-background, var(--ion-background-color));
+  color: var(--transaction-secondary-text);
+  font-size: 0.8125rem;
+}
+
+.transactions-summary__amount {
+  overflow: hidden;
+  font-size: 1rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactions-summary__amount--expense,
+.transactions-date-divider .is-expense {
+  color: var(--transaction-expense-text);
+}
+
+.transactions-summary__amount--income,
+.transactions-date-divider .is-income {
+  color: var(--transaction-income-text);
+}
+
+.transactions-summary__skeleton {
+  width: min(112px, 80%);
+  height: 18px;
+  margin: 0;
+}
+
+.transactions-inline-error {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  color: var(--transaction-expense-text);
+  font-size: 0.875rem;
+}
+
+.transactions-inline-error ion-button {
+  min-height: 44px;
+  margin: 0;
+}
+
+.transactions-analytics {
+  margin-bottom: 12px;
+  border-bottom: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
+}
+
+.transactions-analytics__header {
+  --min-height: 48px;
+  --padding-start: 4px;
+  --inner-padding-end: 4px;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.transactions-analytics__content {
+  padding: 4px 4px 16px;
+}
+
+.transactions-chart-skeleton {
+  width: 180px;
+  height: 180px;
+  margin: 16px auto 0;
+  border-radius: 50%;
+}
+
+.transactions-chart-empty {
+  display: block;
+  padding: 28px 0 20px;
+  color: var(--transaction-secondary-text);
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.transactions-chart-legend {
+  display: grid;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.transactions-chart-legend__item,
+.transactions-chart-legend__label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+}
+
+.transactions-chart-legend__item {
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 0.8125rem;
+}
+
+.transactions-chart-legend__label {
+  gap: 8px;
+}
+
+.transactions-chart-legend__label > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactions-chart-legend__dot {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 50%;
+}
+
+.transactions-chart-legend__amount {
+  flex: 0 0 auto;
+  color: var(--ion-text-color);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.transactions-list {
+  margin: 0;
+  padding: 0;
+  background: transparent;
+}
+
+.transactions-date-divider {
+  --background: rgba(var(--ion-color-primary-rgb), 0.06);
+  --color: var(--ion-text-color);
+  --padding-start: 12px;
+  --inner-padding-end: 12px;
+  min-height: 38px;
+  border: 0;
+}
+
+.transactions-date-divider ion-label {
+  min-width: 0;
+  margin: 0;
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+}
+
+.transactions-date-divider__date {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.transactions-date-divider__total {
+  margin-block: 0;
+  margin-inline-start: 16px;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.transactions-state {
+  display: flex;
+  min-height: 260px;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  padding: 40px 20px;
+  color: var(--transaction-secondary-text);
+  text-align: center;
+}
+
+.transactions-state--compact {
+  min-height: 180px;
+}
+
+.transactions-state > ion-icon {
+  margin-bottom: 12px;
+  color: var(--ion-color-medium-shade);
+  font-size: 44px;
+}
+
+.transactions-state h2 {
+  margin: 0;
+  color: var(--ion-text-color);
+  font-size: 1.0625rem;
+}
+
+.transactions-state p {
+  max-width: 320px;
+  margin: 8px 0 16px;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.transactions-state ion-button {
+  min-height: 44px;
+}
+
+.transactions-skeleton-row {
+  --min-height: 72px;
+}
+
+.transactions-skeleton-row__icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.transactions-skeleton-row__title {
+  width: 56%;
+  height: 16px;
+}
+
+.transactions-skeleton-row__subtitle {
+  width: 38%;
+  height: 13px;
+}
+
+.transactions-skeleton-row__amount {
+  width: 86px;
+  height: 16px;
+}
+
+.transactions-fab {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 420px) {
+  .transactions-controls {
+    grid-template-columns: 44px minmax(0, 1fr) 44px 44px;
+    gap: 4px;
+  }
+
+  .transactions-period-selector {
+    font-size: 0.8125rem;
+  }
+
+  .transactions-period-selector ion-select {
+    font-size: 0.8125rem;
+  }
+
+  .transactions-summary__item {
+    padding-inline: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .transactions-content *,
+  .transactions-content *::before,
+  .transactions-content *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

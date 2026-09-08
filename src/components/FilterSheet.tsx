@@ -8,40 +8,29 @@ import {
   IonContent,
   IonButton,
   IonButtons,
-  IonList,
-  IonItem,
-  IonLabel,
-  IonDatetime,
-  IonChip,
+  IonBadge,
   IonIcon,
   IonSegment,
   IonSegmentButton,
+  IonLabel,
   IonNote,
   IonFooter,
+  IonPage,
 } from '@ionic/react'
-import { closeOutline, funnelOutline } from 'ionicons/icons'
+import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type CategoryNode } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
+import { flattenCategories } from '@/lib/categories'
+
+import './FilterSheet.css'
 
 interface FilterSheetProps {
   value: TransactionFilter
   onChange: (f: TransactionFilter) => void
-}
-
-function flattenCategories(nodes: CategoryNode[]): CategoryNode[] {
-  const result: CategoryNode[] = []
-  function walk(items: CategoryNode[]) {
-    for (const n of items) {
-      result.push(n)
-      if (n.children?.length) walk(n.children)
-    }
-  }
-  walk(nodes)
-  return result
 }
 
 function toggle<T>(arr: T[], item: T): T[] {
@@ -55,8 +44,6 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
   const [tagIds, setTagIds] = useState<string[]>(value.tagIds ?? [])
   const [tagMode, setTagMode] = useState<'or' | 'and'>(value.tagMode ?? 'or')
-  const [dateFrom, setDateFrom] = useState(value.dateFrom ?? '')
-  const [dateTo, setDateTo] = useState(value.dateTo ?? '')
 
   useEffect(() => {
     if (open) {
@@ -64,8 +51,6 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
       setCategoryIds(value.categoryIds ?? [])
       setTagIds(value.tagIds ?? [])
       setTagMode(value.tagMode ?? 'or')
-      setDateFrom(value.dateFrom ?? '')
-      setDateTo(value.dateTo ?? '')
     }
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -80,9 +65,9 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
   })
   const { data: tags = [] } = useQuery({ queryKey: ['tags'], queryFn: () => tagsApi.list() })
 
-  const allCategories = [
-    ...flattenCategories(expenseTree).map((c) => ({ ...c, typeLabel: 'Расходы' })),
-    ...flattenCategories(incomeTree).map((c) => ({ ...c, typeLabel: 'Доходы' })),
+  const allCategories: CategoryNode[] = [
+    ...flattenCategories(expenseTree),
+    ...flattenCategories(incomeTree),
   ]
 
   function apply() {
@@ -90,8 +75,6 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
     if (accountIds.length) f.accountIds = accountIds
     if (categoryIds.length) f.categoryIds = categoryIds
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
-    if (dateFrom) f.dateFrom = dateFrom
-    if (dateTo) f.dateTo = dateTo
     onChange(f)
     setOpen(false)
   }
@@ -101,8 +84,6 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
     setCategoryIds([])
     setTagIds([])
     setTagMode('or')
-    setDateFrom('')
-    setDateTo('')
     onChange({})
     setOpen(false)
   }
@@ -111,169 +92,157 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
     (value.accountIds?.length ?? 0) > 0,
     (value.categoryIds?.length ?? 0) > 0,
     (value.tagIds?.length ?? 0) > 0,
-    !!value.dateFrom || !!value.dateTo,
   ].filter(Boolean).length
 
   return (
     <>
-      <IonButton
-        fill={activeCount > 0 ? 'solid' : 'outline'}
-        size="small"
-        onClick={() => setOpen(true)}
-      >
-        <IonIcon icon={funnelOutline} slot="start" />
-        Фильтры
+      <div className="filter-sheet-trigger-wrapper">
+        <IonButton
+          fill={activeCount > 0 ? 'solid' : 'outline'}
+          className="filter-sheet-trigger"
+          onClick={() => setOpen(true)}
+          aria-label={activeCount > 0 ? `Фильтры, активно: ${activeCount}` : 'Фильтры'}
+        >
+          <IonIcon icon={funnelOutline} slot="icon-only" />
+        </IonButton>
         {activeCount > 0 && (
-          <span
-            style={{
-              marginLeft: 6,
-              background: 'var(--ion-color-primary-contrast)',
-              color: 'var(--ion-color-primary)',
-              borderRadius: '50%',
-              width: 18,
-              height: 18,
-              fontSize: 11,
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontWeight: 700,
-            }}
-          >
+          <IonBadge className="filter-sheet-trigger__badge" aria-hidden="true">
             {activeCount}
-          </span>
+          </IonBadge>
         )}
-      </IonButton>
+      </div>
 
       <IonModal
+        className="filter-sheet-modal"
         isOpen={open}
         onDidDismiss={() => setOpen(false)}
-        breakpoints={[0, 0.5, 1]}
-        initialBreakpoint={0.5}
+        breakpoints={[0, 1]}
+        initialBreakpoint={1}
       >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>Фильтры</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setOpen(false)}>
-                <IonIcon icon={closeOutline} slot="icon-only" />
-              </IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
+        <IonPage>
+          <IonHeader>
+            <IonToolbar>
+              <IonTitle>Фильтры</IonTitle>
+              <IonButtons slot="end">
+                <IonButton onClick={() => setOpen(false)} aria-label="Закрыть фильтры">
+                  <IonIcon icon={closeOutline} slot="icon-only" />
+                </IonButton>
+              </IonButtons>
+            </IonToolbar>
+          </IonHeader>
 
-        <IonContent className="ion-padding">
-          {/* Date range */}
-          <IonList>
-            <IonItem>
-              <IonLabel>Период с</IonLabel>
-              <IonDatetime
-                presentation="date"
-                preferWheel={true}
-                value={dateFrom || undefined}
-                onIonChange={(e) => {
-                  const val = e.detail.value
-                  setDateFrom(typeof val === 'string' ? val.slice(0, 10) : '')
-                }}
-                style={{ maxWidth: 180 }}
-              />
-            </IonItem>
-            <IonItem>
-              <IonLabel>Период по</IonLabel>
-              <IonDatetime
-                presentation="date"
-                preferWheel={true}
-                value={dateTo || undefined}
-                onIonChange={(e) => {
-                  const val = e.detail.value
-                  setDateTo(typeof val === 'string' ? val.slice(0, 10) : '')
-                }}
-                style={{ maxWidth: 180 }}
-              />
-            </IonItem>
-          </IonList>
-
+          <IonContent className="ion-padding filter-sheet-content">
           {/* Accounts */}
           {accounts.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <IonNote style={{ paddingLeft: 16, fontWeight: 600, fontSize: 14 }}>Счета</IonNote>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 16px' }}>
-                {accounts.map((a) => (
-                  <IonChip
-                    key={a.id}
-                    color={accountIds.includes(a.id) ? 'primary' : undefined}
-                    outline={!accountIds.includes(a.id)}
-                    onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
-                  >
-                    <AccountIcon value={a.icon} size={22} />
-                    {a.name}
-                  </IonChip>
-                ))}
+            <section className="filter-sheet-section" aria-labelledby="filter-accounts-title">
+              <IonNote id="filter-accounts-title" className="filter-sheet-section__title">Счета</IonNote>
+              <div className="filter-sheet-options">
+                {accounts.map((a) => {
+                  const selected = accountIds.includes(a.id)
+                  return (
+                    <IonButton
+                      key={a.id}
+                      fill={selected ? 'solid' : 'outline'}
+                      className="filter-sheet-option"
+                      onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
+                      aria-pressed={selected}
+                    >
+                      <span className="filter-sheet-option__content">
+                        <AccountIcon value={a.icon} size={22} />
+                        <span>{a.name}</span>
+                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                      </span>
+                    </IonButton>
+                  )
+                })}
               </div>
-            </div>
+            </section>
           )}
 
           {/* Categories */}
           {allCategories.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <IonNote style={{ paddingLeft: 16, fontWeight: 600, fontSize: 14 }}>Категории</IonNote>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 16px' }}>
-                {allCategories.map((c) => (
-                  <IonChip
-                    key={c.id}
-                    color={categoryIds.includes(c.id) ? 'primary' : undefined}
-                    outline={!categoryIds.includes(c.id)}
-                    onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
-                  >
-                    <CategoryIcon value={c.icon} type={c.type} size={22} />
-                    {c.name}
-                  </IonChip>
-                ))}
+            <section className="filter-sheet-section" aria-labelledby="filter-categories-title">
+              <IonNote id="filter-categories-title" className="filter-sheet-section__title">Категории</IonNote>
+              <div className="filter-sheet-options">
+                {allCategories.map((c) => {
+                  const selected = categoryIds.includes(c.id)
+                  return (
+                    <IonButton
+                      key={c.id}
+                      fill={selected ? 'solid' : 'outline'}
+                      className="filter-sheet-option"
+                      onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
+                      aria-pressed={selected}
+                    >
+                      <span className="filter-sheet-option__content">
+                        <CategoryIcon value={c.icon} type={c.type} size={22} />
+                        <span>{c.name}</span>
+                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                      </span>
+                    </IonButton>
+                  )
+                })}
               </div>
-            </div>
+            </section>
           )}
 
           {/* Tags */}
           {tags.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px' }}>
-                <IonNote style={{ fontWeight: 600, fontSize: 14 }}>Теги</IonNote>
-                <IonSegment
-                  value={tagMode}
-                  onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
-                  style={{ maxWidth: 120 }}
-                >
-                  <IonSegmentButton value="or">OR</IonSegmentButton>
-                  <IonSegmentButton value="and">AND</IonSegmentButton>
-                </IonSegment>
-              </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, padding: '8px 16px' }}>
-                {tags.map((t) => (
-                  <IonChip
-                    key={t.id}
-                    color={tagIds.includes(t.id) ? 'primary' : undefined}
-                    outline={!tagIds.includes(t.id)}
-                    onClick={() => setTagIds((prev) => toggle(prev, t.id))}
+            <section className="filter-sheet-section" aria-labelledby="filter-tags-title">
+              <div className="filter-sheet-section__heading">
+                <IonNote id="filter-tags-title" className="filter-sheet-section__title">Теги</IonNote>
+                <div className="filter-sheet-tag-mode-control">
+                  <span className="filter-sheet-tag-mode__label">Совпадение</span>
+                  <IonSegment
+                    value={tagMode}
+                    onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
+                    className="filter-sheet-tag-mode"
+                    aria-label="Совпадение выбранных тегов"
                   >
-                    #{t.name}
-                  </IonChip>
-                ))}
+                    <IonSegmentButton value="or" aria-label="Любой выбранный тег">
+                      <IonLabel>Любой</IonLabel>
+                    </IonSegmentButton>
+                    <IonSegmentButton value="and" aria-label="Все выбранные теги">
+                      <IonLabel>Все</IonLabel>
+                    </IonSegmentButton>
+                  </IonSegment>
+                </div>
               </div>
-            </div>
+              <div className="filter-sheet-options">
+                {tags.map((t) => {
+                  const selected = tagIds.includes(t.id)
+                  return (
+                    <IonButton
+                      key={t.id}
+                      fill={selected ? 'solid' : 'outline'}
+                      className="filter-sheet-option"
+                      onClick={() => setTagIds((prev) => toggle(prev, t.id))}
+                      aria-pressed={selected}
+                    >
+                      <span className="filter-sheet-option__content">
+                        <span>#{t.name}</span>
+                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                      </span>
+                    </IonButton>
+                  )
+                })}
+              </div>
+            </section>
           )}
-        </IonContent>
 
-        <IonFooter>
-          <IonToolbar>
-            <div style={{ display: 'flex', gap: 12, padding: '0 16px' }}>
-              <IonButton expand="block" fill="outline" color="medium" onClick={reset} style={{ flex: 1 }}>
+          </IonContent>
+
+          <IonFooter className="filter-sheet-footer">
+            <div className="filter-sheet-footer-actions">
+              <IonButton expand="block" fill="outline" onClick={reset}>
                 Сбросить
               </IonButton>
-              <IonButton expand="block" onClick={apply} style={{ flex: 1 }}>
+              <IonButton expand="block" onClick={apply}>
                 Применить
               </IonButton>
             </div>
-          </IonToolbar>
-        </IonFooter>
+          </IonFooter>
+        </IonPage>
       </IonModal>
     </>
   )
