@@ -15,7 +15,7 @@ import {
 } from 'ionicons/icons'
 
 import type { Account } from '@/api/accounts'
-import type { CategoryNode } from '@/api/categories'
+import type { Category } from '@/api/categories'
 import type { Transaction } from '@/api/transactions'
 import {
   CategoryIcon,
@@ -35,7 +35,7 @@ interface TransactionItemProps {
   tx: Transaction
   account?: Account
   toAccount?: Account
-  category?: CategoryNode
+  category?: Category
   currentUserId?: string
   defaultCurrency: string
   onEdit: (id: string) => void

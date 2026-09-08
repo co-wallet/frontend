@@ -5,18 +5,14 @@ export type CategoryType = 'expense' | 'income';
 export interface Category {
   id: string;
   userId: string;
-  parentId: string | null;
   name: string;
   type: CategoryType;
   icon: string | null;
   createdAt: string;
-  children: CategoryNode[];
 }
 
-export type CategoryNode = Category;
 
 export interface CreateCategoryReq {
-  parentId?: string | null;
   name: string;
   type: CategoryType;
   icon?: string | null;
@@ -29,7 +25,7 @@ export interface UpdateCategoryReq {
 
 export const categoriesApi = {
   list: (type: CategoryType) =>
-    apiClient.get<CategoryNode[]>('/categories', { params: { type } }).then((r: { data: CategoryNode[] }) => r.data),
+    apiClient.get<Category[]>('/categories', { params: { type } }).then((r: { data: Category[] }) => r.data),
 
   create: (req: CreateCategoryReq) =>
     apiClient.post<Category>('/categories', req).then((r: { data: Category }) => r.data),

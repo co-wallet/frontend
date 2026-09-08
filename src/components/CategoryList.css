@@ -1,0 +1,30 @@
+.category-list-row {
+  --padding-start: 16px;
+  --inner-padding-end: 4px;
+  --min-height: 60px;
+}
+
+.category-list-row__icon {
+  display: inline-flex;
+  align-items: center;
+  margin-inline-end: 12px;
+}
+
+.category-list-row__label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.category-list-row__actions {
+  flex: 0 0 auto;
+}
+
+.category-list-row__actions ion-button {
+  width: 44px;
+  min-height: 44px;
+  margin: 0;
+  --padding-end: 6px;
+  --padding-start: 6px;
+}

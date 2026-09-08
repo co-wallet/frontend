@@ -1,18 +1,16 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { CategoryNode } from '@/api/categories'
+import type { Category } from '@/api/categories'
 import { CategorySelect } from '@/components/CategorySelect'
 
-const categories: CategoryNode[] = [{
+const categories: Category[] = [{
   id: 'category-cafe',
   userId: 'user-1',
-  parentId: null,
   name: 'Кофейни',
   type: 'expense',
   icon: 'preset:cafe|orange|none',
   createdAt: '2026-09-08T00:00:00Z',
-  children: [],
 }]
 
 describe('CategorySelect', () => {

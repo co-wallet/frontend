@@ -14,7 +14,7 @@ import {
 } from '@ionic/react'
 import { checkmarkCircle, chevronExpandOutline } from 'ionicons/icons'
 
-import type { CategoryNode, CategoryType } from '@/api/categories'
+import type { Category, CategoryType } from '@/api/categories'
 import {
   CategoryIcon,
   UNCATEGORIZED_CATEGORY_ICON,
@@ -24,7 +24,7 @@ import './CategorySelect.css'
 
 interface CategorySelectProps {
   label?: string
-  categories: CategoryNode[]
+  categories: Category[]
   type: CategoryType
   value: string
   onChange: (categoryId: string) => void

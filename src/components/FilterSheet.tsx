@@ -21,10 +21,9 @@ import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/ic
 import { accountsApi } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
 import { CategoryIcon } from '@/components/CategoryIcon'
-import { categoriesApi, type CategoryNode } from '@/api/categories'
+import { categoriesApi, type Category } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
-import { flattenCategories } from '@/lib/categories'
 
 import './FilterSheet.css'
 
@@ -55,19 +54,19 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
   }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const { data: accounts = [] } = useQuery({ queryKey: ['accounts'], queryFn: () => accountsApi.list() })
-  const { data: expenseTree = [] } = useQuery({
+  const { data: expenseCategories = [] } = useQuery({
     queryKey: ['categories', 'expense'],
     queryFn: () => categoriesApi.list('expense'),
   })
-  const { data: incomeTree = [] } = useQuery({
+  const { data: incomeCategories = [] } = useQuery({
     queryKey: ['categories', 'income'],
     queryFn: () => categoriesApi.list('income'),
   })
   const { data: tags = [] } = useQuery({ queryKey: ['tags'], queryFn: () => tagsApi.list() })
 
-  const allCategories: CategoryNode[] = [
-    ...flattenCategories(expenseTree),
-    ...flattenCategories(incomeTree),
+  const allCategories: Category[] = [
+    ...expenseCategories,
+    ...incomeCategories,
   ]
 
   function apply() {

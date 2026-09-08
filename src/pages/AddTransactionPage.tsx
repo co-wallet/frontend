@@ -18,7 +18,6 @@ import { AccountSelect } from '@/components/AccountSelect'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
-import { flattenCategories } from '@/lib/categories'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Расход' },
@@ -80,12 +79,11 @@ export function AddTransactionPage() {
   })
 
   const catType = type === 'income' ? 'income' : 'expense'
-  const { data: categoryTree = [] } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['categories', catType],
     queryFn: () => categoriesApi.list(catType),
     enabled: type !== 'transfer',
   })
-  const flatCategories = flattenCategories(categoryTree)
 
   useEffect(() => {
     if (!isShared || !members.length || customShares) return
@@ -373,7 +371,7 @@ export function AddTransactionPage() {
             {/* Category */}
             {type !== 'transfer' && (
               <CategorySelect
-                categories={flatCategories}
+                categories={categories}
                 type={catType}
                 value={categoryId}
                 onChange={setCategoryId}

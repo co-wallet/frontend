@@ -17,7 +17,6 @@ import { TagInput } from '@/components/TagInput'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
-import { flattenCategories } from '@/lib/categories'
 
 function roundCents(v: number): number {
   return Math.round(v * 100) / 100
@@ -72,12 +71,11 @@ export function EditTransactionPage() {
   })
 
   const catType = tx?.type === 'income' ? 'income' : 'expense'
-  const { data: categoryTree = [] } = useQuery({
+  const { data: categories = [] } = useQuery({
     queryKey: ['categories', catType],
     queryFn: () => categoriesApi.list(catType),
     enabled: !!tx && tx.type !== 'transfer',
   })
-  const flatCategories = flattenCategories(categoryTree)
 
   useEffect(() => {
     if (!tx || initialized) return
@@ -359,7 +357,7 @@ export function EditTransactionPage() {
             {/* Category (not for transfer) */}
             {tx.type !== 'transfer' && (
               <CategorySelect
-                categories={flatCategories}
+                categories={categories}
                 type={catType}
                 value={categoryId}
                 onChange={setCategoryId}

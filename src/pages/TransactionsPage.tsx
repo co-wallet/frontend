@@ -57,7 +57,6 @@ import {
 } from '@/components/CategoryIcon'
 import { FilterSheet } from '@/components/FilterSheet'
 import { TransactionItem } from '@/components/TransactionItem'
-import { flattenCategories } from '@/lib/categories'
 import {
   buildTransactionAnalyticsParams,
   formatCurrencyAmount,
@@ -194,8 +193,8 @@ export function TransactionsPage() {
 
   const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data])
   const allCategories = useMemo(() => [
-    ...flattenCategories(expenseCategoriesQuery.data ?? []),
-    ...flattenCategories(incomeCategoriesQuery.data ?? []),
+    ...(expenseCategoriesQuery.data ?? []),
+    ...(incomeCategoriesQuery.data ?? []),
   ], [expenseCategoriesQuery.data, incomeCategoriesQuery.data])
   const tags = tagsQuery.data ?? []
   const accountsById = useMemo(
