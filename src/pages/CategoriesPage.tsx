@@ -1,18 +1,18 @@
 import { AppContent } from '@/components/layout/AppContent'
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   IonPage, IonHeader, IonToolbar, IonTitle,
-  IonList, IonItem, IonLabel, IonIcon,
+  IonList, IonItem, IonIcon,
   IonMenuButton, IonButtons, IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton,
   IonSegment, IonSegmentButton, IonFab, IonFabButton,
 } from '@ionic/react';
 import {
-  folderOpenOutline, folderOutline, addOutline,
+  folderOutline, addOutline,
 } from 'ionicons/icons';
-import { categoriesApi, CategoryNode, CategoryType, CreateCategoryReq } from '../api/categories';
-import { CategoryTree } from '../components/CategoryTree';
+import { categoriesApi, Category, CategoryType, CreateCategoryReq } from '../api/categories';
+import { CategoryList } from '../components/CategoryList';
 import {
   defaultCategoryIconValue,
   normalizeCategoryIconValue,
@@ -24,7 +24,6 @@ import './CategoriesPage.css';
 function emptyFormData(type: CategoryType) {
   return {
     name: '',
-    parentId: '',
     icon: defaultCategoryIconValue(type),
   };
 }
@@ -33,12 +32,8 @@ export default function CategoriesPage() {
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [formData, setFormData] = useState<{ name: string; parentId: string; icon: string }>(
-    emptyFormData('expense'),
-  );
-  const [parentName, setParentName] = useState<string | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<CategoryNode | null>(null);
-  const [expanded, setExpanded] = useState<Set<string>>(new Set());
+  const [formData, setFormData] = useState(() => emptyFormData('expense'));
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
 
   const queryClient = useQueryClient();
 
@@ -47,20 +42,6 @@ export default function CategoriesPage() {
     queryFn: () => categoriesApi.list(activeTab),
   });
 
-  useEffect(() => {
-    const ids = new Set<string>();
-    function collect(nodes: CategoryNode[]) {
-      for (const n of nodes) {
-        if (n.children?.length) {
-          ids.add(n.id);
-          collect(n.children);
-        }
-      }
-    }
-    collect(categories);
-    setExpanded(ids);
-  }, [categories]);
-
   function invalidateCategoryConsumers() {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
     queryClient.invalidateQueries({ queryKey: ['analytics'] });
@@ -68,11 +49,8 @@ export default function CategoriesPage() {
 
   const createMutation = useMutation({
     mutationFn: (req: CreateCategoryReq) => categoriesApi.create(req),
-    onSuccess: (_, variables) => {
+    onSuccess: () => {
       invalidateCategoryConsumers();
-      if (variables.parentId) {
-        setExpanded((current) => new Set(current).add(variables.parentId!));
-      }
       resetForm();
     },
   });
@@ -94,32 +72,25 @@ export default function CategoriesPage() {
   function resetForm() {
     setShowForm(false);
     setEditingId(null);
-    setParentName(null);
     setFormData(emptyFormData(activeTab));
   }
 
-  function handleCreate(parent?: CategoryNode) {
+  function handleCreate() {
     setEditingId(null);
-    setParentName(parent?.name ?? null);
-    setFormData({
-      ...emptyFormData(activeTab),
-      parentId: parent?.id ?? '',
-    });
+    setFormData(emptyFormData(activeTab));
     setShowForm(true);
   }
 
-  function handleEdit(cat: CategoryNode) {
+  function handleEdit(cat: Category) {
     setEditingId(cat.id);
-    setParentName(null);
     setFormData({
       name: cat.name,
-      parentId: cat.parentId ?? '',
       icon: normalizeCategoryIconValue(cat.icon, cat.type),
     });
     setShowForm(true);
   }
 
-  function handleDelete(category: CategoryNode) {
+  function handleDelete(category: Category) {
     deleteMutation.reset();
     setDeleteTarget(category);
   }
@@ -132,7 +103,6 @@ export default function CategoriesPage() {
       createMutation.mutate({
         name: formData.name,
         type: activeTab,
-        parentId: formData.parentId || null,
         icon: formData.icon || null,
       });
     }
@@ -142,15 +112,6 @@ export default function CategoriesPage() {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id);
     setDeleteTarget(null);
-  }
-
-  function toggleExpand(id: string) {
-    setExpanded(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
   }
 
   return (
@@ -175,7 +136,7 @@ export default function CategoriesPage() {
       <AppContent withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
-            <IonFabButton aria-label="Добавить корневую категорию" onClick={() => handleCreate()}>
+            <IonFabButton aria-label="Добавить категорию" onClick={() => handleCreate()}>
               <IonIcon icon={addOutline} />
             </IonFabButton>
           </IonFab>
@@ -194,11 +155,8 @@ export default function CategoriesPage() {
           </div>
         ) : (
           <IonList>
-            <CategoryTree
-              nodes={categories}
-              expanded={expanded}
-              onToggle={toggleExpand}
-              onAddChild={handleCreate}
+            <CategoryList
+              categories={categories}
               onEdit={handleEdit}
               onDelete={handleDelete}
             />
@@ -211,7 +169,6 @@ export default function CategoriesPage() {
           </IonText>
         )}
 
-
         {/* Add/Edit Modal */}
         <IonModal isOpen={showForm} onDidDismiss={resetForm}>
           <IonHeader>
@@ -219,9 +176,7 @@ export default function CategoriesPage() {
               <IonTitle>
                 {editingId
                   ? 'Изменить категорию'
-                  : parentName
-                    ? 'Новая подкатегория'
-                    : 'Новая категория'}
+                  : 'Новая категория'}
               </IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={resetForm}>Отмена</IonButton>
@@ -238,15 +193,7 @@ export default function CategoriesPage() {
                   onIonInput={e => setFormData(f => ({ ...f, name: e.detail.value ?? '' }))}
                 />
               </IonItem>
-              {!editingId && parentName && (
-                <IonItem className="category-parent-context">
-                  <IonIcon slot="start" icon={folderOpenOutline} color="primary" />
-                  <IonLabel>
-                    <p>Родительская категория</p>
-                    <h2>{parentName}</h2>
-                  </IonLabel>
-                </IonItem>
-              )}
+
             </IonList>
 
             <CategoryIconSettings
@@ -282,11 +229,7 @@ export default function CategoriesPage() {
           isOpen={!!deleteTarget}
           onDidDismiss={() => setDeleteTarget(null)}
           header="Удалить категорию?"
-          message={
-            deleteTarget?.children?.length
-              ? `Категория "${deleteTarget.name}" будет удалена. Её подкатегории останутся и станут корневыми.`
-              : `Удалить категорию "${deleteTarget?.name}"?`
-          }
+          message={`Удалить категорию "${deleteTarget?.name}"?`}
           buttons={[
             { text: 'Отмена', role: 'cancel' },
             { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },

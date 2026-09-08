@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '@/api/accounts'
-import type { CategoryNode } from '@/api/categories'
+import type { Category } from '@/api/categories'
 import type { Transaction } from '@/api/transactions'
 import { TransactionItem } from '@/components/TransactionItem'
 
@@ -20,15 +20,13 @@ const account: Account = {
   updatedAt: '2026-01-01T00:00:00Z',
 }
 
-const category: CategoryNode = {
+const category: Category = {
   id: 'category-1',
   userId: 'user-1',
-  parentId: null,
   name: 'Продукты',
   type: 'expense',
   icon: 'preset:groceries',
   createdAt: '2026-01-01T00:00:00Z',
-  children: [],
 }
 
 function transaction(overrides: Partial<Transaction> = {}): Transaction {

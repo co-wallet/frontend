@@ -15,7 +15,6 @@ vi.mock('@tanstack/react-query', () => ({
           name: 'Продукты',
           icon: 'preset:groceries',
           type: 'expense',
-          children: [],
         }],
       }
     }
