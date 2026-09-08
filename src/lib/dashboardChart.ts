@@ -1,12 +1,23 @@
+import { accountIconChartColor } from '@/components/AccountIcon'
+import { categoryIconChartColor } from '@/components/CategoryIcon'
+import type { CategoryType } from '@/api/categories'
+
 export interface DashboardPieEntry {
   name: string
   amount: number
   icon?: string
   iconType?: 'account' | 'category'
+  categoryType?: CategoryType
 }
 
 export interface DashboardChartEntry extends DashboardPieEntry {
   chartAmount: number
+}
+
+export function dashboardEntryColor(entry: DashboardPieEntry): string {
+  return entry.iconType === 'account'
+    ? accountIconChartColor(entry.icon)
+    : categoryIconChartColor(entry.icon, entry.categoryType)
 }
 
 export function prepareDashboardChart(data: DashboardPieEntry[]): {

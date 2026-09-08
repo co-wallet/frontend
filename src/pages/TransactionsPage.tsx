@@ -51,7 +51,7 @@ import { categoriesApi } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
 import { transactionsApi, type TransactionFilter } from '@/api/transactions'
 import {
-  categoryIconForegroundColor,
+  categoryIconChartColor,
   CategoryIcon,
   UNCATEGORIZED_CATEGORY_ICON,
 } from '@/components/CategoryIcon'
@@ -228,7 +228,7 @@ export function TransactionsPage() {
       return {
         ...stat,
         icon,
-        color: categoryIconForegroundColor(icon, chartCategoryType),
+        color: categoryIconChartColor(icon, chartCategoryType),
       }
     })
   const hasFilters = hasTransactionFilters(filter)

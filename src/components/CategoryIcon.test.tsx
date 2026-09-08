@@ -4,7 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   CategoryIcon,
   CategoryIconPicker,
-  categoryIconForegroundColor,
+  categoryIconChartColor,
   defaultCategoryIconValue,
   normalizeCategoryIconValue,
   UNCATEGORIZED_CATEGORY_ICON,
@@ -12,6 +12,11 @@ import {
 } from './CategoryIcon'
 
 describe('CategoryIcon', () => {
+  it.each(['unprefixed-label', 'preset:unknown'])('uses category-type defaults for unsupported value %s', (value) => {
+    expect(normalizeCategoryIconValue(value, 'expense')).toBe('preset:groceries')
+    expect(normalizeCategoryIconValue(value, 'income')).toBe('preset:work')
+  })
+
   it('renders a category preset with the same frame and color mechanism as account icons', () => {
     const markup = renderToStaticMarkup(
       <CategoryIcon value="preset:groceries|green|orange" />,
@@ -24,12 +29,28 @@ describe('CategoryIcon', () => {
   })
 
   it('exposes the resolved foreground color for chart sectors', () => {
-    expect(categoryIconForegroundColor('preset:cafe|orange|none', 'expense'))
+    expect(categoryIconChartColor('preset:cafe|orange|none', 'expense'))
       .toBe('var(--account-icon-color-orange)')
-    expect(categoryIconForegroundColor('preset:salary|yellow|none', 'income'))
-      .toBe('var(--account-icon-foreground-yellow)')
-    expect(categoryIconForegroundColor(UNCATEGORIZED_CATEGORY_ICON, 'expense'))
+    expect(categoryIconChartColor('preset:salary|yellow|none', 'income'))
+      .toBe('var(--account-icon-color-yellow)')
+    expect(categoryIconChartColor(UNCATEGORIZED_CATEGORY_ICON, 'expense'))
       .toBe('var(--account-icon-color-red)')
+  })
+
+  it.each([
+    [undefined, 'expense'],
+    [undefined, 'income'],
+    ['preset:unknown|invalid|red', 'income'],
+  ] as const)('matches the rendered default icon %s for %s', (value, type) => {
+    const markup = renderToStaticMarkup(<CategoryIcon value={value} type={type} />)
+    expect(markup).toContain(`--account-icon-foreground:${categoryIconChartColor(value, type)}`)
+  })
+
+  it('uses bright yellow for sectors while keeping icon text readable', () => {
+    expect(categoryIconChartColor('preset:cafe|yellow|none', 'expense'))
+      .toBe('var(--account-icon-color-yellow)')
+    expect(renderToStaticMarkup(<CategoryIcon value="preset:cafe|yellow|none" />))
+      .toContain('--account-icon-foreground:var(--account-icon-foreground-yellow)')
   })
 
   it('renders the shared uncategorized preset with an explicit accessible label', () => {
@@ -43,12 +64,6 @@ describe('CategoryIcon', () => {
 
     expect(markup).toContain('aria-label="Без категории"')
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
-  })
-
-  it('normalizes legacy emoji icons to vector presets', () => {
-    expect(normalizeCategoryIconValue('🛒', 'expense')).toBe('preset:groceries')
-    expect(normalizeCategoryIconValue('💼', 'income')).toBe('preset:work')
-    expect(normalizeCategoryIconValue('🎁', 'income')).toBe('preset:gift-income')
   })
 
   it('provides category-type defaults and normalizes missing values', () => {

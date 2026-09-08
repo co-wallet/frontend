@@ -94,17 +94,6 @@ export const DEFAULT_ACCOUNT_ICON = `${PRESET_PREFIX}debit-card`
 
 const presetsById = new Map(ACCOUNT_ICON_PRESETS.map((preset) => [preset.id, preset]))
 
-const legacyIconPresets: Record<string, string> = {
-  '💳': 'debit-card',
-  '💵': 'cash',
-  '🏦': 'bank',
-  '💰': 'piggy-bank',
-  '📈': 'investments',
-  '🏠': 'shared',
-  '🚗': 'car',
-  '✈️': 'travel',
-}
-
 export interface AccountIconAppearance {
   foreground: AccountIconColorId
   border: AccountIconBorderColorId
@@ -129,13 +118,11 @@ function resolveAccountIcon(value?: string | null): ResolvedAccountIcon {
     APPEARANCE_SEPARATOR,
     3,
   )
-  const foregroundCandidate = foregroundValue === 'teal' ? 'yellow' : foregroundValue
-  const borderCandidate = borderValue === 'teal' ? 'yellow' : borderValue
-  const foreground = accountIconColorIds.has(foregroundCandidate as AccountIconColorId)
-    ? foregroundCandidate as AccountIconColorId
+  const foreground = accountIconColorIds.has(foregroundValue as AccountIconColorId)
+    ? foregroundValue as AccountIconColorId
     : DEFAULT_FOREGROUND_COLOR
-  const border = borderCandidate === 'none' || accountIconColorIds.has(borderCandidate as AccountIconColorId)
-    ? borderCandidate as AccountIconBorderColorId
+  const border = borderValue === 'none' || accountIconColorIds.has(borderValue as AccountIconColorId)
+    ? borderValue as AccountIconBorderColorId
     : DEFAULT_BORDER_COLOR
 
   if (baseValue.startsWith(PRESET_PREFIX)) {
@@ -150,24 +137,6 @@ function resolveAccountIcon(value?: string | null): ResolvedAccountIcon {
         CUSTOM_PREFIX.length,
         CUSTOM_PREFIX.length + MAX_CUSTOM_ACCOUNT_ICON_LENGTH,
       ),
-      foreground,
-      border,
-    }
-  }
-
-  if (baseValue && legacyIconPresets[baseValue]) {
-    return {
-      kind: 'preset',
-      preset: presetsById.get(legacyIconPresets[baseValue])!,
-      foreground,
-      border,
-    }
-  }
-
-  if (baseValue) {
-    return {
-      kind: 'custom',
-      label: baseValue.slice(0, MAX_CUSTOM_ACCOUNT_ICON_LENGTH),
       foreground,
       border,
     }
@@ -280,6 +249,10 @@ export function accountIconStyle(
       ? 'transparent'
       : `var(--account-icon-color-${resolved.border})`,
   }
+}
+
+export function accountIconChartColor(value?: string | null): string {
+  return `var(--account-icon-color-${resolveAccountIcon(value).foreground})`
 }
 
 export function AccountIcon({
