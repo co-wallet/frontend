@@ -98,7 +98,11 @@ export function TagsPage() {
                 key={tag.id}
                 ref={(el) => { slidingRef.current = el }}
               >
-                <IonItem>
+                <IonItem
+                  routerLink={`/transactions?${new URLSearchParams({ tag_ids: tag.id })}`}
+                  routerDirection="forward"
+                  detail
+                >
                   <IonIcon icon={pricetagOutline} slot="start" color="primary" />
                   <IonLabel>#{tag.name}</IonLabel>
                   {tag.txCount !== undefined && (
