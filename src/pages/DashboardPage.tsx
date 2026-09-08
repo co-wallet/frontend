@@ -51,7 +51,7 @@ import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon } from '@/components/AccountIcon'
-import { CategoryIcon } from '@/components/CategoryIcon'
+import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/CategoryIcon'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
   filterAccountsByKinds,
@@ -69,7 +69,6 @@ import './DashboardPage.css'
 type ChartMode = 'balance' | 'expenses' | 'income'
 type AccountFilter = 'all' | 'custom'
 
-import { BALANCE_COLORS, EXPENSE_COLORS, INCOME_COLORS } from '@/lib/chartColors'
 import { useChartTheme } from '@/lib/useChartTheme'
 
 function formatAmount(n: number, symbol?: string): string {
@@ -83,14 +82,12 @@ function ChartBlock({
   data,
   sym,
   emptyText,
-  colors,
   tooltipStyle,
   legendColor,
 }: {
   data: DashboardPieEntry[]
   sym: string
   emptyText: string
-  colors: string[]
   tooltipStyle: React.CSSProperties
   legendColor: string
 }) {
@@ -122,7 +119,7 @@ function ChartBlock({
               {chartEntries.map((entry, i) => (
                 <Cell
                   key={`${entry.name}-${i}`}
-                  fill={dashboardEntryColor(entry, colors[i % colors.length])}
+                  fill={dashboardEntryColor(entry)}
                 />
               ))}
             </Pie>
@@ -149,14 +146,14 @@ function ChartBlock({
                     height: 10,
                     borderRadius: '50%',
                     flexShrink: 0,
-                    background: dashboardEntryColor(s, colors[i % colors.length]),
+                    background: dashboardEntryColor(s),
                   }}
                 />
                 {s.iconType === 'account' && (
                   <AccountIcon value={s.icon} size={20} shape="rectangle" />
                 )}
                 {s.iconType === 'category' && (
-                  <CategoryIcon value={s.icon} size={20} />
+                  <CategoryIcon value={s.icon} type={s.categoryType} size={20} />
                 )}
                 <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
                   {s.name}
@@ -291,8 +288,9 @@ export function DashboardPage() {
     .slice(0, 8)
     .map((s) => ({
       name: s.categoryName,
-      icon: s.icon ?? undefined,
+      icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
       iconType: 'category' as const,
+      categoryType: 'expense',
       amount: s.amount,
     }))
 
@@ -301,8 +299,9 @@ export function DashboardPage() {
     .slice(0, 8)
     .map((s) => ({
       name: s.categoryName,
-      icon: s.icon ?? undefined,
+      icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
       iconType: 'category' as const,
+      categoryType: 'income',
       amount: s.amount,
     }))
 
@@ -577,7 +576,6 @@ export function DashboardPage() {
                 data={activePieData}
                 sym={sym}
                 emptyText={chartEmptyTexts[chartMode]}
-                colors={chartMode === 'expenses' ? EXPENSE_COLORS : chartMode === 'income' ? INCOME_COLORS : BALANCE_COLORS}
                 tooltipStyle={chartTheme.tooltipStyle}
                 legendColor={chartTheme.legendColor}
               />

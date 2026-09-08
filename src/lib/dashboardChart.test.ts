@@ -5,16 +5,15 @@ import { dashboardEntryColor, prepareDashboardChart, type DashboardPieEntry } fr
 describe('dashboard chart data', () => {
   it.each([
     ['preset:cash|green|purple', 'var(--account-icon-color-green)'],
-    ['custom:TBank|yellow|none', 'var(--account-icon-foreground-yellow)'],
-    ['preset:cash|teal|red', 'var(--account-icon-foreground-yellow)'],
+    ['custom:TBank|yellow|none', 'var(--account-icon-color-yellow)'],
+    ['preset:cash|teal|red', 'var(--account-icon-color-yellow)'],
     ['💵', 'var(--account-icon-color-blue)'],
     [undefined, 'var(--account-icon-color-blue)'],
     ['preset:cash|invalid|red', 'var(--account-icon-color-blue)'],
   ])('uses the icon foreground for account %s regardless of balance or position', (icon, color) => {
     for (const amount of [100, -100, 0]) {
       const entry: DashboardPieEntry = { name: 'Счёт', amount, iconType: 'account', icon }
-      expect(dashboardEntryColor(entry, 'red')).toBe(color)
-      expect(dashboardEntryColor(entry, 'purple')).toBe(color)
+      expect(dashboardEntryColor(entry)).toBe(color)
     }
   })
 
@@ -25,20 +24,27 @@ describe('dashboard chart data', () => {
       { name: 'Основной', amount: 50, iconType: 'account', icon: 'custom:Bank|purple|none' },
     ]
     const { chartEntries, legendEntries } = prepareDashboardChart(data)
-    expect(chartEntries.map((entry) => dashboardEntryColor(entry, 'fallback'))).toEqual([
+    expect(chartEntries.map((entry) => dashboardEntryColor(entry))).toEqual([
       'var(--account-icon-color-purple)', 'var(--account-icon-color-green)',
     ])
     for (const sector of chartEntries) {
       const legend = legendEntries.find((entry) => entry.name === sector.name)!
-      expect(dashboardEntryColor(sector, 'sector')).toBe(dashboardEntryColor(legend, 'legend'))
+      expect(dashboardEntryColor(sector)).toBe(dashboardEntryColor(legend))
     }
     const filtered = prepareDashboardChart(data.filter((entry) => entry.name === 'Долг'))
-    expect(dashboardEntryColor(filtered.chartEntries[0], 'fallback')).toBe('var(--account-icon-color-green)')
+    expect(dashboardEntryColor(filtered.chartEntries[0])).toBe('var(--account-icon-color-green)')
   })
 
-  it('preserves palette colors for category charts', () => {
-    expect(dashboardEntryColor({ name: 'Еда', amount: 10, iconType: 'category', icon: 'preset:food|green|red' }, 'palette')).toBe('palette')
-    expect(dashboardEntryColor({ name: 'Еда', amount: -10, iconType: 'category' }, 'palette')).toBe('var(--ion-color-danger)')
+  it.each(['expense', 'income'] as const)('uses category colors for %s charts', (categoryType) => {
+    const entry: DashboardPieEntry = {
+      name: 'Категория', amount: 10, iconType: 'category', categoryType,
+      icon: 'preset:salary|green|red',
+    }
+    expect(dashboardEntryColor(entry)).toBe('var(--account-icon-color-green)')
+    expect(dashboardEntryColor({ ...entry, icon: 'preset:salary|yellow|none' }))
+      .toBe('var(--account-icon-color-yellow)')
+    expect(dashboardEntryColor({ ...entry, amount: -10 }))
+      .toBe('var(--account-icon-color-green)')
   })
 
   it('builds chart sectors when all account balances are negative', () => {

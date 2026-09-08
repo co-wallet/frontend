@@ -462,14 +462,12 @@ export function updateCategoryIconAppearance(
   )
 }
 
-export function categoryIconForegroundColor(
+export function categoryIconChartColor(
   value?: string | null,
   type?: CategoryType,
 ): string {
   const { foreground } = resolveCategoryIcon(value, type)
-  return foreground === 'yellow'
-    ? 'var(--account-icon-foreground-yellow)'
-    : `var(--account-icon-color-${foreground})`
+  return `var(--account-icon-color-${foreground})`
 }
 
 export function CategoryIcon({
