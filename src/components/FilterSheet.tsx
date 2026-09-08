@@ -22,7 +22,7 @@ import { accountsApi } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type Category } from '@/api/categories'
-import { tagsApi } from '@/api/tags'
+import { tagsApi, type Tag } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
 
 import './FilterSheet.css'
@@ -68,6 +68,36 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
     ...expenseCategories,
     ...incomeCategories,
   ]
+
+  const hiddenCategories = allCategories.filter((category) => category.hidden)
+  const hiddenTags = tags.filter((tag) => tag.hidden)
+
+  function categoryOption(c: Category) {
+    const selected = categoryIds.includes(c.id)
+    return (
+      <IonButton key={c.id} fill={selected ? 'solid' : 'outline'} className="filter-sheet-option"
+        onClick={() => setCategoryIds((prev) => toggle(prev, c.id))} aria-pressed={selected}>
+        <span className="filter-sheet-option__content">
+          <CategoryIcon value={c.icon} type={c.type} size={22} />
+          <span>{c.name}</span>
+          {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+        </span>
+      </IonButton>
+    )
+  }
+
+  function tagOption(tag: Tag) {
+    const selected = tagIds.includes(tag.id)
+    return (
+      <IonButton key={tag.id} fill={selected ? 'solid' : 'outline'} className="filter-sheet-option"
+        onClick={() => setTagIds((prev) => toggle(prev, tag.id))} aria-pressed={selected}>
+        <span className="filter-sheet-option__content">
+          <span>#{tag.name}</span>
+          {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+        </span>
+      </IonButton>
+    )
+  }
 
   function apply() {
     const f: TransactionFilter = {}
@@ -163,25 +193,14 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
             <section className="filter-sheet-section" aria-labelledby="filter-categories-title">
               <IonNote id="filter-categories-title" className="filter-sheet-section__title">Категории</IonNote>
               <div className="filter-sheet-options">
-                {allCategories.map((c) => {
-                  const selected = categoryIds.includes(c.id)
-                  return (
-                    <IonButton
-                      key={c.id}
-                      fill={selected ? 'solid' : 'outline'}
-                      className="filter-sheet-option"
-                      onClick={() => setCategoryIds((prev) => toggle(prev, c.id))}
-                      aria-pressed={selected}
-                    >
-                      <span className="filter-sheet-option__content">
-                        <CategoryIcon value={c.icon} type={c.type} size={22} />
-                        <span>{c.name}</span>
-                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
-                      </span>
-                    </IonButton>
-                  )
-                })}
+                {allCategories.filter((category) => !category.hidden).map(categoryOption)}
               </div>
+              {hiddenCategories.length > 0 && (
+                <details className="filter-sheet-hidden">
+                  <summary>Скрытые категории ({hiddenCategories.length}){categoryIds.some((id) => hiddenCategories.some((c) => c.id === id)) && ` · выбрано: ${hiddenCategories.filter((c) => categoryIds.includes(c.id)).length}`}</summary>
+                  <div className="filter-sheet-options">{hiddenCategories.map(categoryOption)}</div>
+                </details>
+              )}
             </section>
           )}
 
@@ -208,24 +227,14 @@ export function FilterSheet({ value, onChange }: FilterSheetProps) {
                 </div>
               </div>
               <div className="filter-sheet-options">
-                {tags.map((t) => {
-                  const selected = tagIds.includes(t.id)
-                  return (
-                    <IonButton
-                      key={t.id}
-                      fill={selected ? 'solid' : 'outline'}
-                      className="filter-sheet-option"
-                      onClick={() => setTagIds((prev) => toggle(prev, t.id))}
-                      aria-pressed={selected}
-                    >
-                      <span className="filter-sheet-option__content">
-                        <span>#{t.name}</span>
-                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
-                      </span>
-                    </IonButton>
-                  )
-                })}
+                {tags.filter((tag) => !tag.hidden).map(tagOption)}
               </div>
+              {hiddenTags.length > 0 && (
+                <details className="filter-sheet-hidden">
+                  <summary>Скрытые теги ({hiddenTags.length}){tagIds.some((id) => hiddenTags.some((tag) => tag.id === id)) && ` · выбрано: ${hiddenTags.filter((tag) => tagIds.includes(tag.id)).length}`}</summary>
+                  <div className="filter-sheet-options">{hiddenTags.map(tagOption)}</div>
+                </details>
+              )}
             </section>
           )}
 

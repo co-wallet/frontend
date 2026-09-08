@@ -20,6 +20,7 @@ import {
 import { CategoryIconSettings } from '../components/CategoryIconSettings';
 
 import './CategoriesPage.css';
+import axios from 'axios';
 
 function emptyFormData(type: CategoryType) {
   return {
@@ -29,6 +30,7 @@ function emptyFormData(type: CategoryType) {
 }
 
 export default function CategoriesPage() {
+  const [showHidden, setShowHidden] = useState(false);
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,9 +44,13 @@ export default function CategoriesPage() {
     queryFn: () => categoriesApi.list(activeTab),
   });
 
+  const hiddenCount = categories.filter((category) => category.hidden).length;
+  const visibleCategories = categories.filter((category) => showHidden || !category.hidden);
+
   function invalidateCategoryConsumers() {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
     queryClient.invalidateQueries({ queryKey: ['analytics'] });
+    queryClient.invalidateQueries({ queryKey: ['transactions'] });
   }
 
   const createMutation = useMutation({
@@ -66,6 +72,11 @@ export default function CategoriesPage() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => categoriesApi.delete(id),
+    onSuccess: invalidateCategoryConsumers,
+  });
+
+  const visibilityMutation = useMutation({
+    mutationFn: (category: Category) => categoriesApi.setHidden(category.id, !category.hidden),
     onSuccess: invalidateCategoryConsumers,
   });
 
@@ -142,30 +153,39 @@ export default function CategoriesPage() {
           </IonFab>
         }
       >
+        <IonText color="medium"><p>Общий справочник. Изменения видны всем. Скрытие действует только для вас.</p></IonText>
+        {hiddenCount > 0 && <IonButton fill="outline" onClick={() => setShowHidden(!showHidden)} aria-expanded={showHidden}>
+          {showHidden ? 'Не показывать скрытые' : `Показать скрытые категории (${hiddenCount})`}
+        </IonButton>}
+        {visibilityMutation.error && <IonText color="danger"><p>Не удалось изменить видимость. Попробуйте ещё раз.</p></IonText>}
         {isLoading ? (
           <div className="app-state">
             <IonSpinner />
           </div>
-        ) : categories.length === 0 ? (
+        ) : visibleCategories.length === 0 ? (
           <div className="app-state">
             <IonIcon icon={folderOutline} />
             <IonText color="medium">
-              <p>Нет категорий. Создайте первую!</p>
+              <p>{hiddenCount > 0 ? 'Все категории скрыты. Нажмите «Показать скрытые категории», чтобы вернуть их в список.' : 'Нет категорий. Создайте первую!'}</p>
             </IonText>
           </div>
         ) : (
           <IonList>
             <CategoryList
-              categories={categories}
+              categories={visibleCategories}
               onEdit={handleEdit}
               onDelete={handleDelete}
+              onToggleHidden={(category) => visibilityMutation.mutate(category)}
+              visibilityPending={visibilityMutation.isPending}
             />
           </IonList>
         )}
 
         {deleteMutation.error && (
           <IonText color="danger" className="category-page-error">
-            <p>Не удалось удалить категорию. Попробуйте ещё раз.</p>
+            <p>{axios.isAxiosError(deleteMutation.error) && deleteMutation.error.response?.status === 409
+              ? 'Категория используется в операциях. Её можно скрыть для себя.'
+              : 'Не удалось удалить категорию. Попробуйте ещё раз.'}</p>
           </IonText>
         )}
 
@@ -229,7 +249,7 @@ export default function CategoriesPage() {
           isOpen={!!deleteTarget}
           onDidDismiss={() => setDeleteTarget(null)}
           header="Удалить категорию?"
-          message={`Удалить категорию "${deleteTarget?.name}"?`}
+          message={`Удалить категорию "${deleteTarget?.name}" из общего справочника? Это возможно, только если она не используется в операциях.`}
           buttons={[
             { text: 'Отмена', role: 'cancel' },
             { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },

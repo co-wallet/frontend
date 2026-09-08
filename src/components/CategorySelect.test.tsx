@@ -44,3 +44,8 @@ describe('CategorySelect', () => {
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
   })
 })
+
+it('preserves a hidden category as the current transaction value', () => {
+  const markup = renderToStaticMarkup(<CategorySelect categories={[{ ...categories[0], hidden: true }]} type="expense" value="category-cafe" onChange={vi.fn()} />)
+  expect(markup).toContain('aria-label="Категория: Кофейни"')
+})

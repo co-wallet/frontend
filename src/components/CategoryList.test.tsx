@@ -32,3 +32,10 @@ describe('CategoryList', () => {
     )).toBe('')
   })
 })
+
+it('offers personal hiding and restoring while retaining edit and delete', () => {
+  const markup = renderToStaticMarkup(<CategoryList categories={[{ ...categories[0], hidden: true }]} onEdit={vi.fn()} onDelete={vi.fn()} onToggleHidden={vi.fn()} />)
+  expect(markup).toContain('Скрыта для меня')
+  expect(markup).toContain('Показать «Продукты»')
+  expect(markup).toContain('Редактировать «Продукты»')
+})

@@ -3,6 +3,7 @@ import { apiClient } from './client';
 export type CategoryType = 'expense' | 'income';
 
 export interface Category {
+  hidden?: boolean;
   id: string;
   userId: string;
   name: string;
@@ -32,6 +33,9 @@ export const categoriesApi = {
 
   update: (id: string, req: UpdateCategoryReq) =>
     apiClient.patch<Category>(`/categories/${id}`, req).then((r: { data: Category }) => r.data),
+
+  setHidden: (id: string, hidden: boolean) =>
+    apiClient.put(`/categories/${id}/visibility`, { hidden }),
 
   delete: (id: string) =>
     apiClient.delete(`/categories/${id}`),

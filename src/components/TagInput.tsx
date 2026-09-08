@@ -34,7 +34,7 @@ export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
   })
 
   const filteredSuggestions = suggestions
-    .filter((s) => !value.includes(s.name))
+    .filter((s) => !s.hidden && !value.includes(s.name))
     .slice(0, 6)
 
   function addTag(name: string) {
