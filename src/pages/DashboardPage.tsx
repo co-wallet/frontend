@@ -518,6 +518,7 @@ export function DashboardPage() {
                       return (
                         <IonChip
                           key={a.id}
+                          className="dashboard-account-chip"
                           color={active ? 'primary' : 'medium'}
                           outline={!active}
                           role="button"
