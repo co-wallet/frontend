@@ -29,7 +29,7 @@ describe('TagsPage', () => {
     expect(markup).toMatch(/<ion-item[^>]*href="\/transactions\?tag_ids=tag-2"[^>]*>.*?#Покупки/)
     expect(markup).toContain('4 транз.')
     expect(markup).toContain('0 транз.')
-    expect(markup.match(/<ion-item-option /g)).toHaveLength(4)
+    expect(markup.match(/<ion-item-option /g)).toHaveLength(6)
   })
 
   it('encodes the tag ID so it cannot introduce additional filters', () => {
@@ -46,4 +46,13 @@ describe('TagsPage', () => {
     expect(markup).toContain('Нет тегов. Добавьте теги к транзакциям.')
     expect(markup).not.toContain('/transactions?')
   })
+})
+
+it('keeps hidden tags accessible through history links and offers to show them', () => {
+  queryState.tags = [{ id: 'hidden-tag', name: 'отпуск', hidden: true }]
+  const markup = renderToStaticMarkup(<TagsPage />)
+  expect(markup).toContain('/transactions?tag_ids=hidden-tag')
+  expect(markup).toContain('Скрыт для меня')
+  expect(markup).toContain('Показать тег отпуск')
+  expect(markup).toContain('Добавить тег')
 })

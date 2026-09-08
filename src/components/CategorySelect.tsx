@@ -113,7 +113,7 @@ export function CategorySelect({
               )}
             </IonItem>
 
-            {categories.map((category) => {
+            {categories.filter((category) => !category.hidden || category.id === value).map((category) => {
               const selected = category.id === value
               return (
                 <IonItem

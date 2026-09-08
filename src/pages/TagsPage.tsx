@@ -6,11 +6,11 @@ import {
   IonList, IonItem, IonLabel, IonNote, IonIcon,
   IonItemSliding, IonItemOptions, IonItemOption,
   IonMenuButton, IonButtons, IonSpinner, IonText,
-  IonAlert, IonModal, IonInput, IonButton,
+  IonAlert, IonModal, IonInput, IonButton, IonFab, IonFabButton,
 } from '@ionic/react'
-import { pricetagOutline, createOutline, trashOutline } from 'ionicons/icons'
+import { pricetagOutline, createOutline, trashOutline, addOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons'
 import axios from 'axios'
-import { tagsApi } from '@/api/tags'
+import { tagsApi, type Tag } from '@/api/tags'
 
 export function TagsPage() {
   const qc = useQueryClient()
@@ -31,8 +31,13 @@ export function TagsPage() {
     qc.invalidateQueries({ queryKey: ['transactions'] })
   }
 
+  const visibilityMutation = useMutation({
+    mutationFn: (tag: Tag) => tagsApi.setHidden(tag.id, !tag.hidden),
+    onSuccess: invalidateTagConsumers,
+  })
+
   const renameMutation = useMutation({
-    mutationFn: ({ id, name }: { id: string; name: string }) => tagsApi.rename(id, name),
+    mutationFn: ({ id, name }: { id: string; name: string }) => id ? tagsApi.rename(id, name) : tagsApi.create(name),
     onSuccess: () => {
       invalidateTagConsumers()
       setEditingTag(null)
@@ -79,7 +84,18 @@ export function TagsPage() {
           <IonTitle>Теги</IonTitle>
         </IonToolbar>
       </IonHeader>
-      <AppContent>
+      <AppContent withFab fixed={
+        <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          <IonFabButton aria-label="Добавить тег" onClick={() => handleEditOpen('', '')}>
+            <IonIcon icon={addOutline} />
+          </IonFabButton>
+        </IonFab>
+      }>
+        <IonText color="medium"><p>Общий справочник. Изменения видны всем. Скрытие действует только для вас.</p></IonText>
+        {visibilityMutation.error && <IonText color="danger"><p>Не удалось изменить видимость. Попробуйте ещё раз.</p></IonText>}
+        {deleteMutation.error && <IonText color="danger"><p>{axios.isAxiosError(deleteMutation.error) && deleteMutation.error.response?.status === 409
+          ? 'Тег используется в операциях. Его можно скрыть для себя.'
+          : 'Не удалось удалить тег. Попробуйте ещё раз.'}</p></IonText>}
         {isLoading ? (
           <div className="app-state">
             <IonSpinner />
@@ -104,12 +120,17 @@ export function TagsPage() {
                   detail
                 >
                   <IonIcon icon={pricetagOutline} slot="start" color="primary" />
-                  <IonLabel>#{tag.name}</IonLabel>
+                  <IonLabel>#{tag.name}{tag.hidden && <p>Скрыт для меня</p>}</IonLabel>
                   {tag.txCount !== undefined && (
                     <IonNote slot="end">{tag.txCount} транз.</IonNote>
                   )}
                 </IonItem>
                 <IonItemOptions side="end">
+                  <IonItemOption color="medium" disabled={visibilityMutation.isPending}
+                    aria-label={`${tag.hidden ? 'Показать' : 'Скрыть'} тег ${tag.name}`}
+                    onClick={() => visibilityMutation.mutate(tag)}>
+                    <IonIcon slot="icon-only" icon={tag.hidden ? eyeOutline : eyeOffOutline} />
+                  </IonItemOption>
                   <IonItemOption color="primary" onClick={() => handleEditOpen(tag.id, tag.name)}>
                     <IonIcon slot="icon-only" icon={createOutline} />
                   </IonItemOption>
@@ -132,7 +153,7 @@ export function TagsPage() {
         <IonModal isOpen={!!editingTag} onDidDismiss={() => setEditingTag(null)}>
           <IonHeader>
             <IonToolbar>
-              <IonTitle>Переименовать тег</IonTitle>
+              <IonTitle>{editingTag?.id ? 'Переименовать тег' : 'Новый тег'}</IonTitle>
               <IonButtons slot="end">
                 <IonButton onClick={() => setEditingTag(null)}>Отмена</IonButton>
               </IonButtons>
@@ -173,11 +194,7 @@ export function TagsPage() {
           isOpen={!!deleteTag}
           onDidDismiss={() => setDeleteTag(null)}
           header="Удалить тег?"
-          message={
-            deleteTag && deleteTag.txCount > 0
-              ? `Тег #${deleteTag.name} будет удалён из ${deleteTag.txCount} транзакций. Продолжить?`
-              : `Удалить тег #${deleteTag?.name}?`
-          }
+          message={`Удалить тег #${deleteTag?.name} из общего справочника? Это возможно, только если он не используется в операциях.`}
           buttons={[
             { text: 'Отмена', role: 'cancel' },
             { text: 'Удалить', role: 'destructive', handler: handleDeleteConfirm },
