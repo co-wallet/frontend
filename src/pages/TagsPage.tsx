@@ -1,16 +1,16 @@
 import { AppContent } from '@/components/layout/AppContent'
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle,
-  IonList, IonItem, IonLabel, IonNote, IonIcon,
-  IonItemSliding, IonItemOptions, IonItemOption,
+  IonList, IonItem, IonLabel, IonIcon,
   IonMenuButton, IonButtons, IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton, IonFab, IonFabButton,
 } from '@ionic/react'
 import { pricetagOutline, createOutline, trashOutline, addOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons'
 import axios from 'axios'
 import { tagsApi, type Tag } from '@/api/tags'
+import './TagsPage.css'
 
 export function TagsPage() {
   const qc = useQueryClient()
@@ -18,12 +18,15 @@ export function TagsPage() {
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
   const [deleteTag, setDeleteTag] = useState<{ id: string; name: string; txCount: number } | null>(null)
-  const slidingRef = useRef<HTMLIonItemSlidingElement | null>(null)
+  const [showHidden, setShowHidden] = useState(false)
 
   const { data: tags = [], isLoading } = useQuery({
     queryKey: ['tags'],
     queryFn: () => tagsApi.list(),
   })
+
+  const hiddenCount = tags.filter((tag) => tag.hidden).length
+  const visibleTags = tags.filter((tag) => showHidden || !tag.hidden)
 
   function invalidateTagConsumers() {
     qc.invalidateQueries({ queryKey: ['tags'] })
@@ -60,7 +63,6 @@ export function TagsPage() {
     setEditName(name)
     setEditError(null)
     setEditingTag({ id, name })
-    if (slidingRef.current) slidingRef.current.close()
   }
 
   function handleEditSave() {
@@ -92,6 +94,9 @@ export function TagsPage() {
         </IonFab>
       }>
         <IonText color="medium"><p>Общий справочник. Изменения видны всем. Скрытие действует только для вас.</p></IonText>
+        {hiddenCount > 0 && <IonButton fill="outline" onClick={() => setShowHidden(!showHidden)} aria-expanded={showHidden}>
+          {showHidden ? 'Не показывать скрытые' : `Показать скрытые теги (${hiddenCount})`}
+        </IonButton>}
         {visibilityMutation.error && <IonText color="danger"><p>Не удалось изменить видимость. Попробуйте ещё раз.</p></IonText>}
         {deleteMutation.error && <IonText color="danger"><p>{axios.isAxiosError(deleteMutation.error) && deleteMutation.error.response?.status === 409
           ? 'Тег используется в операциях. Его можно скрыть для себя.'
@@ -100,51 +105,48 @@ export function TagsPage() {
           <div className="app-state">
             <IonSpinner />
           </div>
-        ) : tags.length === 0 ? (
+        ) : visibleTags.length === 0 ? (
           <div className="app-state">
             <IonIcon icon={pricetagOutline} />
             <IonText color="medium">
-              <p>Нет тегов. Добавьте теги к транзакциям.</p>
+              <p>{hiddenCount > 0 ? 'Все теги скрыты. Нажмите «Показать скрытые теги», чтобы вернуть их в список.' : 'Нет тегов. Добавьте теги к транзакциям.'}</p>
             </IonText>
           </div>
         ) : (
           <IonList>
-            {tags.map((tag) => (
-              <IonItemSliding
-                key={tag.id}
-                ref={(el) => { slidingRef.current = el }}
-              >
-                <IonItem
-                  routerLink={`/transactions?${new URLSearchParams({ tag_ids: tag.id })}`}
-                  routerDirection="forward"
-                  detail
-                >
-                  <IonIcon icon={pricetagOutline} slot="start" color="primary" />
-                  <IonLabel>#{tag.name}{tag.hidden && <p>Скрыт для меня</p>}</IonLabel>
-                  {tag.txCount !== undefined && (
-                    <IonNote slot="end">{tag.txCount} транз.</IonNote>
-                  )}
-                </IonItem>
-                <IonItemOptions side="end">
-                  <IonItemOption color="medium" disabled={visibilityMutation.isPending}
+            {visibleTags.map((tag) => (
+              <IonItem key={tag.id} className="tag-list-row">
+                <IonIcon icon={pricetagOutline} slot="start" color="primary" />
+                <IonLabel className="tag-list-row__label">
+                  <h2>#{tag.name}</h2>
+                  {tag.hidden && <p>Скрыт для меня</p>}
+                  <IonButton fill="clear" size="small" className="tag-list-row__history"
+                    routerLink={`/transactions?${new URLSearchParams({ tag_ids: tag.id })}`}
+                    routerDirection="forward" aria-label={`Операции с тегом ${tag.name}`}>
+                    Операции{tag.txCount !== undefined ? ` (${tag.txCount})` : ''}
+                  </IonButton>
+                </IonLabel>
+                <IonButtons slot="end" className="tag-list-row__actions">
+                  <IonButton fill="clear" color="medium" disabled={visibilityMutation.isPending}
+                    title={tag.hidden ? 'Вернуть тег в список' : 'Скрыть тег для себя'}
                     aria-label={`${tag.hidden ? 'Показать' : 'Скрыть'} тег ${tag.name}`}
                     onClick={() => visibilityMutation.mutate(tag)}>
                     <IonIcon slot="icon-only" icon={tag.hidden ? eyeOutline : eyeOffOutline} />
-                  </IonItemOption>
-                  <IonItemOption color="primary" onClick={() => handleEditOpen(tag.id, tag.name)}>
+                  </IonButton>
+                  <IonButton fill="clear" color="primary" title="Редактировать тег"
+                    aria-label={`Редактировать тег ${tag.name}`} onClick={() => handleEditOpen(tag.id, tag.name)}>
                     <IonIcon slot="icon-only" icon={createOutline} />
-                  </IonItemOption>
-                  <IonItemOption
-                    color="danger"
+                  </IonButton>
+                  <IonButton fill="clear" color="danger" title="Удалить тег"
+                    aria-label={`Удалить тег ${tag.name}`}
                     onClick={() => {
+                      deleteMutation.reset()
                       setDeleteTag({ id: tag.id, name: tag.name, txCount: tag.txCount ?? 0 })
-                      if (slidingRef.current) slidingRef.current.close()
-                    }}
-                  >
+                    }}>
                     <IonIcon slot="icon-only" icon={trashOutline} />
-                  </IonItemOption>
-                </IonItemOptions>
-              </IonItemSliding>
+                  </IonButton>
+                </IonButtons>
+              </IonItem>
             ))}
           </IonList>
         )}

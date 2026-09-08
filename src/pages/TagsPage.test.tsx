@@ -25,11 +25,16 @@ describe('TagsPage', () => {
 
     const markup = renderToStaticMarkup(<TagsPage />)
 
-    expect(markup).toMatch(/<ion-item[^>]*href="\/transactions\?tag_ids=tag-1"[^>]*>.*?#Отпуск/)
-    expect(markup).toMatch(/<ion-item[^>]*href="\/transactions\?tag_ids=tag-2"[^>]*>.*?#Покупки/)
-    expect(markup).toContain('4 транз.')
-    expect(markup).toContain('0 транз.')
-    expect(markup.match(/<ion-item-option /g)).toHaveLength(6)
+    expect(markup).toContain('href="/transactions?tag_ids=tag-1"')
+    expect(markup).toContain('href="/transactions?tag_ids=tag-2"')
+    expect(markup).toContain('Операции (4)')
+    expect(markup).toContain('Операции (0)')
+    expect(markup).not.toContain('ion-item-sliding')
+    expect(markup).not.toMatch(/<ion-item[^>]*href=/)
+    expect(markup).toContain('aria-label="Редактировать тег Отпуск"')
+    expect(markup).toContain('aria-label="Скрыть тег Отпуск"')
+    expect(markup).toContain('aria-label="Удалить тег Отпуск"')
+    expect(markup).toContain('aria-label="Операции с тегом Отпуск"')
   })
 
   it('encodes the tag ID so it cannot introduce additional filters', () => {
@@ -48,11 +53,18 @@ describe('TagsPage', () => {
   })
 })
 
-it('keeps hidden tags accessible through history links and offers to show them', () => {
+it('omits hidden tags by default and offers a reveal button even when all are hidden', () => {
   queryState.tags = [{ id: 'hidden-tag', name: 'отпуск', hidden: true }]
   const markup = renderToStaticMarkup(<TagsPage />)
-  expect(markup).toContain('/transactions?tag_ids=hidden-tag')
-  expect(markup).toContain('Скрыт для меня')
-  expect(markup).toContain('Показать тег отпуск')
-  expect(markup).toContain('Добавить тег')
+  expect(markup).not.toContain('/transactions?tag_ids=hidden-tag')
+  expect(markup).not.toContain('Редактировать тег отпуск')
+  expect(markup).toContain('Показать скрытые теги (1)')
+  expect(markup).toContain('aria-expanded="false"')
+  expect(markup).toContain('Все теги скрыты')
+})
+
+it('does not offer reveal when the catalog has no hidden entries', () => {
+  queryState.tags = [{ id: 'visible-tag', name: 'отпуск' }]
+  const markup = renderToStaticMarkup(<TagsPage />)
+  expect(markup).not.toContain('Показать скрытые теги')
 })

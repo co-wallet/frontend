@@ -30,6 +30,7 @@ function emptyFormData(type: CategoryType) {
 }
 
 export default function CategoriesPage() {
+  const [showHidden, setShowHidden] = useState(false);
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -42,6 +43,9 @@ export default function CategoriesPage() {
     queryKey: ['categories', activeTab],
     queryFn: () => categoriesApi.list(activeTab),
   });
+
+  const hiddenCount = categories.filter((category) => category.hidden).length;
+  const visibleCategories = categories.filter((category) => showHidden || !category.hidden);
 
   function invalidateCategoryConsumers() {
     queryClient.invalidateQueries({ queryKey: ['categories'] });
@@ -150,22 +154,25 @@ export default function CategoriesPage() {
         }
       >
         <IonText color="medium"><p>Общий справочник. Изменения видны всем. Скрытие действует только для вас.</p></IonText>
+        {hiddenCount > 0 && <IonButton fill="outline" onClick={() => setShowHidden(!showHidden)} aria-expanded={showHidden}>
+          {showHidden ? 'Не показывать скрытые' : `Показать скрытые категории (${hiddenCount})`}
+        </IonButton>}
         {visibilityMutation.error && <IonText color="danger"><p>Не удалось изменить видимость. Попробуйте ещё раз.</p></IonText>}
         {isLoading ? (
           <div className="app-state">
             <IonSpinner />
           </div>
-        ) : categories.length === 0 ? (
+        ) : visibleCategories.length === 0 ? (
           <div className="app-state">
             <IonIcon icon={folderOutline} />
             <IonText color="medium">
-              <p>Нет категорий. Создайте первую!</p>
+              <p>{hiddenCount > 0 ? 'Все категории скрыты. Нажмите «Показать скрытые категории», чтобы вернуть их в список.' : 'Нет категорий. Создайте первую!'}</p>
             </IonText>
           </div>
         ) : (
           <IonList>
             <CategoryList
-              categories={categories}
+              categories={visibleCategories}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleHidden={(category) => visibilityMutation.mutate(category)}
