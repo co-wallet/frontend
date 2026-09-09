@@ -19,6 +19,7 @@ export interface AccountBalance {
 }
 
 export interface Account {
+  acceptTransfers?: boolean
   id: string
   ownerId: string
   name: string
@@ -35,6 +36,7 @@ export interface Account {
 }
 
 export interface CreateAccountDto {
+  acceptTransfers?: boolean
   name: string
   accessMode: AccountAccessMode
   kind: AccountKind
@@ -45,6 +47,7 @@ export interface CreateAccountDto {
 }
 
 export interface UpdateAccountDto {
+  acceptTransfers?: boolean
   name?: string
   accessMode?: AccountAccessMode
   icon?: string | null
@@ -52,7 +55,13 @@ export interface UpdateAccountDto {
   initialBalanceDate?: string
 }
 
+export type TransferAccount = Pick<Account, 'id' | 'name' | 'icon' | 'currency'>
+
 export const accountsApi = {
+  transferAccounts: async (username: string): Promise<TransferAccount[]> => {
+    const { data } = await apiClient.get<TransferAccount[]>('/transfer-accounts', { params: { username } })
+    return data
+  },
   list: async (currency?: string): Promise<Account[]> => {
     const { data } = await apiClient.get<Account[]>('/accounts', {
       params: currency ? { currency } : {},

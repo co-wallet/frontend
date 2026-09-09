@@ -150,3 +150,15 @@ it('renders every tag as a separate forward link with an accessible label', () =
   expect(markup).toContain('aria-label="Транзакции с тегом важное"')
   expect(markup).not.toMatch(/<button[^>]*>[\s\S]*?<a[\s\S]*?<\/button>/)
 })
+
+it('shows incoming currency and amount with read-only actions and both account names', () => {
+  const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer', readOnly: true,
+    accountName: 'Отправитель', toAccountName: 'Получатель', toCurrency: 'EUR',
+    currency: 'USD', amount: 100, toAmount: 90, recipientAmount: 54, shares: [], tags: [], description: null,
+    defaultCurrency: null, defaultCurrencyAmount: null })} defaultCurrency="RUB" onEdit={vi.fn()} onDelete={vi.fn()} />)
+  expect(markup).toContain('Отправитель → Получатель')
+  expect(markup).toContain('+54 €')
+  expect(markup).not.toContain('Изменить')
+  expect(markup).not.toContain('Удалить')
+  expect(markup).not.toContain('100 $')
+})

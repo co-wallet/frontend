@@ -27,7 +27,7 @@ export function AccountSelect({
   onChange,
 }: {
   label: string
-  accounts: Account[]
+  accounts: (Pick<Account, 'id' | 'name' | 'icon' | 'currency'> & Partial<Pick<Account, 'accessMode'>>)[]
   value: string
   onChange: (accountId: string) => void
 }) {
@@ -86,7 +86,7 @@ export function AccountSelect({
                     <IonLabel>
                       <h2>{account.name}</h2>
                       <p>
-                        {account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
+                        {account.accessMode ? `${account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · ` : ''}{account.currency}
                       </p>
                     </IonLabel>
                     {selected && (

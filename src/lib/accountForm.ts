@@ -1,6 +1,7 @@
 import type { AccountAccessMode, AccountKind } from '@/api/accounts'
 
 export interface AccountFormState {
+  acceptTransfers?: boolean
   name: string
   accessMode: AccountAccessMode
   kind: AccountKind
@@ -18,7 +19,8 @@ export function hasAccountFormChanges(
   initial: AccountFormState,
   current: AccountFormState,
 ): boolean {
-  return initial.name !== current.name
+  return (initial.acceptTransfers ?? false) !== (current.acceptTransfers ?? false)
+    || initial.name !== current.name
     || initial.accessMode !== current.accessMode
     || initial.kind !== current.kind
     || initial.currency !== current.currency
