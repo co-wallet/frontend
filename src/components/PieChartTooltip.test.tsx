@@ -5,6 +5,19 @@ import { PieChartTooltip } from './PieChartTooltip'
 const formatAmount = (amount: number) => `${amount.toFixed(2)} RUB`
 
 describe('PieChartTooltip', () => {
+  it.each([
+    { payload: { iconType: 'account', icon: 'preset:debit-card' }, label: 'Дебетовая' },
+    { payload: { iconType: 'account', icon: 'custom:TBank' }, label: 'Своя иконка: TBank' },
+    { payload: { iconType: 'category', icon: 'preset:cafe', categoryType: 'expense' }, label: 'Кафе' },
+    { payload: { icon: 'preset:cafe' }, label: 'Кафе' },
+    { payload: { icon: 'preset:other|red|none', categoryId: 'uncategorized' }, label: 'Без категории' },
+  ])('shows the legend icon: $label', ({ payload, label }) => {
+    const markup = renderToStaticMarkup(<PieChartTooltip active payload={[{ name: 'Название', value: 10, payload }]} formatAmount={formatAmount} />)
+    expect(markup).toContain(`aria-label="${label}"`)
+    expect(markup).toContain('role="img"')
+    expect(markup).toContain('Название')
+  })
+
   it.each(['Личный счёт', 'Продукты', 'Зарплата', 'Без категории', 'Очень длинное название категории без сокращения'])('shows the full legend label %s and formatted amount', (name) => {
     const markup = renderToStaticMarkup(<PieChartTooltip active payload={[{ name, value: 123.45 }]} formatAmount={formatAmount} />)
     expect(markup).toContain('role="tooltip"')
