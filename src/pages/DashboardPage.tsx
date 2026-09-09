@@ -267,10 +267,12 @@ export function DashboardPage() {
     enabled: !isEmptyCustom,
   })
 
+  const tagParams: AnalyticsParams = { ...params, type: chartMode === 'income' ? 'income' : 'expense' }
+
   const { data: byTagRaw = [] } = useQuery({
-    queryKey: ['analytics', 'by-tag', params],
-    queryFn: () => analyticsApi.byTag(params),
-    enabled: !isEmptyCustom,
+    queryKey: ['analytics', 'by-tag', tagParams],
+    queryFn: () => analyticsApi.byTag(tagParams),
+    enabled: chartMode !== 'balance' && !isEmptyCustom,
   })
 
   const summary = isEmptyCustom ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
@@ -573,10 +575,10 @@ export function DashboardPage() {
           )}
 
           {/* Tags breakdown */}
-          {byTag.length > 0 && (
+          {chartMode !== 'balance' && byTag.length > 0 && (
             <IonCard style={{ margin: '0 0 16px 0' }}>
               <IonCardHeader>
-                <IonCardTitle style={{ fontSize: '0.875rem' }}>Расходы по тегам</IonCardTitle>
+                <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartMode === 'income' ? 'Доходы по тегам' : 'Расходы по тегам'}</IonCardTitle>
               </IonCardHeader>
               <IonCardContent>
                 <IonList>
