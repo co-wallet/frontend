@@ -46,6 +46,9 @@ function App() {
         <Route exact path="/transactions">
           <ProtectedRoute><TransactionsPage /></ProtectedRoute>
         </Route>
+        <Route exact path="/transactions/filtered/:depth">
+          <ProtectedRoute><TransactionsPage /></ProtectedRoute>
+        </Route>
         <Route exact path="/transactions/add">
           <ProtectedRoute><AddTransactionPage /></ProtectedRoute>
         </Route>

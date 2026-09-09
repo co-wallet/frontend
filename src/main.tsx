@@ -19,7 +19,7 @@ import './index.css'
 import './store/themeStore'
 import App from './App'
 
-setupIonicReact()
+setupIonicReact({ swipeBackEnabled: true })
 
 const queryClient = new QueryClient({
   defaultOptions: {

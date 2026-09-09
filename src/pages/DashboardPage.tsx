@@ -64,6 +64,9 @@ import {
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
 
+import { filteredTransactionsHref } from '@/lib/transactionNavigation'
+import { formatPeriodControlLabel } from '@/lib/transactionList'
+
 import './DashboardPage.css'
 
 type ChartMode = 'balance' | 'expenses' | 'income'
@@ -188,7 +191,7 @@ export function DashboardPage() {
   const updateUser = useAuthStore((s) => s.updateUser)
   const history = useHistory()
 
-  const { period, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
+  const { period, periodOffset, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
@@ -200,7 +203,7 @@ export function DashboardPage() {
     mutationFn: (code: string) => authApi.updateMe(code),
     onSuccess: (updatedUser) => updateUser(updatedUser),
   })
-  const { data: accounts = [] } = useQuery({
+  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
     queryKey: ['accounts', displayCurrency],
     queryFn: () => accountsApi.list(displayCurrency),
   })
@@ -218,7 +221,7 @@ export function DashboardPage() {
 
   const isEmptyCustom = accountFilter === 'custom' && effectiveSelectedAccountIds.length === 0
 
-  const { dateFrom, dateTo } = computeDateRange(period, 0, customFrom, customTo)
+  const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const params: AnalyticsParams = {
     date_from: dateFrom,
     date_to: dateTo,
@@ -395,6 +398,7 @@ export function DashboardPage() {
                 aria-label="Период"
                 interface="popover"
                 value={period}
+                selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
                 onIonChange={(e) => setPeriod(e.detail.value as Period)}
                 label="Период"
                 labelPlacement="start"
@@ -591,7 +595,18 @@ export function DashboardPage() {
               <IonCardContent>
                 <IonList>
                   {byTag.slice(0, 6).map((s) => (
-                    <IonItem key={s.tagId} lines="none" style={{ '--min-height': '32px' } as React.CSSProperties}>
+                    <IonItem
+                      key={s.tagId}
+                      routerLink={filteredTransactionsHref(
+                        { accountIds: filteredAccounts.map((account) => account.id), tagIds: [s.tagId] },
+                        { period, periodOffset, customFrom, customTo },
+                      )}
+                      routerDirection="forward"
+                      disabled={accountsLoading || filteredAccounts.length === 0}
+                      detail
+                      lines="none"
+                      style={{ '--min-height': '44px' } as React.CSSProperties}
+                    >
                       <IonLabel color="medium" style={{ fontSize: '0.75rem' }}>#{s.tagName}</IonLabel>
                       <IonNote slot="end" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{formatAmount(s.amount, sym)}</IonNote>
                     </IonItem>

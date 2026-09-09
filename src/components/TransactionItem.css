@@ -126,3 +126,37 @@
     font-size: 0.9375rem;
   }
 }
+
+.transaction-item__open {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.transaction-item__open:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: -2px;
+}
+
+.transaction-item__label .transaction-item__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  white-space: normal;
+  overflow: visible;
+}
+
+.transaction-item__tags ion-router-link {
+  position: relative;
+  z-index: 2;
+  display: inline-block;
+  padding-block: 4px;
+  color: var(--transaction-tag-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
