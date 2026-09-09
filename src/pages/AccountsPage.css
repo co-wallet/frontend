@@ -1,3 +1,56 @@
+.account-list-item > [slot="start"] {
+  margin-inline-end: 12px;
+}
+
+.account-list-label {
+  min-width: 0;
+}
+
+.account-list-label h2 {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+}
+
+.account-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  margin-top: 4px;
+  color: var(--ion-color-medium-shade);
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.account-list-currency {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.account-list-access {
+  display: inline-flex;
+  align-items: center;
+  font-size: 16px;
+}
+
+.account-list-kind {
+  white-space: nowrap;
+}
+
+.account-list-balance {
+  flex-shrink: 0;
+  max-width: 50%;
+  margin-inline-start: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+
 .account-form-section {
   margin: 0;
   padding: 0;

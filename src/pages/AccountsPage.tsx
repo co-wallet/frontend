@@ -36,6 +36,7 @@ import {
   walletOutline,
   trashOutline,
   peopleOutline,
+  personOutline,
 } from 'ionicons/icons'
 import {
   accountsApi,
@@ -458,6 +459,7 @@ export function AccountsPage() {
               return (
                 <IonItemSliding key={account.id}>
                   <IonItem
+                    className="account-list-item"
                     button
                     onClick={() => openEditor(account)}
                     detail={false}
@@ -465,14 +467,27 @@ export function AccountsPage() {
                     <span slot="start">
                       <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
                     </span>
-                    <IonLabel>
-                      <h2>{account.name}</h2>
-                      <p>
-                        {accountKindShortLabel(account.kind)} · {account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · {account.currency}
-                      </p>
+                    <IonLabel className="account-list-label">
+                      <h2 title={account.name}>{account.name}</h2>
+                      <div className="account-list-meta">
+                        <span className="account-list-currency">
+                          <span
+                            className="account-list-access"
+                            role="img"
+                            aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                            title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                          >
+                            <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
+                          </span>
+                          <span>{account.currency}</span>
+                        </span>
+                        {account.kind !== 'spending' && (
+                          <span className="account-list-kind">{accountKindShortLabel(account.kind)}</span>
+                        )}
+                      </div>
                     </IonLabel>
                     {account.balance && (
-                      <IonNote slot="end" style={{ fontSize: '14px', fontWeight: 500 }}>
+                      <IonNote slot="end" className="account-list-balance">
                         <div style={{ textAlign: 'right' }}>
                           {fmtCurrency(account.balance.native, account.currency)}
                           {account.balance.displayCurrency !== account.currency && (
