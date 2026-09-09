@@ -8,6 +8,7 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   IonPage,
+  IonCheckbox,
   IonButton,
   IonIcon,
   IonSegment,
@@ -188,6 +189,7 @@ export function DashboardPage() {
   const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
+  const [transferVisibility, setTransferVisibility] = useState({ expenses: false, income: true })
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
@@ -217,6 +219,8 @@ export function DashboardPage() {
 
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const params: AnalyticsParams = {
+    include_transfer_expenses: transferVisibility.expenses,
+    include_transfer_income: transferVisibility.income,
     date_from: dateFrom,
     date_to: dateTo,
     currency: displayCurrency,
@@ -509,6 +513,25 @@ export function DashboardPage() {
               <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
             </IonCardHeader>
             <IonCardContent>
+              {chartMode !== 'balance' && (
+                <IonItem lines="none">
+                  <IonCheckbox
+                    checked={transferVisibility[chartMode]}
+                    onIonChange={(event) => setTransferVisibility((previous) => ({
+                      ...previous, [chartMode]: event.detail.checked,
+                    }))}
+                  >
+                    Отображать переводы
+                  </IonCheckbox>
+                </IonItem>
+              )}
+              {chartMode !== 'balance' && transferVisibility[chartMode] && (
+                <IonNote style={{ display: 'block', margin: '8px 0' }}>
+                  {chartMode === 'expenses'
+                    ? 'С выбранных счетов на остальные счета'
+                    : 'С остальных счетов на выбранные счета'}
+                </IonNote>
+              )}
               <ChartBlock
                 data={activePieData}
                 sym={sym}

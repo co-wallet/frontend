@@ -20,6 +20,8 @@ export interface TagStat {
 }
 
 export interface AnalyticsParams {
+  include_transfer_expenses?: boolean
+  include_transfer_income?: boolean
   date_from?: string
   date_to?: string
   account_ids?: string

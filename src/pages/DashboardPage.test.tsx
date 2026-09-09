@@ -9,6 +9,7 @@ vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}
 
 const queryState = vi.hoisted(() => ({
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
+  transferVisibility: { expenses: false, income: true },
   params: [] as Record<string, unknown>[],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
@@ -16,7 +17,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
     ...actual,
-    useState: (initial: unknown) => actual.useState(initial === 'balance' ? queryState.chartMode : initial),
+    useState: (initial: unknown) => actual.useState(initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
   }
 })
 vi.mock('@/store/periodStore', async (importOriginal) => ({
@@ -39,7 +40,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.chartMode = 'balance' })
+afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 describe('Dashboard tag navigation', () => {
   it.each([
@@ -82,5 +83,31 @@ describe('Dashboard period visibility', () => {
     expect(markup).toMatch(/Доходы[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*Другой период[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
     expect(markup).toContain('Выбранный период: 01.08.26 - 20.08.26')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
+  })
+})
+
+
+describe('Dashboard transfer visibility', () => {
+  it.each(['expenses', 'income'] as const)('shows the independent default for %s', (mode) => {
+    queryState.chartMode = mode
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('Отображать переводы')
+    const checkbox = markup.match(/<ion-checkbox[^>]*>/)?.[0]
+    expect(checkbox).toBeDefined()
+    expect(checkbox!.includes('checked="true"')).toBe(mode === 'income')
+    expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
+  })
+
+  it('uses both changed preferences in analytics queries', () => {
+    queryState.chartMode = 'expenses'
+    queryState.transferVisibility = { expenses: true, income: false }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('С выбранных счетов на остальные счета')
+    expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: true, include_transfer_income: false })
+  })
+
+  it('hides the transfer control for balance', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).not.toContain('Отображать переводы')
   })
 })
