@@ -2,11 +2,13 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useHistory } from 'react-router-dom'
 import {
   IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle,
-  IonItem, IonLabel, IonList, IonSkeletonText,
+  IonItem, IonItemGroup, IonLabel, IonList, IonSkeletonText,
 } from '@ionic/react'
 import type { Account } from '@/api/accounts'
 import { categoriesApi } from '@/api/categories'
 import { transactionsApi } from '@/api/transactions'
+import { groupTransactionsByDate } from '@/lib/transactionList'
+import './RecentTransactions.css'
 import { TransactionItem } from './TransactionItem'
 
 interface RecentTransactionsProps {
@@ -50,7 +52,7 @@ export function RecentTransactions({
   const items = enabled ? (transactions.data ?? []).slice(0, 3) : []
 
   return (
-    <IonCard style={{ margin: '16px 0 0' }}>
+    <IonCard className="recent-transactions">
       <IonCardHeader>
         <IonCardTitle style={{ fontSize: '1rem' }}>Последние транзакции</IonCardTitle>
       </IonCardHeader>
@@ -78,7 +80,10 @@ export function RecentTransactions({
         <IonCardContent>По выбранным счетам пока нет транзакций.</IonCardContent>
       ) : (
         <IonList aria-label="Последние транзакции">
-          {items.map((tx) => (
+          {groupTransactionsByDate(items, () => null).map((group) => (
+            <IonItemGroup key={group.dateKey}>
+              <h3 className="recent-transactions__date">{group.label}</h3>
+              {group.items.map((tx) => (
             <TransactionItem
               key={tx.id}
               tx={tx}
@@ -87,13 +92,15 @@ export function RecentTransactions({
               category={categories.find((category) => category.id === tx.categoryId)}
               currentUserId={currentUserId}
               defaultCurrency={defaultCurrency}
-              showDate
+              showTags={false}
               onEdit={(id) => history.push(`/transactions/${id}/edit`)}
             />
+              ))}
+            </IonItemGroup>
           ))}
         </IonList>
       )}
-      <IonCardContent>
+      <IonCardContent className="recent-transactions__footer">
         <IonButton expand="block" fill="clear" routerLink="/transactions" routerDirection="forward">
           Все транзакции
         </IonButton>

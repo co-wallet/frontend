@@ -1,0 +1,23 @@
+.recent-transactions {
+  margin: 16px 0 0;
+}
+
+.recent-transactions ion-list {
+  padding-block: 0;
+}
+
+.recent-transactions__date {
+  margin: 0;
+  padding: 4px 16px;
+  color: var(--ion-color-medium);
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.recent-transactions .transaction-item {
+  --min-height: 60px;
+}
+
+.recent-transactions .recent-transactions__footer {
+  padding: 0 12px 4px;
+}

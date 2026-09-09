@@ -76,16 +76,18 @@ describe('RecentTransactions', () => {
     expect(markup).not.toContain('пока нет транзакций')
   })
 
-  it('shows dated rows in API order, limited to three, without deletion actions', () => {
+  it('groups dates above rows and hides tags, keeping the three latest operations', () => {
     state.items = [1, 2, 3, 4].map((id) => ({
       id: String(id), accountId: 'selected', accountName: 'Личная', type: 'expense', amount: id,
       currency: 'RUB', description: `Операция ${id}`, date: '2026-09-02T00:00:00Z',
-      tags: [], shares: [],
+      tags: [{ id: 'tag', name: 'Скрытый тег' }], shares: [],
     } as unknown as Transaction))
     const markup = render()
     expect(markup).toMatch(/Операция 1[^]*Операция 2[^]*Операция 3/)
     expect(markup).not.toContain('Операция 4')
-    expect(markup).toContain('2 сентября')
+    expect(markup.match(/2 сентября/g)).toHaveLength(1)
+    expect(markup).toMatch(/<h3[^>]*>[^<]*2 сентября<\/h3>[^]*Операция 1/)
+    expect(markup).not.toContain('Скрытый тег')
     expect(markup).toContain('Личная')
     expect(markup).not.toContain('Удалить')
   })
