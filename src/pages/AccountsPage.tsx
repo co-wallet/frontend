@@ -154,7 +154,7 @@ function AccountFormModal({
 
   const handleSubmit = () => {
     onSubmit({
-      ...(!isEditing || canChangeAccessMode ? { acceptTransfers } : {}),
+      ...(!isEditing || canChangeAccessMode ? { acceptTransfers: accessMode === 'personal' && acceptTransfers } : {}),
       name,
       accessMode,
       kind,
@@ -194,7 +194,7 @@ function AccountFormModal({
             />
           </IonItem>
 
-          {(!isEditing || canChangeAccessMode) && <>
+          {accessMode === 'personal' && (!isEditing || canChangeAccessMode) && <>
             <IonItem><IonToggle checked={acceptTransfers} onIonChange={(e) => setAcceptTransfers(e.detail.checked)}>
               Принимать переводы от других пользователей
             </IonToggle></IonItem>

@@ -14,6 +14,7 @@ import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
 import { categoriesApi } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
+import { transferSourceAccounts } from '@/lib/transferAccounts'
 import { AccountSelect } from '@/components/AccountSelect'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useAuthStore } from '@/store/authStore'
@@ -80,7 +81,8 @@ export function AddTransactionPage() {
     staleTime: 60_000,
   })
 
-  const selectedAccount: Account | undefined = accounts.find((a) => a.id === accountId)
+  const sourceAccounts = transferSourceAccounts(accounts, externalTransfer)
+  const selectedAccount: Account | undefined = sourceAccounts.find((a) => a.id === accountId)
   const isShared = selectedAccount?.accessMode === 'shared'
 
   const { data: members = [] } = useQuery<AccountMember[]>({
@@ -184,7 +186,7 @@ export function AddTransactionPage() {
   })
 
   function handleSubmit() {
-    if (!amountValid || !sharesValid || !accountId || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))) return
+    if (!amountValid || !sharesValid || !selectedAccount || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))) return
 
     const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
     const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
@@ -255,7 +257,7 @@ export function AddTransactionPage() {
         <IonToolbar>
           <IonButtons slot="end">
             <IonButton strong onClick={handleSubmit}
-              disabled={createMutation.isPending || !amountValid || !sharesValid || !accountId || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))} aria-label="Сохранить">
+              disabled={createMutation.isPending || !amountValid || !sharesValid || !selectedAccount || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))} aria-label="Сохранить">
               {createMutation.isPending ? <IonSpinner name="dots" /> : 'Сохранить'}
             </IonButton>
           </IonButtons>
@@ -276,7 +278,7 @@ export function AddTransactionPage() {
             {/* Account */}
             <AccountSelect
               label="Счёт"
-              accounts={accounts}
+              accounts={sourceAccounts}
               value={accountId}
               onChange={setAccountId}
             />
@@ -284,11 +286,12 @@ export function AddTransactionPage() {
             {/* To account (transfer) */}
             {type === 'transfer' && (<>
               <IonItem><EntityFormSelect label="Кому" value={transferMode}
-                onIonChange={(e) => { setTransferMode(e.detail.value); setToAccountId('') }}>
+                onIonChange={(e) => { setTransferMode(e.detail.value); setToAccountId(''); if (e.detail.value === 'other' && selectedAccount?.accessMode === 'shared') setAccountId('') }}>
                 <IonSelectOption value="own">Между своими счетами</IonSelectOption>
                 <IonSelectOption value="other">Другому пользователю</IonSelectOption>
               </EntityFormSelect></IonItem>
               {externalTransfer && <>
+                <IonNote className="entity-form-note">Переводы другим пользователям доступны только с личного счёта.</IonNote>
                 <IonItem><IonInput label="Логин получателя" labelPlacement="stacked" value={recipient}
                   onIonInput={(e) => { setRecipient(e.detail.value ?? ''); setSearchedRecipient(''); setToAccountId('') }} />
                   <IonButton slot="end" disabled={!recipient.trim() || recipientQuery.isFetching}
