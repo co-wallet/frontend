@@ -38,7 +38,7 @@ describe('Monefy preview UI', () => {
     const html = render({ ...state, preview: { ...state.preview!, requires_exclusion_confirmation: false, exclusions: [], accounts: [{ ...state.preview!.accounts[0], kind: 'spending' }] } })
     expect(html).toMatch(/ion-select[^>]*value="spending"/)
     for (const option of ACCOUNT_KIND_OPTIONS) expect(html).toContain(`value="${option.value}">${option.shortLabel}`)
-    expect(html).not.toContain('Накопительный')
+    expect(html).toContain('Накопительный счёт')
     expect(html).not.toContain('Выберите тип каждого счёта')
     expect(html).not.toMatch(/ion-button[^>]*disabled="true"/)
   })
@@ -48,6 +48,8 @@ describe('Monefy preview UI', () => {
     expect(html).toMatch(/ion-select[^>]*value="investment"/)
     expect(html).toContain('value="spending"')
     expect(html).toContain('value="deposit"')
+    expect(html).toContain('value="savings"')
+    expect(html).toContain('value="savings_account"')
   })
   it('disables confirmation before acceptance and enables it afterwards', () => {
     expect(render()).toMatch(/ion-button[^>]*disabled="true"/)

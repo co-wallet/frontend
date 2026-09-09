@@ -1,6 +1,7 @@
 import axios from 'axios'
 import { monefyApi, type ImportMode, type ImportAvailability, type ImportPreview, type ImportResult } from '@/api/monefy'
 import type { AccountKind } from '@/api/accounts'
+import { isAccountKind } from './accountKind'
 
 export const importReasons: Record<string, string> = {
   owned_accounts: 'У вас уже есть собственные счета (включая удалённые).',
@@ -9,6 +10,7 @@ export const importReasons: Record<string, string> = {
   transactions: 'У вас уже есть операции или доли в операциях.',
 }
 const errors: Record<string, string> = {
+  invalid_account_kinds: 'Выберите допустимый тип средств для каждого счёта.',
   deletion_not_confirmed: 'Отдельно подтвердите безвозвратное удаление старых данных.',
   replacement_changed: 'Состав старых данных изменился. Создайте новый предпросмотр и подтвердите удаление заново.',
   replacement_blocked: 'Общие счета или внешние связи блокируют замену. Создайте новый предпросмотр.',
@@ -116,7 +118,9 @@ export class MonefyImport {
   async configure(sourceID: string, kind: AccountKind) {
     const p = this.state.preview
     if (!p || this.state.phase !== 'idle' || this.pending) return
-    if (!['spending', 'deposit', 'investment'].includes(kind)) return
+    if (!isAccountKind(kind)) {
+      this.update({ error: 'Выберите тип средств из списка.' }); return
+    }
     const accounts = p.accounts.map(a => a.source_id === sourceID ? { ...a, kind } : a)
     await this.saveOptions({ ...p, accounts, can_confirm: false })
   }

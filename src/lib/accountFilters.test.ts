@@ -12,6 +12,8 @@ const accounts = [
   { id: 'spending', kind: 'spending' },
   { id: 'deposit', kind: 'deposit' },
   { id: 'investment', kind: 'investment' },
+  { id: 'savings', kind: 'savings' },
+  { id: 'savings_account', kind: 'savings_account' },
 ] as Account[]
 
 describe('account analytics filters', () => {
@@ -21,6 +23,11 @@ describe('account analytics filters', () => {
       'deposit',
       'investment',
     ])
+  })
+
+  it('combines new types without changing legacy selections', () => {
+    expect(filterAccountsByKinds(accounts, ['savings', 'savings_account']).map(a => a.id)).toEqual(['savings', 'savings_account'])
+    expect(selectedVisibleAccountIds(filterAccountsByKinds(accounts, ['savings']), ['savings', 'deposit'])).toEqual(['savings'])
   })
 
   it('keeps selected IDs that remain visible for the active kinds', () => {

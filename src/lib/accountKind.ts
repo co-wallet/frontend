@@ -15,10 +15,22 @@ export const ACCOUNT_KIND_OPTIONS: readonly AccountKindOption[] = [
     description: 'Карты, наличные и счета для повседневных расходов',
   },
   {
+    value: 'savings',
+    label: 'Сбережения',
+    shortLabel: 'Сбережения',
+    description: 'Отложенные деньги без процентов, например резерв или накопления на покупку',
+  },
+  {
     value: 'deposit',
     label: 'Вклад',
     shortLabel: 'Вклад',
-    description: 'Средства на банковском вкладе',
+    description: 'Деньги под проценты на установленный срок; досрочное снятие может уменьшить доход',
+  },
+  {
+    value: 'savings_account',
+    label: 'Накопительный счёт',
+    shortLabel: 'Накопительный счёт',
+    description: 'Банковский счёт с процентами и свободным снятием в любой момент; ставка может меняться',
   },
   {
     value: 'investment',
@@ -34,4 +46,8 @@ export function accountKindLabel(kind: AccountKind): string {
 
 export function accountKindShortLabel(kind: AccountKind): string {
   return ACCOUNT_KIND_OPTIONS.find((option) => option.value === kind)?.shortLabel ?? kind
+}
+
+export function isAccountKind(value: unknown): value is AccountKind {
+  return ACCOUNT_KIND_OPTIONS.some((option) => option.value === value)
 }

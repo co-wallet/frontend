@@ -40,6 +40,7 @@
 
 .account-kind-help {
   --width: min(320px, calc(100vw - 32px));
+  --max-height: min(480px, calc(100dvh - 32px));
 }
 
 .account-kind-help__content {
