@@ -348,35 +348,12 @@ export function DashboardPage() {
       >
         <div>
           <section className="dashboard-view-controls" aria-label="Параметры отображения">
-            <div className="dashboard-view-controls__row">
               <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
                 if (next.period !== undefined) setPeriod(next.period)
                 if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
                 if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
                 if (next.customTo !== undefined) setCustomTo(next.customTo)
               }} />
-              <IonSelect
-                aria-label="Валюта"
-                interface="popover"
-                value={displayCurrency}
-                onIonChange={(e) => {
-                  const code = e.detail.value as string
-                  if (code && code !== displayCurrency) {
-                    setDisplayCurrency(code)
-                    saveCurrency.mutate(code)
-                  }
-                }}
-                label="Валюта"
-                labelPlacement="stacked"
-                className="dashboard-view-select"
-              >
-                {currencies.map((c) => (
-                  <IonSelectOption key={c.code} value={c.code}>
-                    {c.symbol} {c.code}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </div>
 
             {/* Account filter */}
             <div className="dashboard-account-filter">
@@ -391,7 +368,7 @@ export function DashboardPage() {
                         : `Типов средств: ${selectedKinds.length}`}
                   </h2>
                   <p>
-                    {accountFilter === 'all' && 'Все счета выбранных типов'}
+                    {accountFilter === 'all' && 'Все счета'}
                     {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
                       ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
                       : 'Счета не выбраны'
@@ -400,8 +377,28 @@ export function DashboardPage() {
                 </IonLabel>
                 <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
               </IonItem>
+              <IonSelect
+                aria-label="Валюта"
+                interface="popover"
+                value={displayCurrency}
+                onIonChange={(e) => {
+                  const code = e.detail.value as string
+                  if (code && code !== displayCurrency) {
+                    setDisplayCurrency(code)
+                    saveCurrency.mutate(code)
+                  }
+                }}
+                selectedText={displayCurrency}
+                className="dashboard-currency-select"
+              >
+                {currencies.map((c) => (
+                  <IonSelectOption key={c.code} value={c.code}>
+                    {c.symbol} {c.code}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
               {showAccountFilter && (
-                <div style={{ marginTop: 8 }}>
+                <div className="dashboard-account-filter__options">
                   <IonText color="medium" style={{ fontSize: '0.75rem' }}>Тип средств</IonText>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0 12px' }}>
                     {ACCOUNT_KIND_OPTIONS.map((option) => {

@@ -45,7 +45,9 @@ describe('Dashboard tag navigation', () => {
     expect(header).not.toContain('Валюта')
     expect(header).not.toContain('Выйти')
     expect(header).not.toContain('ion-back-button')
-    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*aria-label="Предыдущий период"[^]*aria-label="Валюта"[^]*Текущие средства[^]*<\/section>/)
+    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*aria-label="Предыдущий период"[^]*Текущие средства[^]*aria-label="Валюта"[^]*<\/section>/)
+    expect(markup).not.toContain('label="Валюта" label-placement="stacked"')
+    expect(markup).toMatch(/Текущие средства[^]*<ion-select[^>]*aria-label="Валюта"[^>]*selected-text=/)
     const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
     expect(href).toBeDefined()
     const params = new URL(href!, 'http://localhost').searchParams
