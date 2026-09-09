@@ -44,7 +44,6 @@ function transaction(overrides: Partial<Transaction> = {}): Transaction {
     categoryId: category.id,
     description: 'Магнит',
     date: '2026-09-02T00:00:00Z',
-    includeInBalance: true,
     createdBy: 'user-1',
     createdAt: '2026-09-02T00:00:00Z',
     shares: [],

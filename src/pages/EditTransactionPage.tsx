@@ -5,7 +5,7 @@ import { useHistory, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonButton, IonList, IonItem, IonInput,
-  IonToggle, IonSpinner, IonText, IonNote, IonLabel,
+  IonSpinner, IonText, IonNote, IonLabel,
   IonIcon, IonAlert,
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
@@ -34,7 +34,6 @@ export function EditTransactionPage() {
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState('')
-  const [includeInBalance, setIncludeInBalance] = useState(true)
   const [tags, setTags] = useState<string[]>([])
   const pendingTagRef = useRef('')
   const [customShares, setCustomShares] = useState(false)
@@ -83,7 +82,6 @@ export function EditTransactionPage() {
     setCategoryId(tx.categoryId ?? '')
     setDescription(tx.description ?? '')
     setDate(tx.date.slice(0, 10))
-    setIncludeInBalance(tx.includeInBalance)
     setTags(tx.tags?.map((t) => t.name) ?? [])
     if (tx.toAmount != null) {
       setToAmountStr(String(tx.toAmount))
@@ -169,7 +167,6 @@ export function EditTransactionPage() {
       categoryId: categoryId || null,
       description: description.trim() || null,
       date: date + 'T00:00:00Z',
-      includeInBalance,
       tags: allTags,
       ...(needsDefaultCurrency
         ? { defaultCurrency: userDefaultCurrency, defaultCurrencyAmount: dcaValue > 0 ? dcaValue : null }
@@ -374,18 +371,6 @@ export function EditTransactionPage() {
             </IonLabel>
             <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
           </div>
-
-          {/* Include in balance */}
-          <IonList>
-            <IonItem>
-              <IonToggle
-                checked={includeInBalance}
-                onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
-              >
-                Учитывать в балансе
-              </IonToggle>
-            </IonItem>
-          </IonList>
 
           {/* Shares */}
           {isShared && members.length > 1 && (

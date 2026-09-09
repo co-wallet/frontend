@@ -27,7 +27,6 @@ export interface Transaction {
   categoryId: string | null
   description: string | null
   date: string
-  includeInBalance: boolean
   createdBy: string
   createdAt: string
   shares: TransactionShare[]
@@ -46,7 +45,6 @@ export interface CreateTransactionDto {
   categoryId?: string | null
   description?: string | null
   date: string
-  includeInBalance: boolean
   shares?: { userId: string; amount: number }[]
   tags?: string[]
 }
@@ -59,7 +57,6 @@ export interface UpdateTransactionDto {
   categoryId?: string | null
   description?: string | null
   date?: string
-  includeInBalance?: boolean
   shares?: { userId: string; amount: number }[]
   tags?: string[]
 }
