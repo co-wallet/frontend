@@ -6,6 +6,7 @@ import { accountsApi, type Account } from './accounts'
 vi.mock('./client', () => ({
   apiClient: {
     patch: vi.fn(),
+    get: vi.fn(),
   },
 }))
 
@@ -42,4 +43,20 @@ describe('accountsApi.update', () => {
     await expect(accountsApi.update('account-1', dto)).resolves.toEqual(account)
     expect(apiClient.patch).toHaveBeenCalledWith('/accounts/account-1', dto)
   })
+})
+
+it('looks up transfer destinations by exact username using a separate endpoint', async () => {
+  const destination = { id: 'dest', name: 'Получатель', currency: 'EUR', icon: null }
+  vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [destination] })
+  await expect(accountsApi.transferAccounts('alice')).resolves.toEqual([destination])
+  expect(apiClient.get).toHaveBeenCalledWith('/transfer-accounts', { params: { username: 'alice' } })
+})
+it('propagates transfer lookup errors', async () => {
+  vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('offline'))
+  await expect(accountsApi.transferAccounts('alice')).rejects.toThrow('offline')
+})
+it('saves transfer acceptance explicitly, including disabling it', async () => {
+  vi.mocked(apiClient.patch).mockResolvedValue({ data: account })
+  await accountsApi.update('account-1', { acceptTransfers: false })
+  expect(apiClient.patch).toHaveBeenCalledWith('/accounts/account-1', { acceptTransfers: false })
 })

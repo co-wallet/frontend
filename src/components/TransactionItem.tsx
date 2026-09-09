@@ -60,13 +60,15 @@ export function TransactionItem({
   const title = description
     || (tx.type === 'transfer' ? TRANSACTION_TYPE_LABELS.transfer : categoryName)
   const accountLabel = tx.type === 'transfer'
-    ? `${account?.name ?? 'Счёт'} → ${toAccount?.name ?? 'Счёт'}`
-    : account?.name ?? 'Счёт'
+    ? `${account?.name ?? tx.accountName ?? 'Счёт'} → ${toAccount?.name ?? tx.toAccountName ?? 'Счёт'}`
+    : account?.name ?? tx.accountName ?? 'Счёт'
   const meta = description && tx.type !== 'transfer'
     ? `${categoryName} · ${accountLabel}`
     : accountLabel
-  const displayAmount = transactionUserAmount(tx, account, currentUserId)
-  const amount = formatTransactionAmount(displayAmount, tx.currency, tx.type)
+  const displayAmount = tx.readOnly ? tx.toAmount ?? tx.amount : transactionUserAmount(tx, account, currentUserId)
+  const amount = tx.readOnly
+    ? formatTransactionAmount(tx.toAmount ?? tx.amount, tx.toCurrency || tx.currency, 'income')
+    : formatTransactionAmount(displayAmount, tx.currency, tx.type)
   const shared = isSharedTransaction(tx, account, currentUserId)
   const convertedAmount = transactionDefaultCurrencyAmount(
     tx,
@@ -74,7 +76,7 @@ export function TransactionItem({
     currentUserId,
     defaultCurrency,
   )
-  const showConvertedAmount = convertedAmount != null && tx.currency !== defaultCurrency
+  const showConvertedAmount = !tx.readOnly && convertedAmount != null && tx.currency !== defaultCurrency
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
   return (
@@ -145,7 +147,7 @@ export function TransactionItem({
         </IonNote>
       </IonItem>
 
-      <IonItemOptions side="end">
+      {!tx.readOnly && <IonItemOptions side="end">
         <IonItemOption
           color="primary"
           onClick={() => onEdit(tx.id)}
@@ -162,7 +164,7 @@ export function TransactionItem({
           <IonIcon slot="start" icon={trashOutline} />
           Удалить
         </IonItemOption>
-      </IonItemOptions>
+      </IonItemOptions>}
     </IonItemSliding>
   )
 }

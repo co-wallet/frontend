@@ -115,6 +115,7 @@ function AccountFormModal({
     ? initial.initialBalanceDate.slice(0, 10)
     : today
 
+  const [acceptTransfers, setAcceptTransfers] = useState(initial?.acceptTransfers ?? false)
   const [name, setName] = useState(initialName)
   const [accessMode, setAccessMode] = useState<AccountAccessMode>(initialAccessMode)
   const [kind, setKind] = useState<AccountKind>(initialKind)
@@ -125,6 +126,7 @@ function AccountFormModal({
   const initialBalanceInputRef = useRef<HTMLIonInputElement>(null)
 
   const initialFormState: AccountFormState = {
+    acceptTransfers: initial?.acceptTransfers ?? false,
     name: initialName,
     accessMode: initialAccessMode,
     kind: initialKind,
@@ -134,6 +136,7 @@ function AccountFormModal({
     initialBalanceDate: initialBalanceDateValue,
   }
   const isDirty = hasAccountFormChanges(initialFormState, {
+    acceptTransfers,
     name,
     accessMode,
     kind,
@@ -151,6 +154,7 @@ function AccountFormModal({
 
   const handleSubmit = () => {
     onSubmit({
+      ...(!isEditing || canChangeAccessMode ? { acceptTransfers: accessMode === 'personal' && acceptTransfers } : {}),
       name,
       accessMode,
       kind,
@@ -162,6 +166,7 @@ function AccountFormModal({
   }
 
   const resetForm = () => {
+    setAcceptTransfers(initial?.acceptTransfers ?? false)
     setName(initialName)
     setAccessMode(initialAccessMode)
     setKind(initialKind)
@@ -189,6 +194,12 @@ function AccountFormModal({
             />
           </IonItem>
 
+          {accessMode === 'personal' && (!isEditing || canChangeAccessMode) && <>
+            <IonItem><IonToggle checked={acceptTransfers} onIonChange={(e) => setAcceptTransfers(e.detail.checked)}>
+              Принимать переводы от других пользователей
+            </IonToggle></IonItem>
+            <IonNote className="entity-form-note">По точному логину владельца будут видны название, иконка и валюта счёта. Баланс останется закрытым.</IonNote>
+          </>}
           <AccountIconSettings
             value={icon}
             onChange={setIcon}
@@ -356,6 +367,7 @@ export function AccountsPage() {
     mutationFn: ({ id, dto }: { id: string; dto: CreateAccountDto }) =>
       accountsApi.update(id, {
         name: dto.name,
+        ...(dto.acceptTransfers !== undefined ? { acceptTransfers: dto.acceptTransfers } : {}),
         accessMode: dto.accessMode,
         icon: dto.icon,
         initialBalance: dto.initialBalance,

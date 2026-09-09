@@ -53,7 +53,7 @@ export function EditTransactionPage() {
   })
 
   const accountCurrencyCodes = accounts.map((a) => a.currency)
-  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes])]
+  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes, ...(tx?.toCurrency ? [tx.toCurrency] : [])])]
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', extraCodes.sort().join(',')],
     queryFn: () => currenciesApi.list(extraCodes),
@@ -125,8 +125,8 @@ export function EditTransactionPage() {
 
   const accountCurrency = selectedAccount?.currency ?? tx?.currency ?? ''
   const toAccount = accounts.find((a) => a.id === tx?.toAccountId)
-  const toAccountCurrency = toAccount?.currency ?? ''
-  const isCrossCurrencyTransfer = tx?.type === 'transfer' && !!toAccountCurrency && toAccountCurrency !== accountCurrency
+  const toAccountCurrency = toAccount?.currency ?? tx?.toCurrency ?? ''
+  const isCrossCurrencyTransfer = tx?.type === 'transfer' && !!accountCurrency && !!toAccountCurrency && toAccountCurrency !== accountCurrency
   const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
 
   const updateMutation = useMutation({
@@ -152,7 +152,7 @@ export function EditTransactionPage() {
   })
 
   function handleSubmit() {
-    if (!amountValid || !sharesValid) return
+    if (tx?.readOnly || !amountValid || !sharesValid) return
 
     const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
     const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
@@ -235,6 +235,17 @@ export function EditTransactionPage() {
         </AppContent>
       </IonPage>
     )
+  }
+
+  if (tx.readOnly) {
+    return <IonPage><PageHeader title="Входящий перевод" backHref="/transactions" />
+      <AppContent><IonList>
+        <IonItem><IonLabel>{tx.accountName} → {tx.toAccountName}</IonLabel></IonItem>
+        <IonItem><IonLabel>Всего поступило</IonLabel><IonNote slot="end">{tx.toAmount ?? tx.amount} {tx.toCurrency}</IonNote></IonItem>
+        <IonItem><IonLabel>{tx.date.slice(0, 10)}</IonLabel></IonItem>
+        {tx.description && <IonItem><IonLabel>{tx.description}</IonLabel></IonItem>}
+      </IonList><IonNote className="entity-form-note">Изменить или удалить перевод могут участники исходного счёта.</IonNote></AppContent>
+    </IonPage>
   }
 
   return (

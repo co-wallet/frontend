@@ -14,6 +14,10 @@ export interface TransactionTag {
 }
 
 export interface Transaction {
+  accountName?: string
+  toAccountName?: string
+  toCurrency?: string
+  readOnly?: boolean
   id: string
   accountId: string
   toAccountId: string | null

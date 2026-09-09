@@ -32,3 +32,8 @@ describe('hasAccountFormChanges', () => {
     expect(hasAccountFormChanges(initialState, { ...initialState, initialBalance: '100' })).toBe(true)
   })
 })
+
+it('marks a transfer acceptance change as dirty and treats missing as disabled', () => {
+  expect(hasAccountFormChanges(initialState, { ...initialState, acceptTransfers: true })).toBe(true)
+  expect(hasAccountFormChanges(initialState, { ...initialState, acceptTransfers: false })).toBe(false)
+})
