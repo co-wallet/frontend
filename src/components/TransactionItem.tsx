@@ -41,7 +41,8 @@ interface TransactionItemProps {
   defaultCurrency: string
   tagHref?: (id: string) => string
   onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
+  showTags?: boolean
 }
 
 export function TransactionItem({
@@ -54,6 +55,7 @@ export function TransactionItem({
   onEdit,
   onDelete,
   tagHref,
+  showTags = true,
 }: TransactionItemProps) {
   const description = tx.description?.trim()
   const categoryName = category?.name ?? 'Без категории'
@@ -114,7 +116,7 @@ export function TransactionItem({
         <IonLabel className="transaction-item__label">
           <h2>{title}</h2>
           <p>{meta}</p>
-          {!!tx.tags?.length && (
+          {showTags && !!tx.tags?.length && (
             <p className="transaction-item__tags">
               {tx.tags.map((tag) => tagHref ? (
                 <IonRouterLink
@@ -147,7 +149,7 @@ export function TransactionItem({
         </IonNote>
       </IonItem>
 
-      {!tx.readOnly && <IonItemOptions side="end">
+      {!tx.readOnly && onDelete && <IonItemOptions side="end">
         <IonItemOption
           color="primary"
           onClick={() => onEdit(tx.id)}

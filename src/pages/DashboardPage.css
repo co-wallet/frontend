@@ -126,3 +126,27 @@ body.dark .dashboard-chart-card {
   margin: 0;
   white-space: normal;
 }
+
+.dashboard-tag-row {
+  --min-height: 36px;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
+.dashboard-tag-row ion-label {
+  margin-block: 6px;
+  line-height: 20px;
+}
+
+.dashboard-tag-row ion-note[slot='end'] {
+  align-self: center;
+  margin-block: 0;
+  padding-block: 0;
+  line-height: 20px;
+  white-space: nowrap;
+}
+
+.dashboard-tag-row::part(detail-icon) {
+  align-self: center;
+  margin-block: 0;
+}
