@@ -14,6 +14,7 @@ import {
 } from '@ionic/react'
 import {
   homeOutline,
+  downloadOutline,
   walletOutline,
   swapHorizontalOutline,
   folderOutline,
@@ -34,6 +35,7 @@ import { isMenuPathActive } from '@/lib/navigation'
 import './AppMenu.css'
 
 const mainItems = [
+  { label: 'Импорт Monefy', icon: downloadOutline, path: '/imports/monefy' },
   { label: 'Главная', icon: homeOutline, path: '/dashboard' },
   { label: 'Счета', icon: walletOutline, path: '/accounts' },
   { label: 'Транзакции', icon: swapHorizontalOutline, path: '/transactions' },
