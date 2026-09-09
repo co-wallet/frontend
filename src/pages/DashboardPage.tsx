@@ -1,5 +1,6 @@
 import { PeriodControl } from '@/components/PeriodControl'
 import { PieChartTooltip } from '@/components/PieChartTooltip'
+import { useChartTooltipTrigger } from '@/lib/useChartTooltipTrigger'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
@@ -90,6 +91,7 @@ function ChartBlock({
   legendColor: string
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
+  const tooltipTrigger = useChartTooltipTrigger()
   const { chartEntries, legendEntries } = prepareDashboardChart(data)
   const visibleEntries = legendEntries.slice(0, visibleCount)
 
@@ -122,6 +124,7 @@ function ChartBlock({
               ))}
             </Pie>
             <Tooltip
+              trigger={tooltipTrigger}
               contentStyle={tooltipStyle}
               content={<PieChartTooltip formatAmount={(amount) => formatAmount(amount, sym)} />}
             />
