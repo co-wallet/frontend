@@ -9,6 +9,7 @@ vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}
 
 const queryState = vi.hoisted(() => ({
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
+  transferVisibility: { expenses: false, income: true },
   params: [] as Record<string, unknown>[],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
@@ -16,7 +17,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
     ...actual,
-    useState: (initial: unknown) => actual.useState(initial === 'balance' ? queryState.chartMode : initial),
+    useState: (initial: unknown) => actual.useState(initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
   }
 })
 vi.mock('@/store/periodStore', async (importOriginal) => ({
@@ -33,13 +34,16 @@ vi.mock('@tanstack/react-query', () => ({
       queryState.params.push(queryKey[2] as Record<string, unknown>)
       return { data: [{ tagId: 'travel', tagName: 'Поездка', amount: 10 }] }
     }
+    if (queryKey[1] === 'by-category') return { data: [
+      { categoryId: 'transfers:bank', categoryName: queryKey[2] === 'expense' ? "В 'Банк'" : "Из 'Банк'", amount: 50 },
+    ] }
     if (queryKey[1] === 'summary') return { data: { balance: 10, expenses: 10, income: 0 } }
     return { data: [] }
   },
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.chartMode = 'balance' })
+afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 describe('Dashboard tag navigation', () => {
   it.each([
@@ -83,4 +87,46 @@ describe('Dashboard period visibility', () => {
     expect(markup).toContain('Выбранный период: 01.08.26 - 20.08.26')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
   })
+})
+
+
+describe('Dashboard transfer visibility', () => {
+  it.each(['expenses', 'income'] as const)('shows the independent default for %s', (mode) => {
+    queryState.chartMode = mode
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain(mode === 'expenses' ? 'aria-label="Настройки расходов"' : 'aria-label="Настройки доходов"')
+    expect(markup).toContain('id="dashboard-chart-settings"')
+    expect(markup).toContain('aria-haspopup="dialog"')
+    expect(markup).not.toContain('Отображать переводы')
+    expect(markup).not.toContain('dashboard-transfer-hint')
+    const periodControls = markup.match(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*?<\/section>/)?.[0]
+    expect(periodControls).not.toContain('ion-checkbox')
+    const chartHeader = markup.match(/<ion-card-header[^>]*>[^]*?(Расходы|Доходы) по категориям[^]*?<\/ion-card-header>/)?.[0]
+    expect(chartHeader).toContain('id="dashboard-chart-settings"')
+    expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
+  })
+
+  it('uses both changed preferences in analytics queries', () => {
+    queryState.chartMode = 'expenses'
+    queryState.transferVisibility = { expenses: true, income: false }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('aria-label="Настройки расходов"')
+    expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: true, include_transfer_income: false })
+  })
+
+  it('hides the transfer control for balance', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).not.toContain('Отображать переводы')
+    expect(markup).not.toContain('dashboard-chart-settings')
+  })
+})
+
+
+it.each(['expenses', 'income'] as const)('shows account names and a fixed transfer icon in %s', (mode) => {
+  queryState.chartMode = mode
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  expect(markup).toContain(mode === 'expenses' ? "В &#x27;Банк&#x27;" : "Из &#x27;Банк&#x27;")
+  expect(markup).toContain('aria-label="Перевод"')
+  expect(markup).toMatch(/<span class="account-icon" role="img" aria-label="Перевод"[^>]*--account-icon-foreground:var\(--account-icon-color-blue\)[^>]*--account-icon-border:var\(--account-icon-color-blue\)/)
+  expect(markup).not.toContain('ion-card-title>Переводы')
 })

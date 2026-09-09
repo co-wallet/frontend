@@ -73,3 +73,56 @@ body.dark .dashboard-chart-card {
 .dashboard-period-controls {
   margin-bottom: 16px;
 }
+
+/* One wrapper preserves heading/action order in both Ionic platform modes. */
+.dashboard-chart-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.dashboard-chart-heading ion-card-title {
+  flex: 1;
+  min-width: 0;
+}
+
+.dashboard-chart-settings {
+  --padding-start: 10px;
+  --padding-end: 10px;
+  flex-shrink: 0;
+  min-width: 44px;
+  height: 44px;
+  margin: -8px -8px -8px 0;
+}
+
+.dashboard-chart-popover {
+  --width: 264px;
+  --max-width: calc(100vw - 32px);
+}
+
+.dashboard-chart-popover-content {
+  padding: 8px 16px;
+}
+
+.dashboard-transfer-checkbox {
+  --size: 18px;
+  --border-radius: 5px;
+  --border-width: 1.5px;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.dashboard-transfer-checkbox::part(container) {
+  margin-inline-end: 8px;
+}
+
+.dashboard-transfer-checkbox::part(label) {
+  margin: 0;
+  white-space: normal;
+}

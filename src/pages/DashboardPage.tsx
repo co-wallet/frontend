@@ -8,6 +8,8 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   IonPage,
+  IonCheckbox,
+  IonPopover,
   IonButton,
   IonIcon,
   IonSegment,
@@ -40,6 +42,7 @@ import {
   chevronUpOutline,
   shieldCheckmarkOutline,
   optionsOutline,
+  swapHorizontalOutline,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
@@ -47,7 +50,7 @@ import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
-import { AccountIcon } from '@/components/AccountIcon'
+import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
 import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/CategoryIcon'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
@@ -151,10 +154,20 @@ function ChartBlock({
                 {s.iconType === 'account' && (
                   <AccountIcon value={s.icon} size={20} shape="rectangle" />
                 )}
+                {s.iconType === 'transfer' && (
+                  <span
+                    className="account-icon"
+                    role="img"
+                    aria-label="Перевод"
+                    style={accountIconStyle({ foreground: 'blue', border: 'blue' }, 20, 'square')}
+                  >
+                    <IonIcon icon={swapHorizontalOutline} aria-hidden="true" style={{ fontSize: 12 }} />
+                  </span>
+                )}
                 {s.iconType === 'category' && (
                   <CategoryIcon value={s.icon} type={s.categoryType} size={20} />
                 )}
-                <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: s.iconType === 'transfer' ? 'normal' : 'nowrap', overflowWrap: 'anywhere', maxWidth: 160 }}>
                   {s.name}
                 </span>
               </div>
@@ -188,6 +201,7 @@ export function DashboardPage() {
   const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
+  const [transferVisibility, setTransferVisibility] = useState({ expenses: false, income: true })
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
@@ -217,6 +231,8 @@ export function DashboardPage() {
 
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const params: AnalyticsParams = {
+    include_transfer_expenses: transferVisibility.expenses,
+    include_transfer_income: transferVisibility.income,
     date_from: dateFrom,
     date_to: dateTo,
     currency: displayCurrency,
@@ -277,22 +293,20 @@ export function DashboardPage() {
 
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
-    .slice(0, 8)
     .map((s) => ({
       name: s.categoryName,
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-      iconType: 'category' as const,
+      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'expense',
       amount: s.amount,
     }))
 
   const incomePieData: DashboardPieEntry[] = byIncome
     .filter((s) => s.amount > 0)
-    .slice(0, 8)
     .map((s) => ({
       name: s.categoryName,
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-      iconType: 'category' as const,
+      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'income',
       amount: s.amount,
     }))
@@ -505,8 +519,22 @@ export function DashboardPage() {
 
           {/* Pie chart block */}
           <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
-            <IonCardHeader>
-              <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
+            <IonCardHeader className="dashboard-chart-header">
+              <div className="dashboard-chart-heading">
+                <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
+                {chartMode !== 'balance' && (
+                  <IonButton
+                    id="dashboard-chart-settings"
+                    className="dashboard-chart-settings"
+                    fill="clear"
+                    color="medium"
+                    aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
+                    aria-haspopup="dialog"
+                  >
+                    <IonIcon slot="icon-only" icon={optionsOutline} />
+                  </IonButton>
+                )}
+              </div>
             </IonCardHeader>
             <IonCardContent>
               <ChartBlock
@@ -518,6 +546,31 @@ export function DashboardPage() {
               />
             </IonCardContent>
           </IonCard>
+
+          {chartMode !== 'balance' && (
+            <IonPopover
+              key={chartMode}
+              trigger="dashboard-chart-settings"
+              className="dashboard-chart-popover"
+              side="bottom"
+              alignment="end"
+              aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
+            >
+              <div className="dashboard-chart-popover-content">
+                <IonCheckbox
+                  className="dashboard-transfer-checkbox"
+                  labelPlacement="end"
+                  justify="start"
+                  checked={transferVisibility[chartMode]}
+                  onIonChange={(event) => setTransferVisibility((previous) => ({
+                    ...previous, [chartMode]: event.detail.checked,
+                  }))}
+                >
+                  Отображать переводы
+                </IonCheckbox>
+              </div>
+            </IonPopover>
+          )}
 
           {/* Tags breakdown */}
           {byTag.length > 0 && (
