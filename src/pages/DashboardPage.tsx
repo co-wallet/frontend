@@ -35,8 +35,6 @@ import {
   trendingDownOutline,
   trendingUpOutline,
   analyticsOutline,
-  chevronDownOutline,
-  chevronUpOutline,
   optionsOutline,
   swapHorizontalOutline,
 } from 'ionicons/icons'
@@ -52,7 +50,6 @@ import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
   filterAccountsByKinds,
   selectedVisibleAccountIds,
-  toggleAccountKind,
 } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
@@ -198,10 +195,10 @@ export function DashboardPage() {
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [transferVisibility, setTransferVisibility] = useState({ expenses: false, income: true })
+  const [includeShared, setIncludeShared] = useState(false)
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
-  const [showAccountFilter, setShowAccountFilter] = useState(false)
 
   const saveCurrency = useMutation({
     mutationFn: (code: string) => authApi.updateMe(code),
@@ -213,17 +210,14 @@ export function DashboardPage() {
   })
 
   const kindFilteredAccounts = filterAccountsByKinds(accounts, selectedKinds)
+    .filter((account) => includeShared || account.accessMode !== 'shared')
   const effectiveSelectedAccountIds = selectedVisibleAccountIds(kindFilteredAccounts, selectedAccountIds)
 
-  const filteredAccountIds: string | undefined = (() => {
-    if (accountFilter === 'all') return undefined
-    if (accountFilter === 'custom') {
-      return effectiveSelectedAccountIds.length > 0 ? effectiveSelectedAccountIds.join(',') : undefined
-    }
-    return undefined
-  })()
-
-  const isEmptyCustom = accountFilter === 'custom' && effectiveSelectedAccountIds.length === 0
+  const filteredAccounts = accountFilter === 'all'
+    ? kindFilteredAccounts
+    : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
+  const filteredAccountIds = filteredAccounts.map((account) => account.id).join(',') || undefined
+  const hasAnalyticsAccounts = !accountsLoading && !accountsError && filteredAccounts.length > 0
 
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const params: AnalyticsParams = {
@@ -248,19 +242,19 @@ export function DashboardPage() {
   const { data: summaryRaw } = useQuery({
     queryKey: ['analytics', 'summary', params],
     queryFn: () => analyticsApi.summary(params),
-    enabled: !isEmptyCustom,
+    enabled: hasAnalyticsAccounts,
   })
 
   const { data: byExpenseRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-category', 'expense', params],
     queryFn: () => analyticsApi.byCategory({ ...params, type: 'expense' }),
-    enabled: !isEmptyCustom,
+    enabled: hasAnalyticsAccounts,
   })
 
   const { data: byIncomeRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-category', 'income', params],
     queryFn: () => analyticsApi.byCategory({ ...params, type: 'income' }),
-    enabled: !isEmptyCustom,
+    enabled: hasAnalyticsAccounts,
   })
 
   const tagParams: AnalyticsParams = { ...params, type: chartMode === 'income' ? 'income' : 'expense' }
@@ -268,17 +262,13 @@ export function DashboardPage() {
   const { data: byTagRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-tag', tagParams],
     queryFn: () => analyticsApi.byTag(tagParams),
-    enabled: chartMode !== 'balance' && !isEmptyCustom,
+    enabled: chartMode !== 'balance' && hasAnalyticsAccounts,
   })
 
-  const summary = isEmptyCustom ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
-  const byExpense = isEmptyCustom ? [] : byExpenseRaw
-  const byIncome = isEmptyCustom ? [] : byIncomeRaw
-  const byTag = isEmptyCustom ? [] : byTagRaw
-
-  const filteredAccounts = accountFilter === 'all'
-    ? kindFilteredAccounts
-    : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
+  const summary = !hasAnalyticsAccounts ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
+  const byExpense = !hasAnalyticsAccounts ? [] : byExpenseRaw
+  const byIncome = !hasAnalyticsAccounts ? [] : byIncomeRaw
+  const byTag = !hasAnalyticsAccounts ? [] : byTagRaw
 
   const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
@@ -315,6 +305,12 @@ export function DashboardPage() {
     income: 'Доходы по категориям',
   }
 
+  const chartSettingsLabels: Record<ChartMode, string> = {
+    balance: 'Настройки баланса',
+    expenses: 'Настройки расходов',
+    income: 'Настройки доходов',
+  }
+
   const chartEmptyTexts: Record<ChartMode, string> = {
     balance: 'Нет данных о балансе',
     expenses: 'Нет расходов за период',
@@ -345,6 +341,7 @@ export function DashboardPage() {
       <PageHeader title="co-wallet" backHref={false} />
 
       <AppContent fullscreen withFab
+        className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
         fixed={
           <IonFab slot="fixed" vertical="bottom" horizontal="end">
             <IonFabButton routerLink="/transactions/add">
@@ -357,26 +354,40 @@ export function DashboardPage() {
           <section className="dashboard-view-controls" aria-label="Параметры отображения">
             {/* Account filter */}
             <div className="dashboard-account-filter">
-              <IonItem button lines="none" detail={false} aria-expanded={showAccountFilter} onClick={() => setShowAccountFilter((v) => !v)}>
-                <IonIcon icon={optionsOutline} slot="start" />
-                <IonLabel>
-                  <h2>
-                    {selectedKinds.length === 1
-                      ? accountKindShortLabel(selectedKinds[0])
-                      : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
-                        ? 'Все типы средств'
-                        : `Типов средств: ${selectedKinds.length}`}
-                  </h2>
-                  <p>
-                    {accountFilter === 'all' && 'Все счета'}
-                    {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
-                      ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
-                      : 'Счета не выбраны'
-                    )}
-                  </p>
-                </IonLabel>
-                <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
-              </IonItem>
+              <IonSelect
+                aria-label="Тип средств"
+                interface="popover"
+                multiple
+                value={selectedKinds}
+                onIonChange={(event) => {
+                  const kinds = event.detail.value as AccountKind[]
+                  setSelectedKinds(kinds)
+                }}
+                selectedText={selectedKinds.length === 0 ? 'Типы не выбраны' : selectedKinds.length === 1
+                  ? accountKindShortLabel(selectedKinds[0])
+                  : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
+                    ? 'Все типы средств'
+                    : `Типов средств: ${selectedKinds.length}`}
+                className="dashboard-currency-select"
+              >
+                {ACCOUNT_KIND_OPTIONS.map((option) => (
+                  <IonSelectOption key={option.value} value={option.value}>
+                    {option.shortLabel}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+              <IonButton
+                id="dashboard-account-settings"
+                className="dashboard-account-settings"
+                fill="outline"
+                color="medium"
+                aria-label={accountFilter === 'custom'
+                  ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
+                  : includeShared ? 'Все счета' : 'Личные счета'}
+                aria-haspopup="dialog"
+              >
+                <IonIcon slot="icon-only" icon={optionsOutline} />
+              </IonButton>
               <IonSelect
                 aria-label="Валюта"
                 interface="popover"
@@ -397,36 +408,8 @@ export function DashboardPage() {
                   </IonSelectOption>
                 ))}
               </IonSelect>
-              {showAccountFilter && (
-                <div className="dashboard-account-filter__options">
-                  <IonText color="medium" style={{ fontSize: '0.75rem' }}>Тип средств</IonText>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0 12px' }}>
-                    {ACCOUNT_KIND_OPTIONS.map((option) => {
-                      const active = selectedKinds.includes(option.value)
-                      const toggleKind = () => setSelectedKinds((previous) =>
-                        toggleAccountKind(previous, option.value)
-                      )
-                      return (
-                        <IonChip
-                          key={option.value}
-                          color={active ? 'primary' : 'medium'}
-                          outline={!active}
-                          role="button"
-                          tabIndex={0}
-                          aria-pressed={active}
-                          onClick={toggleKind}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault()
-                              toggleKind()
-                            }
-                          }}
-                        >
-                          <IonLabel>{option.shortLabel}</IonLabel>
-                        </IonChip>
-                      )
-                    })}
-                  </div>
+              <IonPopover trigger="dashboard-account-settings" className="dashboard-chart-popover" aria-label="Фильтр счетов">
+                <div className="dashboard-chart-popover-content">
                   <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
                   <IonSegment
                     value={accountFilter}
@@ -469,7 +452,7 @@ export function DashboardPage() {
                     </div>
                   )}
                 </div>
-              )}
+              </IonPopover>
             </div>
 
           </section>
@@ -513,18 +496,16 @@ export function DashboardPage() {
             <IonCardHeader className="dashboard-chart-header">
               <div className="dashboard-chart-heading">
                 <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
-                {chartMode !== 'balance' && (
-                  <IonButton
-                    id="dashboard-chart-settings"
-                    className="dashboard-chart-settings"
-                    fill="clear"
-                    color="medium"
-                    aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
-                    aria-haspopup="dialog"
+                <IonButton
+                  id="dashboard-chart-settings"
+                  className="dashboard-chart-settings"
+                  fill="clear"
+                  color="medium"
+                  aria-label={chartSettingsLabels[chartMode]}
+                  aria-haspopup="dialog"
                   >
-                    <IonIcon slot="icon-only" icon={optionsOutline} />
-                  </IonButton>
-                )}
+                  <IonIcon slot="icon-only" icon={optionsOutline} />
+                </IonButton>
               </div>
             </IonCardHeader>
             <IonCardContent>
@@ -538,16 +519,25 @@ export function DashboardPage() {
             </IonCardContent>
           </IonCard>
 
-          {chartMode !== 'balance' && (
-            <IonPopover
-              key={chartMode}
-              trigger="dashboard-chart-settings"
-              className="dashboard-chart-popover"
-              side="bottom"
-              alignment="end"
-              aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
-            >
-              <div className="dashboard-chart-popover-content">
+          <IonPopover
+            key={chartMode}
+            trigger="dashboard-chart-settings"
+            className="dashboard-chart-popover"
+            side="bottom"
+            alignment="end"
+            aria-label={chartSettingsLabels[chartMode]}
+          >
+            <div className="dashboard-chart-popover-content">
+              <IonCheckbox
+                className="dashboard-transfer-checkbox"
+                labelPlacement="end"
+                justify="start"
+                checked={includeShared}
+                onIonChange={(event) => setIncludeShared(event.detail.checked)}
+              >
+                Учитывать общие счета
+              </IonCheckbox>
+              {chartMode !== 'balance' && (
                 <IonCheckbox
                   className="dashboard-transfer-checkbox"
                   labelPlacement="end"
@@ -559,9 +549,9 @@ export function DashboardPage() {
                 >
                   Отображать переводы
                 </IonCheckbox>
-              </div>
-            </IonPopover>
-          )}
+              )}
+            </div>
+          </IonPopover>
 
           {/* Tags breakdown */}
           {chartMode !== 'balance' && byTag.length > 0 && (
