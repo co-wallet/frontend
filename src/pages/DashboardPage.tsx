@@ -345,6 +345,7 @@ export function DashboardPage() {
       <PageHeader title="co-wallet" backHref={false} />
 
       <AppContent fullscreen withFab
+        className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
         fixed={
           <IonFab slot="fixed" vertical="bottom" horizontal="end">
             <IonFabButton routerLink="/transactions/add">

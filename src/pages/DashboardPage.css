@@ -150,3 +150,8 @@ body.dark .dashboard-chart-card {
   align-self: center;
   margin-block: 0;
 }
+
+/* The fitted list already reserves the FAB area; keep only the normal bottom gutter. */
+ion-content.app-content.dashboard-balance-content {
+  --padding-bottom: calc(var(--app-page-gutter) + env(safe-area-inset-bottom));
+}

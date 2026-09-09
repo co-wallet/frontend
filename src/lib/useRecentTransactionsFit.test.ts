@@ -21,6 +21,8 @@ vi.mock('react', () => ({
 }))
 
 let top: number
+let padding: number
+let fabTop: number | undefined
 let notifyResize: () => void
 let frames: Map<number, FrameRequestCallback>
 let disconnect: ReturnType<typeof vi.fn>
@@ -49,6 +51,8 @@ beforeEach(() => {
   hooks.cleanup = undefined
   hooks.fit = { count: 0, compact: true, hidden: true }
   top = 700
+  padding = 0
+  fabTop = undefined
   frames = new Map()
   let frameId = 0
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
@@ -56,7 +60,7 @@ beforeEach(() => {
     return frameId
   })
   vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id))
-  vi.stubGlobal('getComputedStyle', () => ({ paddingBottom: '0', marginBottom: '0' }))
+  vi.stubGlobal('getComputedStyle', () => ({ paddingBottom: String(padding), marginBottom: '0' }))
   const windowTarget = Object.assign(new EventTarget(), { innerHeight: 1000 })
   vi.stubGlobal('window', windowTarget)
   disconnect = vi.fn()
@@ -68,7 +72,7 @@ beforeEach(() => {
   const element = (height: number) => ({ getBoundingClientRect: () => ({ height }) })
   const scroll = { scrollTop: 0, getBoundingClientRect: () => ({ bottom: 1000 }) }
   resolveScroll = vi.fn().mockResolvedValue(scroll)
-  const content = { getScrollElement: resolveScroll }
+  const content = { getScrollElement: resolveScroll, querySelector: () => ({ getBoundingClientRect: () => ({ top: fabTop, height: fabTop === undefined ? 0 : 56 }) }) }
   hooks.card = {
     closest: () => content,
     parentElement: { getBoundingClientRect: () => ({ top }) },
@@ -97,6 +101,16 @@ describe('useRecentTransactionsFit', () => {
     await render()
     expect(frames.size).toBe(0)
     expect(resolveScroll).toHaveBeenCalledTimes(1)
+  })
+
+  it('fits the first transaction above the FAB without subtracting its scrolling reserve', async () => {
+    top = 636
+    padding = 104
+    window.innerHeight = 900
+    fabTop = 834
+    await render()
+    flushFrame()
+    expect(hooks.fit).toEqual({ count: 1, compact: false, hidden: false })
   })
 
   it('batches resize notifications into one frame and cancels it on unmount', async () => {
