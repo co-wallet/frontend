@@ -5,6 +5,8 @@ import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { PieChartTooltip } from '@/components/PieChartTooltip'
+import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import {
   IonAccordion,
   IonAccordionGroup,
@@ -73,6 +75,7 @@ import {
 import './TransactionsPage.css'
 
 export function TransactionsPage() {
+  const tooltip = usePieChartTooltip()
   const queryClient = useQueryClient()
   const currentLocation = useLocation()
   const route = useRouteMatch()
@@ -377,6 +380,7 @@ export function TransactionsPage() {
                           cy="50%"
                           outerRadius={70}
                           innerRadius={35}
+                          onClick={tooltip.onSectorClick}
                         >
                           {chartData.map((stat) => (
                             <Cell
@@ -386,8 +390,10 @@ export function TransactionsPage() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: number) => formatCurrencyAmount(value, defaultCurrency, 2)}
+                          trigger={tooltip.trigger}
+                          active={tooltip.active}
                           contentStyle={chartTheme.tooltipStyle}
+                          content={<PieChartTooltip categoryType={chartCategoryType} formatAmount={(amount) => formatCurrencyAmount(amount, defaultCurrency, 2)} />}
                         />
                       </PieChart>
                     </ResponsiveContainer>
