@@ -24,7 +24,6 @@ interface RecentTransactionsProps {
 export function RecentTransactions({
   accounts, accountIds, accountsLoading, accountsError, currentUserId, defaultCurrency,
 }: RecentTransactionsProps) {
-  const fit = useRecentTransactionsFit()
   const history = useHistory()
   const queryClient = useQueryClient()
   const enabled = !accountsLoading && !accountsError && accountIds.length > 0
@@ -51,6 +50,7 @@ export function RecentTransactions({
   const error = accountsError || (enabled && (
     transactions.isError || expenseCategories.isError || incomeCategories.isError
   ))
+  const fit = useRecentTransactionsFit(transactions.data, `${enabled}:${loading}:${error}`)
   const items = enabled ? (transactions.data ?? []) : []
 
   return (

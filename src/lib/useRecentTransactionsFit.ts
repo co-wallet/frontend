@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { fitRecentTransactions } from './fitRecentTransactions'
 
-export function useRecentTransactionsFit() {
+export function useRecentTransactionsFit(contentKey: unknown, status: string) {
   const ref = useRef<HTMLIonCardElement>(null)
   const [fit, setFit] = useState({ count: 0, compact: true, hidden: true })
 
@@ -17,12 +17,14 @@ export function useRecentTransactionsFit() {
       const footer = card.querySelector<HTMLElement>('.recent-transactions__footer')!
       const message = card.querySelector<HTMLElement>('.recent-transactions__message')
       const rows = Array.from(card.querySelectorAll<HTMLElement>('.recent-transactions__row'))
+      let frame: number | undefined
       const measure = () => {
+        frame = undefined
         const viewport = window.visualViewport
         const bottom = Math.min(scroll.getBoundingClientRect().bottom,
           viewport ? viewport.offsetTop + viewport.height : window.innerHeight)
         // Work from the unscrolled position; scrolling must not reveal extra rows.
-        const top = card.getBoundingClientRect().top + scroll.scrollTop
+        const top = card.parentElement!.getBoundingClientRect().top + scroll.scrollTop
         const padding = parseFloat(getComputedStyle(scroll).paddingBottom) || 0
         const margin = parseFloat(getComputedStyle(card).marginBottom) || 0
         const available = Math.max(0, bottom - top - padding - margin - 2)
@@ -36,23 +38,28 @@ export function useRecentTransactionsFit() {
         setFit((previous) => previous.count === count && previous.compact === compact && previous.hidden === hidden
           ? previous : { count, compact, hidden })
       }
-      const observer = new ResizeObserver(measure)
+      // Batch layout reads after React/Ionic updates; never recurse through promise microtasks.
+      const scheduleMeasure = () => {
+        if (frame === undefined) frame = requestAnimationFrame(measure)
+      }
+      const observer = new ResizeObserver(scheduleMeasure)
       for (const element of [scroll, content, card.closest('.app-content-body'), header, footer, message, ...rows]) {
         if (element) observer.observe(element)
       }
-      window.addEventListener('resize', measure)
-      window.visualViewport?.addEventListener('resize', measure)
-      window.visualViewport?.addEventListener('scroll', measure)
-      measure()
+      window.addEventListener('resize', scheduleMeasure)
+      window.visualViewport?.addEventListener('resize', scheduleMeasure)
+      window.visualViewport?.addEventListener('scroll', scheduleMeasure)
+      scheduleMeasure()
       cleanup = () => {
         observer.disconnect()
-        window.removeEventListener('resize', measure)
-        window.visualViewport?.removeEventListener('resize', measure)
-        window.visualViewport?.removeEventListener('scroll', measure)
+        if (frame !== undefined) cancelAnimationFrame(frame)
+        window.removeEventListener('resize', scheduleMeasure)
+        window.visualViewport?.removeEventListener('resize', scheduleMeasure)
+        window.visualViewport?.removeEventListener('scroll', scheduleMeasure)
       }
     })
     return () => { disposed = true; cleanup() }
-  })
+  }, [contentKey, status])
 
   return { ref, ...fit }
 }
