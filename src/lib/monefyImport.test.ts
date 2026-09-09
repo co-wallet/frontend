@@ -69,6 +69,21 @@ describe('MonefyImport public workflow', () => {
     model.accept(true); await model.confirm()
     expect(api.confirm).toHaveBeenCalledWith('configured', true)
   })
+  it('collects kinds for every initially untyped account before sending options', async () => {
+    const { model, api } = setup()
+    api.preview.mockResolvedValue({ ...preview, can_confirm: false, accounts: [
+      { ...preview.accounts[0], source_id: 'first', kind: '' },
+      { ...preview.accounts[0], source_id: 'second', kind: '' },
+    ] })
+    await model.upload(file)
+    await model.configure('first', 'deposit')
+    expect(api.configure).not.toHaveBeenCalled()
+    expect(model.getSnapshot().preview?.accounts[0].kind).toBe('deposit')
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    await model.configure('second', 'investment')
+    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { first: 'deposit', second: 'investment' })
+    expect(model.getSnapshot().preview?.preview_id).toBe('preview-2')
+  })
   it('ignores an old upload after selecting a new file', async () => {
     const { model, api } = setup()
     const old = deferred<ImportPreview>(); api.preview.mockReturnValueOnce(old.promise)

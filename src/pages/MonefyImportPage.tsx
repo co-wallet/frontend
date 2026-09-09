@@ -33,7 +33,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <p>Начальный баланс: {a.initial_balance} {a.currency} на {date(a.initial_balance_date)}</p>
         <p>Итоговый баланс: {a.final_balance} {a.currency}</p>
         <p>В общем балансе Monefy: {a.source_included_in_total ? 'да' : 'нет'}; {a.source_disabled_at ? `отключён с ${date(a.source_disabled_at)}` : 'активен'}.</p>
-        <IonItem lines="none"><IonSelect label={`Тип счёта «${a.name}»`} labelPlacement="stacked" interface="action-sheet" value={a.kind} disabled={locked} onIonChange={e => void controller.configure(a.source_id, e.detail.value as AccountKind)}>
+        <IonItem lines="none"><IonSelect label={`Тип счёта «${a.name}»`} labelPlacement="stacked" interface="action-sheet" placeholder="Выберите тип" value={a.kind || undefined} disabled={locked} onIonChange={e => void controller.configure(a.source_id, e.detail.value as AccountKind)}>
           <IonSelectOption value="spending">Текущий</IonSelectOption><IonSelectOption value="deposit">Накопительный</IonSelectOption><IonSelectOption value="investment">Инвестиционный</IonSelectOption>
         </IonSelect></IonItem>
       </IonCardContent>
@@ -48,7 +48,8 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
       <ul>{p.exclusions.map((e, i) => <li key={i}>Не переносится: {e.entity} {e.source_id} — {e.reason}</li>)}</ul>
       {Object.entries(p.deleted || {}).map(([key, value]) => <p key={key}>Удалённые записи {key}: {value} — не переносятся.</p>)}
       {(p.requires_exclusion_confirmation || p.diagnostics.some(d => d.severity === 'confirmation')) && <IonCheckbox className="import-ack" checked={state.accepted} disabled={locked} onIonChange={e => controller.accept(e.detail.checked)}>Принимаю все перечисленные исключения</IonCheckbox>}
-      {!p.can_confirm && <IonText color="danger"><p>Ошибки блокируют импорт. Исправьте исходный файл и загрузите его заново.</p></IonText>}
+      {p.accounts.some(a => !a.kind) && <p>Выберите тип каждого счёта. После этого предпросмотр обновится.</p>}
+      {!p.can_confirm && p.diagnostics.some(d => d.severity === 'blocking' && d.code !== 'target_account_kind') && <IonText color="danger"><p>Ошибки блокируют импорт. Исправьте исходный файл и загрузите его заново.</p></IonText>}
     </IonCardContent></IonCard>
     <p>После подтверждения счета и история будут добавлены в co-wallet. Отменить применение на этом экране нельзя.</p>
     <IonButton expand="block" disabled={!canConfirmImport(state)} onClick={() => void controller.confirm()}>Подтвердить импорт</IonButton>

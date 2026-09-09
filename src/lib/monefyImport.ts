@@ -98,10 +98,17 @@ export class MonefyImport {
   async configure(sourceID: string, kind: AccountKind) {
     const p = this.state.preview
     if (!p || this.state.phase !== 'idle' || this.pending) return
+    if (!['spending', 'deposit', 'investment'].includes(kind)) return
+    const accounts = p.accounts.map(a => a.source_id === sourceID ? { ...a, kind } : a)
+    const draft = { ...p, accounts, can_confirm: false }
+    this.update({ preview: draft, accepted: false, error: undefined })
+    // The initial API preview has no kinds. Submit only after every account is selected.
+    if (accounts.some(a => !a.kind)) return
+    const kinds = Object.fromEntries(accounts.map(a => [a.source_id, a.kind as AccountKind]))
     const version = ++this.generation
-    this.update({ phase: 'configuring', accepted: false, error: undefined })
+    this.update({ phase: 'configuring' })
     try {
-      const preview = await this.api.configure(p.preview_id, Object.fromEntries(p.accounts.map(a => [a.source_id, a.source_id === sourceID ? kind : a.kind])))
+      const preview = await this.api.configure(p.preview_id, kinds)
       if (version === this.generation) this.update({ preview, phase: 'idle' })
     } catch (e) { if (version === this.generation) this.update({ preview: undefined, phase: 'idle', error: errorText(e) }) }
   }

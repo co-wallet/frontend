@@ -24,8 +24,16 @@ describe('Monefy preview UI', () => {
     expect(render()).toMatch(/ion-button[^>]*disabled="true"/)
     expect(render({ ...state, accepted: true })).not.toMatch(/ion-button[^>]*disabled="true"/)
   })
+  it('asks for account types without incorrectly calling the source file broken', () => {
+    const html = render({ ...state, preview: { ...state.preview!, can_confirm: false,
+      accounts: [{ ...state.preview!.accounts[0], kind: '' }],
+      diagnostics: [{ severity: 'blocking', code: 'target_account_kind', message: 'Выберите тип', source_id: 'a', entity: 'Account' }],
+    } })
+    expect(html).toContain('Выберите тип каждого счёта')
+    expect(html).not.toContain('Исправьте исходный файл')
+  })
   it('shows a blocking error and disables confirmation', () => {
-    const html = render({ ...state, accepted: true, preview: { ...state.preview!, can_confirm: false } })
+    const html = render({ ...state, accepted: true, preview: { ...state.preview!, can_confirm: false, diagnostics: [{ severity: 'blocking', code: 'invalid_currency', message: 'Неизвестная валюта', entity: '', source_id: '' }] } })
     expect(html).toContain('Ошибки блокируют импорт')
     expect(html).toMatch(/ion-button[^>]*disabled="true"/)
   })
