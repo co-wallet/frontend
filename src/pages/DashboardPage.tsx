@@ -31,16 +31,11 @@ import {
 } from '@ionic/react'
 import {
   addOutline,
-  walletOutline,
-  listOutline,
-  pricetagOutline,
   trendingDownOutline,
   trendingUpOutline,
   analyticsOutline,
-  gridOutline,
   chevronDownOutline,
   chevronUpOutline,
-  shieldCheckmarkOutline,
   optionsOutline,
   swapHorizontalOutline,
 } from 'ionicons/icons'
@@ -332,13 +327,6 @@ export function DashboardPage() {
 
   const chartTheme = useChartTheme()
 
-  const navItems: { icon: string; label: string; href: string }[] = [
-    { icon: walletOutline, label: 'Счета', href: '/accounts' },
-    { icon: listOutline, label: 'Транзакции', href: '/transactions' },
-    { icon: pricetagOutline, label: 'Теги', href: '/tags' },
-    { icon: gridOutline, label: 'Категории', href: '/categories' },
-  ]
-
   const summaryCards: { mode: ChartMode; icon: string; label: string; value: number; color: string }[] = [
     {
       mode: 'balance',
@@ -604,34 +592,6 @@ export function DashboardPage() {
             </IonCard>
           )}
 
-          {/* Navigation tiles */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 12 }}>
-            {navItems.map((item) => (
-              <IonCard key={item.href} button routerLink={item.href} style={{ margin: 0 }}>
-                <IonCardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 16 }}>
-                  <IonIcon icon={item.icon} style={{ fontSize: 24 }} />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>{item.label}</span>
-                </IonCardContent>
-              </IonCard>
-            ))}
-            {user?.isAdmin && (
-              <IonCard button routerLink="/admin" style={{ margin: 0, gridColumn: 'span 2' }}>
-                <IonCardContent style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: 16 }}>
-                  <IonIcon icon={shieldCheckmarkOutline} style={{ fontSize: 24 }} />
-                  <span style={{ fontSize: '0.875rem', fontWeight: 500 }}>Администрирование</span>
-                </IonCardContent>
-              </IonCard>
-            )}
-          </div>
-
-          {/* Greeting */}
-          <IonCard style={{ margin: '12px 0 0 0' }}>
-            <IonCardContent>
-              <IonText color="medium" style={{ fontSize: '0.75rem' }}>
-                {user?.username}  ·  {user?.email}
-              </IonText>
-            </IonCardContent>
-          </IonCard>
         </div>
 
         {/* FAB */}
