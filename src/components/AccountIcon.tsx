@@ -403,8 +403,10 @@ export function IconAppearanceControls({
 export function AccountIconPicker({
   value,
   onChange,
+  allowCustom = true,
 }: {
   value: string
+  allowCustom?: boolean
   onChange: (value: string) => void
 }) {
   const resolved = resolveAccountIcon(value)
@@ -416,7 +418,7 @@ export function AccountIconPicker({
     <section className="account-icon-picker" aria-labelledby={titleId}>
       <div className="account-icon-picker__header">
         <h2 id={titleId}>Иконка счёта</h2>
-        <p>Выберите подходящую или создайте свою</p>
+        <p>{allowCustom ? 'Выберите подходящую или создайте свою' : 'Выберите подходящую иконку'}</p>
       </div>
 
       <div className="account-icon-picker__grid">
@@ -440,7 +442,7 @@ export function AccountIconPicker({
           )
         })}
 
-        <button
+        {allowCustom && <button
           className="account-icon-option"
           type="button"
           aria-label="Своя текстовая иконка"
@@ -454,10 +456,10 @@ export function AccountIconPicker({
             size={36}
           />
           <span>Своя</span>
-        </button>
+        </button>}
       </div>
 
-      {customLabel !== null && (
+      {allowCustom && customLabel !== null && (
         <div className="account-icon-picker__custom">
           <AccountIcon value={value} size={48} />
           <div className="account-icon-picker__custom-field">

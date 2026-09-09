@@ -10,6 +10,7 @@ export const importReasons: Record<string, string> = {
 }
 const errors: Record<string, string> = {
   account_not_empty: 'Учётная запись больше не пуста. Импорт недоступен.',
+  invalid_account_icons: 'Не удалось сохранить оформление счёта. Выберите иконку и цвета из списка co-wallet.',
   invalid_category_icons: 'Не удалось сохранить иконки категорий. Выберите иконку из списка co-wallet.',
   preview_storage_full: 'На сервере не хватает места для предпросмотра. Повторите позже или обратитесь к администратору; файл не импортирован.',
   import_conflict: 'Сервер не смог подготовить импорт из-за конфликта состояния. Загрузите файл заново; если ошибка повторяется, передайте её администратору.',
@@ -105,6 +106,13 @@ export class MonefyImport {
     const accounts = p.accounts.map(a => a.source_id === sourceID ? { ...a, kind } : a)
     await this.saveOptions({ ...p, accounts, can_confirm: false })
   }
+  async configureAccountIcon(sourceID: string, icon: string) {
+    const p = this.state.preview
+    if (!p || this.state.phase !== 'idle' || this.pending) return
+    if (!p.accounts.some(a => a.source_id === sourceID)) return
+    const accounts = p.accounts.map(a => a.source_id === sourceID ? { ...a, icon } : a)
+    await this.saveOptions({ ...p, accounts, can_confirm: false })
+  }
   async configureCategory(sourceID: string, icon: string) {
     const p = this.state.preview
     if (!p || this.state.phase !== 'idle' || this.pending) return
@@ -121,7 +129,7 @@ export class MonefyImport {
     const version = ++this.generation
     this.update({ phase: 'configuring' })
     try {
-      const preview = await this.api.configure(draft.preview_id, kinds, categoryIcons)
+      const preview = await this.api.configure(draft.preview_id, kinds, categoryIcons, Object.fromEntries(draft.accounts.map(a => [a.source_id, a.icon])))
       if (version === this.generation) this.update({ preview, phase: 'idle' })
     } catch (e) { if (version === this.generation) this.update({ preview: undefined, phase: 'idle', error: errorText(e) }) }
   }

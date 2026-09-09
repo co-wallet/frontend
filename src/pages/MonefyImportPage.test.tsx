@@ -11,7 +11,7 @@ vi.mock('@/api/monefy', () => ({ monefyApi: {} }))
 const state: ImportState = { phase: 'idle', accepted: false, availability: { available: true, reasons: [] }, preview: {
   preview_id: 'p', expires_at: '2099-01-01', can_confirm: true, requires_exclusion_confirmation: true,
   counts: { accounts: 1, categories: 1, transactions: 2, transfers: 1 }, period_from: '2020-01-01', period_to: '2025-01-01', currencies: ['RUB'],
-  accounts: [{ source_id: 'a', name: 'Семья', currency: 'RUB', kind: 'investment', initial_balance: '100.0001', initial_balance_date: '2020-01-01', final_balance: '50.0001', source_included_in_total: false, source_disabled_at: '2025-01-01' }],
+  accounts: [{ source_id: 'a', icon: 'preset:cash|green|green', name: 'Семья', currency: 'RUB', kind: 'investment', initial_balance: '100.0001', initial_balance_date: '2020-01-01', final_balance: '50.0001', source_included_in_total: false, source_disabled_at: '2025-01-01' }],
   categories: [{ source_id: 'c', name: 'Еда', type: 'expense', icon: 'preset:groceries', existing_id: 'x', source_disabled_at: null }],
   diagnostics: [{ severity: 'warning', code: 'flags', message: 'Флаги не переносятся', source_id: '', entity: '' }], exclusions: [{ entity: 'Transaction', source_id: 't', reason: 'Удалённый счёт' }], deleted: { Account: 1 },
 } }
@@ -60,6 +60,15 @@ describe('Monefy preview UI', () => {
     expect(fresh).toContain('Иконка «Продукты»')
     expect(fresh).not.toContain('📁')
     expect(fresh).not.toContain('💰')
+  })
+  it('offers preset account icons and colors without custom symbols, and locks editing during requests', () => {
+    const html = render()
+    expect(html).toContain('Иконка счёта')
+    expect(html).toContain('Иконка «Наличные»')
+    expect(html).toContain('Цвет иконки')
+    expect(html).toContain('Цвет обводки')
+    expect(html).not.toContain('Своя текстовая иконка')
+    expect(render({ ...state, phase: 'configuring' })).toMatch(/fieldset disabled/)
   })
   it('shows a blocking error and disables confirmation', () => {
     const html = render({ ...state, accepted: true, preview: { ...state.preview!, can_confirm: false, diagnostics: [{ severity: 'blocking', code: 'invalid_currency', message: 'Неизвестная валюта', entity: '', source_id: '' }] } })

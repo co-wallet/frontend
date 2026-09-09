@@ -4,7 +4,7 @@ import { MonefyImportDiagnostics } from './MonefyImportDiagnostics'
 import type { ImportState, MonefyImport } from '@/lib/monefyImport'
 import type { ImportPreview } from '@/api/monefy'
 
-const account = { source_id: 'account-uuid', name: 'Кошелёк в поездках', currency: 'TRY', kind: '' as const, initial_balance: '0', initial_balance_date: '2020-01-01', final_balance: '100', source_included_in_total: true, source_disabled_at: null }
+const account = { icon: 'preset:wallet|blue|blue', source_id: 'account-uuid', name: 'Кошелёк в поездках', currency: 'TRY', kind: '' as const, initial_balance: '0', initial_balance_date: '2020-01-01', final_balance: '100', source_included_in_total: true, source_disabled_at: null }
 const preview: ImportPreview = {
   preview_id: 'p', expires_at: '2099-01-01', can_confirm: false, requires_exclusion_confirmation: true,
   counts: {}, currencies: ['TRY'], period_from: null, period_to: null, accounts: [account], categories: [], deleted: {},
