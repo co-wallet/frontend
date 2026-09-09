@@ -10,6 +10,7 @@ export const importReasons: Record<string, string> = {
 }
 const errors: Record<string, string> = {
   account_not_empty: 'Учётная запись больше не пуста. Импорт недоступен.',
+  invalid_category_icons: 'Не удалось сохранить иконки категорий. Выберите иконку из списка co-wallet.',
   import_busy: 'Уже выполняется обработка файла. Дождитесь её завершения.',
   upload_too_large: 'Размер файла превышает 64 МБ.',
   preview_not_found: 'Предпросмотр истёк или удалён. Загрузите файл заново.',
@@ -100,15 +101,25 @@ export class MonefyImport {
     if (!p || this.state.phase !== 'idle' || this.pending) return
     if (!['spending', 'deposit', 'investment'].includes(kind)) return
     const accounts = p.accounts.map(a => a.source_id === sourceID ? { ...a, kind } : a)
-    const draft = { ...p, accounts, can_confirm: false }
+    await this.saveOptions({ ...p, accounts, can_confirm: false })
+  }
+  async configureCategory(sourceID: string, icon: string) {
+    const p = this.state.preview
+    if (!p || this.state.phase !== 'idle' || this.pending) return
+    if (!p.categories.some(c => c.source_id === sourceID && !c.existing_id)) return
+    const categories = p.categories.map(c => c.source_id === sourceID ? { ...c, icon } : c)
+    await this.saveOptions({ ...p, categories, can_confirm: false })
+  }
+  private async saveOptions(draft: ImportPreview) {
     this.update({ preview: draft, accepted: false, error: undefined })
     // The initial API preview has no kinds. Submit only after every account is selected.
-    if (accounts.some(a => !a.kind)) return
-    const kinds = Object.fromEntries(accounts.map(a => [a.source_id, a.kind as AccountKind]))
+    if (draft.accounts.some(a => !a.kind)) return
+    const kinds = Object.fromEntries(draft.accounts.map(a => [a.source_id, a.kind as AccountKind]))
+    const categoryIcons = Object.fromEntries(draft.categories.filter(c => !c.existing_id).map(c => [c.source_id, c.icon]))
     const version = ++this.generation
     this.update({ phase: 'configuring' })
     try {
-      const preview = await this.api.configure(p.preview_id, kinds)
+      const preview = await this.api.configure(draft.preview_id, kinds, categoryIcons)
       if (version === this.generation) this.update({ preview, phase: 'idle' })
     } catch (e) { if (version === this.generation) this.update({ preview: undefined, phase: 'idle', error: errorText(e) }) }
   }

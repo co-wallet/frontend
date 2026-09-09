@@ -5,6 +5,8 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthStore } from '@/store/authStore'
 import { canConfirmImport, importReasons, MonefyImport, type ImportState } from '@/lib/monefyImport'
 import type { AccountKind } from '@/api/accounts'
+import { CategoryIconSettings } from '@/components/CategoryIconSettings'
+import { CategoryIcon } from '@/components/CategoryIcon'
 import './MonefyImportPage.css'
 
 const countNames: Record<string, string> = { accounts: 'Счета', categories: 'Категории', transactions: 'Операции', transfers: 'Переводы' }
@@ -40,7 +42,12 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
     </IonCard>)}
     <IonCard><IonCardHeader><IonCardTitle>Общие категории</IonCardTitle></IonCardHeader><IonCardContent>
       <p>Совпадающие категории переиспользуются; остальные добавляются в общий справочник.</p>
-      <ul>{p.categories.map(c => <li key={c.source_id}>{c.name} ({c.type === 'income' ? 'доход' : 'расход'}) — {c.existing_id ? 'переиспользуется' : 'новая'}{c.source_disabled_at ? '; отключена в Monefy' : ''}</li>)}</ul>
+      {p.categories.map(c => <section className="import-category" key={c.source_id}>
+        <h3>{c.name} ({c.type === 'income' ? 'доход' : 'расход'}) — {c.existing_id ? 'переиспользуется' : 'новая'}</h3>
+        {c.source_disabled_at && <p>Отключена в Monefy</p>}
+        {c.existing_id ? <><CategoryIcon value={c.icon} type={c.type} /><p>Иконка общей категории сохраняется.</p></> :
+          <fieldset disabled={locked}><CategoryIconSettings value={c.icon} type={c.type} sessionKey={c.source_id} onChange={icon => void controller.configureCategory(c.source_id, icon)} /></fieldset>}
+      </section>)}
     </IonCardContent></IonCard>
     <IonCard><IonCardHeader><IonCardTitle>Предупреждения и исключения</IonCardTitle></IonCardHeader><IonCardContent>
       {!p.diagnostics.length && !p.exclusions.length && <p>Предупреждений и исключений нет.</p>}

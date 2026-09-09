@@ -13,7 +13,7 @@ describe('Monefy API contract', () => {
   })
   it('uses immutable preview IDs for options and confirmation', async () => {
     await monefyApi.configure('old', { a: 'deposit' })
-    expect(client.post).toHaveBeenCalledWith('/imports/monefy/old/options', { account_kinds: { a: 'deposit' } })
+    expect(client.post).toHaveBeenCalledWith('/imports/monefy/old/options', { account_kinds: { a: 'deposit' }, category_icons: {} })
     await monefyApi.confirm('new', true)
     expect(client.post).toHaveBeenCalledWith('/imports/monefy/new/confirm', { acknowledge_exclusions: true }, { timeout: 30000 })
   })

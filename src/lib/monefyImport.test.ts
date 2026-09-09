@@ -8,7 +8,7 @@ export const preview: ImportPreview = {
   requires_exclusion_confirmation: true, counts: { accounts: 1, categories: 1, transactions: 2, transfers: 1 },
   period_from: '2020-01-01', period_to: '2025-01-01', currencies: ['RUB'],
   accounts: [{ source_id: 'a', name: 'Семья', currency: 'RUB', kind: 'spending', initial_balance: '100.0001', initial_balance_date: '2020-01-01', final_balance: '50.0001', source_included_in_total: false, source_disabled_at: '2025-01-01' }],
-  categories: [{ source_id: 'c', existing_id: 'existing', name: 'Еда', type: 'expense', source_disabled_at: null }],
+  categories: [{ source_id: 'c', existing_id: 'existing', name: 'Еда', type: 'expense', icon: 'preset:groceries', source_disabled_at: null }],
   diagnostics: [{ severity: 'warning', code: 'flags', entity: '', source_id: '', message: 'Флаги не переносятся' }],
   exclusions: [{ entity: 'Transaction', source_id: 't', reason: 'Удалённый счёт' }], deleted: { Account: 1 },
 }
@@ -65,7 +65,7 @@ describe('MonefyImport public workflow', () => {
     expect(canConfirmImport(model.getSnapshot())).toBe(false)
     expect(model.getSnapshot().accepted).toBe(false)
     request.resolve({ ...preview, preview_id: 'configured' }); await configuring
-    expect(api.configure).toHaveBeenCalledWith('preview-1', { a: 'investment' })
+    expect(api.configure).toHaveBeenCalledWith('preview-1', { a: 'investment' }, {})
     model.accept(true); await model.confirm()
     expect(api.confirm).toHaveBeenCalledWith('configured', true)
   })
@@ -81,8 +81,27 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().preview?.accounts[0].kind).toBe('deposit')
     expect(canConfirmImport(model.getSnapshot())).toBe(false)
     await model.configure('second', 'investment')
-    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { first: 'deposit', second: 'investment' })
+    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { first: 'deposit', second: 'investment' }, {})
     expect(model.getSnapshot().preview?.preview_id).toBe('preview-2')
+  })
+  it('preserves category icon choices while collecting account kinds and saves them in options', async () => {
+    const { model, api } = setup()
+    api.preview.mockResolvedValue({ ...preview, can_confirm: false,
+      accounts: [{ ...preview.accounts[0], kind: '' }],
+      categories: [{ ...preview.categories[0], existing_id: undefined }],
+    })
+    await model.upload(file)
+    await model.configureCategory('c', 'preset:groceries|purple|none')
+    expect(api.configure).not.toHaveBeenCalled()
+    expect(model.getSnapshot().preview?.categories[0].icon).toBe('preset:groceries|purple|none')
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    await model.configure('a', 'deposit')
+    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { a: 'deposit' }, { c: 'preset:groceries|purple|none' })
+  })
+  it('does not edit icons of reused categories', async () => {
+    const { model, api } = setup(); await model.upload(file)
+    await model.configureCategory('c', 'preset:work')
+    expect(api.configure).not.toHaveBeenCalled()
   })
   it('ignores an old upload after selecting a new file', async () => {
     const { model, api } = setup()
