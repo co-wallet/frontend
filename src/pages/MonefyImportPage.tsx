@@ -82,7 +82,7 @@ export function MonefyImportPage() {
     {state.error && <IonText color="danger"><p role="alert">{state.error}</p></IonText>}
     {!applying && state.availability?.available === false && <IonCard><IonCardHeader><IonCardTitle>Импорт недоступен</IonCardTitle></IonCardHeader><IonCardContent><p>Нужна пустая учётная запись.</p><ul>{state.availability.reasons.map(reason => <li key={reason}>{importReasons[reason] || `Ограничение сервера: ${reason}`}</li>)}</ul></IonCardContent></IonCard>}
     {!applying && <>
-      <IonButton fill="outline" disabled={busy} onClick={() => void controller.check()}>Проверить доступность</IonButton>
+      {!busy && !state.availability && state.error && <IonButton fill="outline" onClick={() => void controller.check()}>Повторить проверку</IonButton>}
       <label className="import-file">База Monefy (.db)<input type="file" accept=".db" disabled={!state.availability?.available} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; void controller.upload(file) }} /></label>
       <ImportPreviewDetails state={state} controller={controller} />
       {(state.preview || state.fileName) && <IonButton expand="block" fill="clear" onClick={() => controller.cancel()}>Отменить подготовку</IonButton>}
