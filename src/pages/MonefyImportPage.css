@@ -1,0 +1,22 @@
+.monefy-import { max-width: 860px; margin: 0 auto; padding-bottom: 40px; overflow-wrap: anywhere; }
+.monefy-import ion-card { margin: 16px 0; }
+.monefy-import p { line-height: 1.5; }
+.monefy-import li { margin-block: 8px; }
+.import-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 12px; }
+.import-summary dd { margin: 4px 0; font-size: 1.5rem; color: var(--ion-text-color); }
+.import-file { display: grid; gap: 12px; margin-block: 20px; }
+.import-file input { width: 100%; min-height: 44px; }
+.import-ack { width: 100%; margin-top: 16px; }
+.import-ack::part(label) { white-space: normal; }
+
+.monefy-import ion-card-title { color: var(--ion-text-color); }
+.monefy-import ion-card { color: var(--transaction-secondary-text); }
+
+.import-category { margin-block: 20px; }
+.import-category fieldset { min-width: 0; padding: 0; border: 0; }
+
+.import-diagnostics { padding-left: 20px; }
+.import-diagnostics li { margin-block: 20px; }
+.import-diagnostics p { margin-block: 8px; }
+.import-technical { margin-top: 24px; }
+.import-technical summary { cursor: pointer; min-height: 44px; padding-block: 12px; }

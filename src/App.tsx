@@ -16,6 +16,7 @@ import { AdminUsersPage } from '@/pages/admin/AdminUsersPage'
 import { AdminCurrenciesPage } from '@/pages/admin/AdminCurrenciesPage'
 import { AdminInvitesPage } from '@/pages/admin/AdminInvitesPage'
 import { ProtectedRoute, AdminRoute } from '@/components/layout/ProtectedRoute'
+import { MonefyImportPage } from '@/pages/MonefyImportPage'
 import { AppMenu } from '@/components/AppMenu'
 
 function App() {
@@ -57,6 +58,10 @@ function App() {
         </Route>
         <Route exact path="/tags">
           <ProtectedRoute><TagsPage /></ProtectedRoute>
+        </Route>
+
+        <Route exact path="/imports/monefy">
+          <ProtectedRoute><MonefyImportPage /></ProtectedRoute>
         </Route>
 
         {/* Admin */}
