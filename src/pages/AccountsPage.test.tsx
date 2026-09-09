@@ -36,6 +36,8 @@ describe('AccountsPage list', () => {
 
   it.each([
     ['deposit', 'Вклад'],
+    ['savings', 'Сбережения'],
+    ['savings_account', 'Накопительный счёт'],
     ['investment', 'Инвестиции'],
   ] as const)('preserves the %s type after the currency', (kind, label) => {
     const markup = renderAccount({ kind })
@@ -43,9 +45,9 @@ describe('AccountsPage list', () => {
     expect(markup.indexOf('<span>RUB</span>')).toBeLessThan(markup.indexOf(`>${label}</span>`))
   })
 
-  it('labels shared access and preserves share, conversion and total balances', () => {
+  it.each(['spending', 'savings', 'savings_account'] as const)('labels shared access and preserves share, conversion and total balances for %s', (kind) => {
     const markup = renderAccount({
-      accessMode: 'shared',
+      accessMode: 'shared', kind,
       balance: { native: 123, display: 2, totalNative: 246, totalDisplay: 4, displayCurrency: 'USD' },
     })
     expect(markup).toContain('role="img" aria-label="Совместный счёт"')

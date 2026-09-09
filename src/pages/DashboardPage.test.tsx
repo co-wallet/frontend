@@ -42,6 +42,8 @@ vi.mock('@tanstack/react-query', () => ({
       { id: 'deposit', name: 'Вклад', kind: 'deposit', accessMode: 'personal', currency: 'USD', balance: { display: 10 } },
       { id: 'shared', name: 'Общий кошелёк', kind: 'spending', accessMode: 'shared', currency: 'USD', balance: { display: 30 } },
       { id: 'shared-deposit', name: 'Общий вклад', kind: 'deposit', accessMode: 'shared', currency: 'USD', balance: { display: 40 } },
+      { id: 'savings', name: 'Резерв', kind: 'savings', accessMode: 'personal', currency: 'USD', balance: { display: 50 } },
+      { id: 'shared-savings-account', name: 'Общий накопительный', kind: 'savings_account', accessMode: 'shared', currency: 'USD', balance: { display: 60, totalDisplay: 240 } },
     ].filter((account) => !queryState.onlyShared || account.accessMode === 'shared') }
     if (queryKey[1] === 'by-tag') {
       queryState.params.push(queryKey[2] as Record<string, unknown>)
@@ -240,4 +242,17 @@ it('shows zero totals without querying analytics when no account types are selec
   expect(markup).toContain('Типы не выбраны')
   expect(markup).toContain('Нет данных о балансе')
   expect(queryState.analyticsQueries.every((query) => !query.enabled)).toBe(true)
+})
+
+
+it.each([false, true])('uses new kinds consistently in analytics and transaction links, shared=%s', (includeShared) => {
+  queryState.selectedKinds = ['savings', 'savings_account']
+  queryState.includeShared = includeShared
+  queryState.chartMode = 'expenses'
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  const ids = includeShared ? ['savings', 'shared-savings-account'] : ['savings']
+  for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe(ids.join(','))
+  const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
+  expect(href).toBeDefined()
+  expect(filterFromParams(new URL(href!, 'http://localhost').searchParams).accountIds).toEqual(ids)
 })

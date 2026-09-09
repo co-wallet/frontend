@@ -298,3 +298,25 @@ describe('Monefy replacement workflow', () => {
     expect(model.getSnapshot().error).toContain('Состав старых данных изменился')
   })
 })
+
+
+it.each(['savings', 'savings_account'] as const)('configures and confirms %s without losing preview balances', async (kind) => {
+  const { model, api } = setup()
+  api.configure.mockResolvedValue({ ...preview, preview_id: 'new-kind', accounts: [{ ...preview.accounts[0], kind }] })
+  await model.upload(file)
+  await model.configure('a', kind)
+  expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { a: kind }, {}, { a: preview.accounts[0].icon })
+  expect(model.getSnapshot().preview?.accounts[0]).toEqual({ ...preview.accounts[0], kind })
+  model.accept(true)
+  await model.confirm()
+  expect(api.confirm).toHaveBeenCalledExactlyOnceWith('new-kind', true, false)
+})
+
+it('rejects an unknown kind with an actionable error', async () => {
+  const { model, api } = setup()
+  await model.upload(file)
+  await model.configure('a', 'unknown' as import('@/api/accounts').AccountKind)
+  expect(api.configure).not.toHaveBeenCalled()
+  expect(model.getSnapshot().error).toBe('Выберите тип средств из списка.')
+  expect(model.getSnapshot().preview?.accounts[0].kind).toBe('spending')
+})
