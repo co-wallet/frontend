@@ -348,13 +348,6 @@ export function DashboardPage() {
       >
         <div>
           <section className="dashboard-view-controls" aria-label="Параметры отображения">
-              <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
-                if (next.period !== undefined) setPeriod(next.period)
-                if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
-                if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
-                if (next.customTo !== undefined) setCustomTo(next.customTo)
-              }} />
-
             {/* Account filter */}
             <div className="dashboard-account-filter">
               <IonItem button lines="none" detail={false} aria-expanded={showAccountFilter} onClick={() => setShowAccountFilter((v) => !v)}>
@@ -496,6 +489,17 @@ export function DashboardPage() {
               </IonCard>
             ))}
           </div>
+
+          {chartMode !== 'balance' && (
+            <section className="dashboard-period-controls" aria-label="Период доходов и расходов">
+              <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
+                if (next.period !== undefined) setPeriod(next.period)
+                if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
+                if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
+                if (next.customTo !== undefined) setCustomTo(next.customTo)
+              }} />
+            </section>
+          )}
 
           {/* Pie chart block */}
           <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
