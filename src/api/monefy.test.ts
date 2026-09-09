@@ -13,9 +13,13 @@ describe('Monefy API contract', () => {
   })
   it('uses immutable preview IDs for options and confirmation', async () => {
     await monefyApi.configure('old', { a: 'deposit' })
-    expect(client.post).toHaveBeenCalledWith('/imports/monefy/old/options', { account_kinds: { a: 'deposit' }, category_icons: {} })
+    expect(client.post).toHaveBeenCalledWith('/imports/monefy/old/options', { account_kinds: { a: 'deposit' }, category_icons: {}, account_icons: {} })
     await monefyApi.confirm('new', true)
     expect(client.post).toHaveBeenCalledWith('/imports/monefy/new/confirm', { acknowledge_exclusions: true }, { timeout: 30000 })
+  })
+  it('sends account and category appearance in the same options snapshot', async () => {
+    await monefyApi.configure('p', { a: 'spending' }, { c: 'preset:cafe|red|none' }, { a: 'preset:cash|green|green' })
+    expect(client.post).toHaveBeenCalledWith('/imports/monefy/p/options', { account_kinds: { a: 'spending' }, category_icons: { c: 'preset:cafe|red|none' }, account_icons: { a: 'preset:cash|green|green' } })
   })
   it('propagates API failures without retrying confirmation', async () => {
     client.post.mockRejectedValue(new Error('offline'))

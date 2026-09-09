@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/authStore'
 import { canConfirmImport, importReasons, MonefyImport, type ImportState } from '@/lib/monefyImport'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import type { AccountKind } from '@/api/accounts'
+import { AccountIconSettings } from '@/components/AccountIconSettings'
 import { CategoryIconSettings } from '@/components/CategoryIconSettings'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { MonefyImportDiagnostics, importAccountAnchor, scrollToImportAccount } from '@/components/MonefyImportDiagnostics'
@@ -49,6 +50,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <IonItem lines="none"><IonSelect label={`Тип счёта «${a.name}»`} labelPlacement="stacked" interface="action-sheet" placeholder="Выберите тип" value={a.kind || undefined} disabled={locked} onIonChange={e => void controller.configure(a.source_id, e.detail.value as AccountKind)}>
           {ACCOUNT_KIND_OPTIONS.map(option => <IonSelectOption key={option.value} value={option.value}>{option.shortLabel}</IonSelectOption>)}
         </IonSelect></IonItem>
+        <fieldset disabled={locked}><AccountIconSettings value={a.icon} allowCustom={false} sessionKey={a.source_id} onChange={icon => void controller.configureAccountIcon(a.source_id, icon)} /></fieldset>
       </IonCardContent>
     </IonCard>)}
     <IonCard><IonCardHeader><IonCardTitle>Общие категории</IonCardTitle></IonCardHeader><IonCardContent>

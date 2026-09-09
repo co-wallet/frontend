@@ -6,9 +6,11 @@ export function AccountIconSettings({
   value,
   onChange,
   sessionKey,
+  allowCustom = true,
 }: {
   value: string
   onChange: (value: string) => void
+  allowCustom?: boolean
   sessionKey: string
 }) {
   return (
@@ -24,7 +26,7 @@ export function AccountIconSettings({
             </IonLabel>
           </IonItem>
           <div slot="content">
-            <AccountIconPicker value={value} onChange={onChange} />
+            <AccountIconPicker allowCustom={allowCustom} value={value} onChange={onChange} />
           </div>
         </IonAccordion>
       </IonAccordionGroup>
