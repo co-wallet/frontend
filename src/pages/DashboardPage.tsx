@@ -9,6 +9,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   IonPage,
   IonCheckbox,
+  IonPopover,
   IonButton,
   IonIcon,
   IonSegment,
@@ -504,7 +505,49 @@ export function DashboardPage() {
                 if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
                 if (next.customTo !== undefined) setCustomTo(next.customTo)
               }} />
-              <div className="dashboard-transfer-control">
+            </section>
+          )}
+
+          {/* Pie chart block */}
+          <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
+            <IonCardHeader className="dashboard-chart-header">
+              <div className="dashboard-chart-heading">
+                <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
+                {chartMode !== 'balance' && (
+                  <IonButton
+                    id="dashboard-chart-settings"
+                    className="dashboard-chart-settings"
+                    fill="clear"
+                    color="medium"
+                    aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
+                    aria-haspopup="dialog"
+                  >
+                    <IonIcon slot="icon-only" icon={optionsOutline} />
+                  </IonButton>
+                )}
+              </div>
+            </IonCardHeader>
+            <IonCardContent>
+              <ChartBlock
+                data={activePieData}
+                sym={sym}
+                emptyText={chartEmptyTexts[chartMode]}
+                tooltipStyle={chartTheme.tooltipStyle}
+                legendColor={chartTheme.legendColor}
+              />
+            </IonCardContent>
+          </IonCard>
+
+          {chartMode !== 'balance' && (
+            <IonPopover
+              key={chartMode}
+              trigger="dashboard-chart-settings"
+              className="dashboard-chart-popover"
+              side="bottom"
+              alignment="end"
+              aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
+            >
+              <div className="dashboard-chart-popover-content">
                 <IonCheckbox
                   className="dashboard-transfer-checkbox"
                   labelPlacement="end"
@@ -517,24 +560,8 @@ export function DashboardPage() {
                   Отображать переводы
                 </IonCheckbox>
               </div>
-            </section>
+            </IonPopover>
           )}
-
-          {/* Pie chart block */}
-          <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
-            <IonCardHeader>
-              <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
-              <ChartBlock
-                data={activePieData}
-                sym={sym}
-                emptyText={chartEmptyTexts[chartMode]}
-                tooltipStyle={chartTheme.tooltipStyle}
-                legendColor={chartTheme.legendColor}
-              />
-            </IonCardContent>
-          </IonCard>
 
           {/* Tags breakdown */}
           {byTag.length > 0 && (

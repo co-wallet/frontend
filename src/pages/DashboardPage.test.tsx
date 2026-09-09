@@ -91,19 +91,15 @@ describe('Dashboard transfer visibility', () => {
   it.each(['expenses', 'income'] as const)('shows the independent default for %s', (mode) => {
     queryState.chartMode = mode
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toContain('Отображать переводы')
-    const checkbox = markup.match(/<ion-checkbox[^>]*>/)?.[0]
-    expect(checkbox).toBeDefined()
-    expect(checkbox).toContain('label-placement="end"')
-    expect(checkbox).toContain('justify="start"')
+    expect(markup).toContain(mode === 'expenses' ? 'aria-label="Настройки расходов"' : 'aria-label="Настройки доходов"')
+    expect(markup).toContain('id="dashboard-chart-settings"')
+    expect(markup).toContain('aria-haspopup="dialog"')
+    expect(markup).not.toContain('Отображать переводы')
     expect(markup).not.toContain('dashboard-transfer-hint')
-    expect(markup).not.toContain('С выбранных счетов на остальные счета')
-    expect(markup).not.toContain('С остальных счетов на выбранные счета')
-    expect(markup).toMatch(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Отображать переводы[^]*<\/section>/)
+    const periodControls = markup.match(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*?<\/section>/)?.[0]
+    expect(periodControls).not.toContain('ion-checkbox')
     const chartHeader = markup.match(/<ion-card-header[^>]*>[^]*?(Расходы|Доходы) по категориям[^]*?<\/ion-card-header>/)?.[0]
-    expect(chartHeader).toBeDefined()
-    expect(chartHeader).not.toContain('ion-checkbox')
-    expect(checkbox!.includes('checked="true"')).toBe(mode === 'income')
+    expect(chartHeader).toContain('id="dashboard-chart-settings"')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
   })
 
@@ -111,12 +107,13 @@ describe('Dashboard transfer visibility', () => {
     queryState.chartMode = 'expenses'
     queryState.transferVisibility = { expenses: true, income: false }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toContain('Отображать переводы')
+    expect(markup).toContain('aria-label="Настройки расходов"')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: true, include_transfer_income: false })
   })
 
   it('hides the transfer control for balance', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).not.toContain('Отображать переводы')
+    expect(markup).not.toContain('dashboard-chart-settings')
   })
 })
