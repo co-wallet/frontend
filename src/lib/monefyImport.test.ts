@@ -151,6 +151,14 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().availability?.available).toBe(false)
     expect(model.getSnapshot().error).toContain('больше не пуста')
   })
+  it('explains exhausted server storage without offering confirmation', async () => {
+    const { model, api } = setup()
+    api.preview.mockRejectedValue({ isAxiosError: true, response: { status: 409, data: { error: 'preview_storage_full' } } })
+    await model.upload(file)
+    expect(model.getSnapshot().error).toContain('не хватает места для предпросмотра')
+    expect(model.getSnapshot().preview).toBeUndefined()
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+  })
   it('requires a successful server availability check', async () => {
     const { model, api } = setup(); api.availability.mockRejectedValue(new Error())
     await model.check()
