@@ -65,9 +65,9 @@ export function TransactionItem({
   const meta = description && tx.type !== 'transfer'
     ? `${categoryName} · ${accountLabel}`
     : accountLabel
-  const displayAmount = tx.readOnly ? tx.recipientAmount ?? tx.toAmount ?? tx.amount : transactionUserAmount(tx, account, currentUserId)
+  const displayAmount = tx.readOnly ? tx.toAmount ?? tx.amount : transactionUserAmount(tx, account, currentUserId)
   const amount = tx.readOnly
-    ? formatTransactionAmount(tx.recipientAmount ?? tx.toAmount ?? tx.amount, tx.toCurrency || tx.currency, 'income')
+    ? formatTransactionAmount(tx.toAmount ?? tx.amount, tx.toCurrency || tx.currency, 'income')
     : formatTransactionAmount(displayAmount, tx.currency, tx.type)
   const shared = isSharedTransaction(tx, account, currentUserId)
   const convertedAmount = transactionDefaultCurrencyAmount(

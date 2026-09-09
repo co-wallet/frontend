@@ -18,7 +18,6 @@ export interface Transaction {
   toAccountName?: string
   toCurrency?: string
   readOnly?: boolean
-  recipientAmount?: number
   id: string
   accountId: string
   toAccountId: string | null
