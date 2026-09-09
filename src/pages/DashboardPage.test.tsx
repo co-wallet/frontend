@@ -127,6 +127,6 @@ it.each(['expenses', 'income'] as const)('shows account names and a fixed transf
   const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
   expect(markup).toContain(mode === 'expenses' ? "В &#x27;Банк&#x27;" : "Из &#x27;Банк&#x27;")
   expect(markup).toContain('aria-label="Перевод"')
-  expect(markup).toContain('color:var(--account-icon-color-blue)')
+  expect(markup).toMatch(/<span class="account-icon" role="img" aria-label="Перевод"[^>]*--account-icon-foreground:var\(--account-icon-color-blue\)[^>]*--account-icon-border:var\(--account-icon-color-blue\)/)
   expect(markup).not.toContain('ion-card-title>Переводы')
 })

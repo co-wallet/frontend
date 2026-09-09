@@ -50,7 +50,7 @@ import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
-import { AccountIcon } from '@/components/AccountIcon'
+import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
 import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/CategoryIcon'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
@@ -60,7 +60,6 @@ import {
 } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
-  TRANSFER_CHART_COLOR,
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
@@ -156,7 +155,14 @@ function ChartBlock({
                   <AccountIcon value={s.icon} size={20} shape="rectangle" />
                 )}
                 {s.iconType === 'transfer' && (
-                  <IonIcon icon={swapHorizontalOutline} aria-label="Перевод" style={{ fontSize: 20, flexShrink: 0, color: TRANSFER_CHART_COLOR }} />
+                  <span
+                    className="account-icon"
+                    role="img"
+                    aria-label="Перевод"
+                    style={accountIconStyle({ foreground: 'blue', border: 'blue' }, 20, 'square')}
+                  >
+                    <IonIcon icon={swapHorizontalOutline} aria-hidden="true" style={{ fontSize: 12 }} />
+                  </span>
                 )}
                 {s.iconType === 'category' && (
                   <CategoryIcon value={s.icon} type={s.categoryType} size={20} />
