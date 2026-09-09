@@ -198,6 +198,7 @@ export function DashboardPage() {
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [transferVisibility, setTransferVisibility] = useState({ expenses: false, income: true })
+  const [includeShared, setIncludeShared] = useState(false)
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
@@ -213,17 +214,14 @@ export function DashboardPage() {
   })
 
   const kindFilteredAccounts = filterAccountsByKinds(accounts, selectedKinds)
+    .filter((account) => includeShared || account.accessMode !== 'shared')
   const effectiveSelectedAccountIds = selectedVisibleAccountIds(kindFilteredAccounts, selectedAccountIds)
 
-  const filteredAccountIds: string | undefined = (() => {
-    if (accountFilter === 'all') return undefined
-    if (accountFilter === 'custom') {
-      return effectiveSelectedAccountIds.length > 0 ? effectiveSelectedAccountIds.join(',') : undefined
-    }
-    return undefined
-  })()
-
-  const isEmptyCustom = accountFilter === 'custom' && effectiveSelectedAccountIds.length === 0
+  const filteredAccounts = accountFilter === 'all'
+    ? kindFilteredAccounts
+    : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
+  const filteredAccountIds = filteredAccounts.map((account) => account.id).join(',') || undefined
+  const hasAnalyticsAccounts = !accountsLoading && !accountsError && filteredAccounts.length > 0
 
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const params: AnalyticsParams = {
@@ -248,19 +246,19 @@ export function DashboardPage() {
   const { data: summaryRaw } = useQuery({
     queryKey: ['analytics', 'summary', params],
     queryFn: () => analyticsApi.summary(params),
-    enabled: !isEmptyCustom,
+    enabled: hasAnalyticsAccounts,
   })
 
   const { data: byExpenseRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-category', 'expense', params],
     queryFn: () => analyticsApi.byCategory({ ...params, type: 'expense' }),
-    enabled: !isEmptyCustom,
+    enabled: hasAnalyticsAccounts,
   })
 
   const { data: byIncomeRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-category', 'income', params],
     queryFn: () => analyticsApi.byCategory({ ...params, type: 'income' }),
-    enabled: !isEmptyCustom,
+    enabled: hasAnalyticsAccounts,
   })
 
   const tagParams: AnalyticsParams = { ...params, type: chartMode === 'income' ? 'income' : 'expense' }
@@ -268,17 +266,13 @@ export function DashboardPage() {
   const { data: byTagRaw = [] } = useQuery({
     queryKey: ['analytics', 'by-tag', tagParams],
     queryFn: () => analyticsApi.byTag(tagParams),
-    enabled: chartMode !== 'balance' && !isEmptyCustom,
+    enabled: chartMode !== 'balance' && hasAnalyticsAccounts,
   })
 
-  const summary = isEmptyCustom ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
-  const byExpense = isEmptyCustom ? [] : byExpenseRaw
-  const byIncome = isEmptyCustom ? [] : byIncomeRaw
-  const byTag = isEmptyCustom ? [] : byTagRaw
-
-  const filteredAccounts = accountFilter === 'all'
-    ? kindFilteredAccounts
-    : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
+  const summary = !hasAnalyticsAccounts ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
+  const byExpense = !hasAnalyticsAccounts ? [] : byExpenseRaw
+  const byIncome = !hasAnalyticsAccounts ? [] : byIncomeRaw
+  const byTag = !hasAnalyticsAccounts ? [] : byTagRaw
 
   const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
@@ -368,7 +362,7 @@ export function DashboardPage() {
                         : `Типов средств: ${selectedKinds.length}`}
                   </h2>
                   <p>
-                    {accountFilter === 'all' && 'Все счета'}
+                    {accountFilter === 'all' && (includeShared ? 'Все счета' : 'Личные счета')}
                     {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
                       ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
                       : 'Счета не выбраны'
@@ -427,6 +421,14 @@ export function DashboardPage() {
                       )
                     })}
                   </div>
+                  <IonItem lines="none">
+                    <IonCheckbox
+                      checked={includeShared}
+                      onIonChange={(event) => setIncludeShared(event.detail.checked)}
+                    >
+                      Учитывать общие счета
+                    </IonCheckbox>
+                  </IonItem>
                   <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
                   <IonSegment
                     value={accountFilter}

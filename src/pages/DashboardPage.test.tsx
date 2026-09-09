@@ -8,6 +8,13 @@ import { filterFromParams, periodFromParams, type TransactionPeriod } from '@/li
 vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}, legendColor: 'black' }) }))
 
 const queryState = vi.hoisted(() => ({
+  includeShared: false,
+  accountFilter: 'all',
+  selectedIds: [] as string[],
+  accountsLoading: false,
+  accountsError: false,
+  onlyShared: false,
+  analyticsQueries: [] as { params: Record<string, unknown>; enabled: boolean }[],
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
   params: [] as Record<string, unknown>[],
@@ -19,7 +26,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
     ...actual,
-    useState: (initial: unknown) => actual.useState(initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
+    useState: (initial: unknown) => actual.useState(initial === false ? queryState.includeShared : initial === 'all' ? queryState.accountFilter : Array.isArray(initial) && initial.length === 0 ? queryState.selectedIds : initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
   }
 })
 vi.mock('@/store/periodStore', async (importOriginal) => ({
@@ -28,10 +35,13 @@ vi.mock('@/store/periodStore', async (importOriginal) => ({
 }))
 vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey, enabled }: { queryKey: unknown[]; enabled?: boolean }) => {
-    if (queryKey[0] === 'accounts') return { data: [
-      { id: 'spending', name: 'Личная', kind: 'spending', currency: 'USD', balance: { display: 10 } },
-      { id: 'deposit', name: 'Вклад', kind: 'deposit', currency: 'USD', balance: { display: 10 } },
-    ] }
+    if (queryKey[0] === 'analytics') queryState.analyticsQueries.push({ params: queryKey[queryKey.length - 1] as Record<string, unknown>, enabled: Boolean(enabled) })
+    if (queryKey[0] === 'accounts') return { isLoading: queryState.accountsLoading, isError: queryState.accountsError, data: [
+      { id: 'spending', name: 'Личная', kind: 'spending', accessMode: 'personal', currency: 'USD', balance: { display: 10 } },
+      { id: 'deposit', name: 'Вклад', kind: 'deposit', accessMode: 'personal', currency: 'USD', balance: { display: 10 } },
+      { id: 'shared', name: 'Общий кошелёк', kind: 'spending', accessMode: 'shared', currency: 'USD', balance: { display: 30 } },
+      { id: 'shared-deposit', name: 'Общий вклад', kind: 'deposit', accessMode: 'shared', currency: 'USD', balance: { display: 40 } },
+    ].filter((account) => !queryState.onlyShared || account.accessMode === 'shared') }
     if (queryKey[1] === 'by-tag') {
       queryState.params.push(queryKey[2] as Record<string, unknown>)
       queryState.tagsEnabled.push(Boolean(enabled))
@@ -48,7 +58,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.tagsEnabled = []; queryState.emptyTags = false; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
+afterEach(() => { queryState.includeShared = false; queryState.accountFilter = 'all'; queryState.selectedIds = []; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.period = initialPeriod; queryState.params = []; queryState.tagsEnabled = []; queryState.emptyTags = false; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 describe('Dashboard tag navigation', () => {
   it.each([
@@ -178,5 +188,44 @@ describe('Dashboard recent transactions', () => {
     expect(markup).not.toContain('Последние транзакции')
     expect(markup).not.toContain('Все транзакции')
     expect(markup).toContain('по тегам')
+  })
+})
+
+
+describe('Dashboard shared accounts', () => {
+  it.each(['balance', 'expenses', 'income'] as const)('excludes shared accounts from every analytics request in %s', (mode) => {
+    queryState.chartMode = mode
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(queryState.analyticsQueries).toHaveLength(4)
+    for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe('spending')
+    expect(markup).toContain('Личные счета')
+    expect(markup).not.toContain('Общий кошелёк')
+  })
+
+  it('includes shared accounts while keeping the kind filter', () => {
+    queryState.includeShared = true
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe('spending,shared')
+    expect(markup).toContain('Общий кошелёк')
+    expect(markup).not.toContain('Общий вклад')
+    expect(markup).toContain('Учитывать общие счета')
+  })
+
+  it.each([false, true])('intersects custom selection with shared visibility %s', (includeShared) => {
+    queryState.includeShared = includeShared
+    queryState.accountFilter = 'custom'
+    queryState.selectedIds = ['spending', 'shared', 'shared-deposit', 'deleted']
+    renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe(includeShared ? 'spending,shared' : 'spending')
+  })
+
+  it.each(['onlyShared', 'accountsLoading', 'accountsError', 'emptyCustom'] as const)('never requests all accounts when %s', (scenario) => {
+    if (scenario === 'emptyCustom') queryState.accountFilter = 'custom'
+    else queryState[scenario] = true
+    queryState.chartMode = 'expenses'
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(queryState.analyticsQueries.every((query) => !query.enabled)).toBe(true)
+    expect(markup).toContain('Нет расходов за период')
+    expect(markup).not.toContain('Расходы по тегам')
   })
 })
