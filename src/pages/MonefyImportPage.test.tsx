@@ -1,8 +1,12 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
-import { ImportPreviewDetails } from './MonefyImportPage'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
+import { ImportPreviewDetails, MonefyImportPage } from './MonefyImportPage'
 import type { MonefyImport, ImportState } from '@/lib/monefyImport'
 
+vi.mock('react', async importOriginal => ({ ...await importOriginal<typeof import('react')>(), useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot() }))
+vi.mock('@/components/layout/PageHeader', () => ({ PageHeader: () => null }))
 vi.mock('@/api/monefy', () => ({ monefyApi: {} }))
 const state: ImportState = { phase: 'idle', accepted: false, availability: { available: true, reasons: [] }, preview: {
   preview_id: 'p', expires_at: '2099-01-01', can_confirm: true, requires_exclusion_confirmation: true,
@@ -13,6 +17,21 @@ const state: ImportState = { phase: 'idle', accepted: false, availability: { ava
 } }
 const render = (s = state) => renderToStaticMarkup(<ImportPreviewDetails state={s} controller={{} as MonefyImport} />)
 describe('Monefy preview UI', () => {
+  it('provides an accessible file name and format description without a visible label', () => {
+    const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><MonefyImportPage /></QueryClientProvider>)
+    expect(html).toMatch(/input[^>]*aria-label="База Monefy \(.db\)"[^>]*aria-describedby="import-file-format"[^>]*type="file"[^>]*accept=".db"/)
+    expect(html).toContain('id="import-file-format"')
+    expect(html).toContain('SQLite с расширением .db (до 64 МБ)')
+    expect(html.replace(/<[^>]*>/g, '')).not.toContain('База Monefy (.db)')
+  })
+  it('shows current funds by default with shared type names and permits confirmation', () => {
+    const html = render({ ...state, preview: { ...state.preview!, requires_exclusion_confirmation: false, exclusions: [], accounts: [{ ...state.preview!.accounts[0], kind: 'spending' }] } })
+    expect(html).toMatch(/ion-select[^>]*value="spending"/)
+    for (const option of ACCOUNT_KIND_OPTIONS) expect(html).toContain(`value="${option.value}">${option.shortLabel}`)
+    expect(html).not.toContain('Накопительный')
+    expect(html).not.toContain('Выберите тип каждого счёта')
+    expect(html).not.toMatch(/ion-button[^>]*disabled="true"/)
+  })
   it('shows exact balances, period, reused categories, flags, diagnostics and exclusions', () => {
     const html = render()
     for (const text of ['100.0001', '50.0001', '2020-01-01', '2025-01-01', 'переиспользуется', 'личными и активными', 'Флаги не переносятся', 'Удалённый счёт', 'отключён с', 'Переводы']) expect(html).toContain(text)
