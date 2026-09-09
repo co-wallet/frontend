@@ -15,7 +15,7 @@ export function PageHeader({ title, backHref = '/dashboard', actions, children }
       <IonToolbar>
         {backHref !== false && (
           <IonButtons slot="start">
-            <IonBackButton defaultHref={backHref} text="Назад" />
+            <IonBackButton defaultHref={backHref} text="" aria-label="Назад" />
           </IonButtons>
         )}
         <IonTitle style={backHref === false ? { textAlign: 'start', paddingInline: 20 } : undefined}>{title}</IonTitle>
