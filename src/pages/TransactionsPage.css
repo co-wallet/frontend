@@ -15,21 +15,58 @@
 }
 
 .transactions-active-filters {
-  display: flex;
+  display: grid;
   min-width: 0;
   flex: 1 1 auto;
-  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.transactions-filter-group {
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  align-items: center;
   gap: 8px;
 }
 
+.transactions-filter-group__values {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
 .transactions-active-filters ion-button {
-  min-width: max-content;
+  min-width: 0;
   min-height: 44px;
   margin: 0;
   text-transform: none;
   --border-color: var(--transaction-transfer-text);
   --border-radius: 999px;
   --color: var(--transaction-transfer-text);
+}
+
+.transactions-filter-group__chip {
+  max-width: 100%;
+  flex: 0 1 auto;
+}
+
+.transactions-filter-group__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactions-filter-group__chip ion-icon {
+  flex-shrink: 0;
+}
+
+.transactions-filter-group__more {
+  flex: 0 0 auto;
+}
+
+.transactions-active-filters__reset {
+  justify-self: end;
 }
 
 .transactions-summary {

@@ -30,14 +30,21 @@ import './FilterSheet.css'
 interface FilterSheetProps {
   value: TransactionFilter
   onChange: (f: TransactionFilter) => void
+  isOpen?: boolean
+  onOpenChange?: (open: boolean) => void
 }
 
 function toggle<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]
 }
 
-export function FilterSheet({ value, onChange }: FilterSheetProps) {
-  const [open, setOpen] = useState(false)
+export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterSheetProps) {
+  const [localOpen, setLocalOpen] = useState(false)
+  const open = isOpen ?? localOpen
+  function setOpen(next: boolean) {
+    setLocalOpen(next)
+    onOpenChange?.(next)
+  }
 
   const [accountIds, setAccountIds] = useState<string[]>(value.accountIds ?? [])
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
