@@ -73,3 +73,35 @@ body.dark .dashboard-chart-card {
 .dashboard-period-controls {
   margin-bottom: 16px;
 }
+
+.dashboard-transfer-control {
+  margin-top: 8px;
+}
+
+.dashboard-transfer-checkbox {
+  --size: 18px;
+  --border-radius: 5px;
+  --border-width: 1.5px;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  font-size: 0.8125rem;
+  font-weight: 400;
+}
+
+.dashboard-transfer-checkbox::part(container) {
+  margin-inline-end: 8px;
+}
+
+.dashboard-transfer-checkbox::part(label) {
+  margin: 0;
+  white-space: normal;
+}
+
+.dashboard-transfer-hint {
+  margin: -4px 0 0 26px;
+  color: var(--ion-color-medium);
+  font-size: 0.75rem;
+  line-height: 1.4;
+}

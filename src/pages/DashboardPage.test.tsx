@@ -94,6 +94,13 @@ describe('Dashboard transfer visibility', () => {
     expect(markup).toContain('Отображать переводы')
     const checkbox = markup.match(/<ion-checkbox[^>]*>/)?.[0]
     expect(checkbox).toBeDefined()
+    expect(checkbox).toContain('label-placement="end"')
+    expect(checkbox).toContain('justify="start"')
+    expect(checkbox).toContain('aria-describedby="dashboard-transfer-hint"')
+    expect(markup).toMatch(/<ion-card-header[^>]*>[^]*Отображать переводы[^]*id="dashboard-transfer-hint"[^]*<\/ion-card-header>/)
+    expect(markup).toContain(mode === 'expenses'
+      ? 'С выбранных счетов на остальные счета'
+      : 'С остальных счетов на выбранные счета')
     expect(checkbox!.includes('checked="true"')).toBe(mode === 'income')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
   })

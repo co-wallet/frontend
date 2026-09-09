@@ -511,11 +511,13 @@ export function DashboardPage() {
           <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
             <IonCardHeader>
               <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
-            </IonCardHeader>
-            <IonCardContent>
               {chartMode !== 'balance' && (
-                <IonItem lines="none">
+                <div className="dashboard-transfer-control">
                   <IonCheckbox
+                    className="dashboard-transfer-checkbox"
+                    labelPlacement="end"
+                    justify="start"
+                    aria-describedby="dashboard-transfer-hint"
                     checked={transferVisibility[chartMode]}
                     onIonChange={(event) => setTransferVisibility((previous) => ({
                       ...previous, [chartMode]: event.detail.checked,
@@ -523,15 +525,15 @@ export function DashboardPage() {
                   >
                     Отображать переводы
                   </IonCheckbox>
-                </IonItem>
+                  <p id="dashboard-transfer-hint" className="dashboard-transfer-hint">
+                    {chartMode === 'expenses'
+                      ? 'С выбранных счетов на остальные счета'
+                      : 'С остальных счетов на выбранные счета'}
+                  </p>
+                </div>
               )}
-              {chartMode !== 'balance' && transferVisibility[chartMode] && (
-                <IonNote style={{ display: 'block', margin: '8px 0' }}>
-                  {chartMode === 'expenses'
-                    ? 'С выбранных счетов на остальные счета'
-                    : 'С остальных счетов на выбранные счета'}
-                </IonNote>
-              )}
+            </IonCardHeader>
+            <IonCardContent>
               <ChartBlock
                 data={activePieData}
                 sym={sym}
