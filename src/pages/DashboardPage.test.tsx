@@ -8,6 +8,7 @@ import { filterFromParams, periodFromParams, type TransactionPeriod } from '@/li
 vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}, legendColor: 'black' }) }))
 
 const queryState = vi.hoisted(() => ({
+  selectedKinds: ['spending'] as string[],
   includeShared: false,
   accountFilter: 'all',
   selectedIds: [] as string[],
@@ -26,7 +27,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
     ...actual,
-    useState: (initial: unknown) => actual.useState(initial === false ? queryState.includeShared : initial === 'all' ? queryState.accountFilter : Array.isArray(initial) && initial.length === 0 ? queryState.selectedIds : initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
+    useState: (initial: unknown) => actual.useState(Array.isArray(initial) && initial[0] === 'spending' ? queryState.selectedKinds : initial === false ? queryState.includeShared : initial === 'all' ? queryState.accountFilter : Array.isArray(initial) && initial.length === 0 ? queryState.selectedIds : initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
   }
 })
 vi.mock('@/store/periodStore', async (importOriginal) => ({
@@ -58,7 +59,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.includeShared = false; queryState.accountFilter = 'all'; queryState.selectedIds = []; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.period = initialPeriod; queryState.params = []; queryState.tagsEnabled = []; queryState.emptyTags = false; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
+afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountFilter = 'all'; queryState.selectedIds = []; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.period = initialPeriod; queryState.params = []; queryState.tagsEnabled = []; queryState.emptyTags = false; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 describe('Dashboard tag navigation', () => {
   it.each([
@@ -75,7 +76,7 @@ describe('Dashboard tag navigation', () => {
     expect(header).not.toContain('ion-back-button')
     expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*Текущие средства[^]*aria-label="Валюта"[^]*<\/section>/)
     expect(markup).not.toContain('label="Валюта" label-placement="stacked"')
-    expect(markup).toMatch(/Текущие средства[^]*<ion-select[^>]*aria-label="Валюта"[^>]*selected-text=/)
+    expect(markup).toMatch(/<ion-select[^>]*aria-label="Тип средств"[^>]*interface="popover"[^>]*multiple="true"/)
     const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
     expect(href).toBeDefined()
     const params = new URL(href!, 'http://localhost').searchParams
@@ -201,6 +202,7 @@ describe('Dashboard shared accounts', () => {
     for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe('spending')
     expect(markup).toContain('Личные счета')
     expect(markup).not.toContain('Общий кошелёк')
+    expect(markup).not.toContain('dashboard-account-filter__options')
   })
 
   it('includes shared accounts while keeping the kind filter', () => {
@@ -229,4 +231,13 @@ describe('Dashboard shared accounts', () => {
     expect(markup).toContain('Нет расходов за период')
     expect(markup).not.toContain('Расходы по тегам')
   })
+})
+
+
+it('shows zero totals without querying analytics when no account types are selected', () => {
+  queryState.selectedKinds = []
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  expect(markup).toContain('Типы не выбраны')
+  expect(markup).toContain('Нет данных о балансе')
+  expect(queryState.analyticsQueries.every((query) => !query.enabled)).toBe(true)
 })

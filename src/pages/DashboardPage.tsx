@@ -35,8 +35,6 @@ import {
   trendingDownOutline,
   trendingUpOutline,
   analyticsOutline,
-  chevronDownOutline,
-  chevronUpOutline,
   optionsOutline,
   swapHorizontalOutline,
 } from 'ionicons/icons'
@@ -52,7 +50,6 @@ import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
   filterAccountsByKinds,
   selectedVisibleAccountIds,
-  toggleAccountKind,
 } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
@@ -202,7 +199,6 @@ export function DashboardPage() {
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
   const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
-  const [showAccountFilter, setShowAccountFilter] = useState(false)
 
   const saveCurrency = useMutation({
     mutationFn: (code: string) => authApi.updateMe(code),
@@ -358,26 +354,40 @@ export function DashboardPage() {
           <section className="dashboard-view-controls" aria-label="Параметры отображения">
             {/* Account filter */}
             <div className="dashboard-account-filter">
-              <IonItem button lines="none" detail={false} aria-expanded={showAccountFilter} onClick={() => setShowAccountFilter((v) => !v)}>
-                <IonIcon icon={optionsOutline} slot="start" />
-                <IonLabel>
-                  <h2>
-                    {selectedKinds.length === 1
-                      ? accountKindShortLabel(selectedKinds[0])
-                      : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
-                        ? 'Все типы средств'
-                        : `Типов средств: ${selectedKinds.length}`}
-                  </h2>
-                  <p>
-                    {accountFilter === 'all' && (includeShared ? 'Все счета' : 'Личные счета')}
-                    {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
-                      ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
-                      : 'Счета не выбраны'
-                    )}
-                  </p>
-                </IonLabel>
-                <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
-              </IonItem>
+              <IonSelect
+                aria-label="Тип средств"
+                interface="popover"
+                multiple
+                value={selectedKinds}
+                onIonChange={(event) => {
+                  const kinds = event.detail.value as AccountKind[]
+                  setSelectedKinds(kinds)
+                }}
+                selectedText={selectedKinds.length === 0 ? 'Типы не выбраны' : selectedKinds.length === 1
+                  ? accountKindShortLabel(selectedKinds[0])
+                  : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
+                    ? 'Все типы средств'
+                    : `Типов средств: ${selectedKinds.length}`}
+                className="dashboard-currency-select"
+              >
+                {ACCOUNT_KIND_OPTIONS.map((option) => (
+                  <IonSelectOption key={option.value} value={option.value}>
+                    {option.shortLabel}
+                  </IonSelectOption>
+                ))}
+              </IonSelect>
+              <IonButton
+                id="dashboard-account-settings"
+                className="dashboard-account-settings"
+                fill="outline"
+                color="medium"
+                aria-label={accountFilter === 'custom'
+                  ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
+                  : includeShared ? 'Все счета' : 'Личные счета'}
+                aria-haspopup="dialog"
+              >
+                <IonIcon slot="icon-only" icon={optionsOutline} />
+              </IonButton>
               <IonSelect
                 aria-label="Валюта"
                 interface="popover"
@@ -398,36 +408,8 @@ export function DashboardPage() {
                   </IonSelectOption>
                 ))}
               </IonSelect>
-              {showAccountFilter && (
-                <div className="dashboard-account-filter__options">
-                  <IonText color="medium" style={{ fontSize: '0.75rem' }}>Тип средств</IonText>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0 12px' }}>
-                    {ACCOUNT_KIND_OPTIONS.map((option) => {
-                      const active = selectedKinds.includes(option.value)
-                      const toggleKind = () => setSelectedKinds((previous) =>
-                        toggleAccountKind(previous, option.value)
-                      )
-                      return (
-                        <IonChip
-                          key={option.value}
-                          color={active ? 'primary' : 'medium'}
-                          outline={!active}
-                          role="button"
-                          tabIndex={0}
-                          aria-pressed={active}
-                          onClick={toggleKind}
-                          onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                              event.preventDefault()
-                              toggleKind()
-                            }
-                          }}
-                        >
-                          <IonLabel>{option.shortLabel}</IonLabel>
-                        </IonChip>
-                      )
-                    })}
-                  </div>
+              <IonPopover trigger="dashboard-account-settings" className="dashboard-chart-popover" aria-label="Фильтр счетов">
+                <div className="dashboard-chart-popover-content">
                   <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
                   <IonSegment
                     value={accountFilter}
@@ -470,7 +452,7 @@ export function DashboardPage() {
                     </div>
                   )}
                 </div>
-              )}
+              </IonPopover>
             </div>
 
           </section>

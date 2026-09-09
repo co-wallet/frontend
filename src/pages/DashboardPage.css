@@ -31,7 +31,7 @@ body.dark .dashboard-chart-card {
 
 .dashboard-account-filter {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 96px;
+  grid-template-columns: minmax(0, 1fr) 44px 80px;
   align-items: stretch;
   gap: 8px;
 }
@@ -47,25 +47,14 @@ body.dark .dashboard-chart-card {
   background: var(--ion-item-background, var(--ion-background-color));
 }
 
-.dashboard-account-filter > ion-item {
-  --padding-start: 12px;
-  --inner-padding-end: 12px;
-  --min-height: 48px;
-  min-width: 0;
-  border: 1px solid var(--ion-border-color, var(--ion-color-light-shade));
-  border-radius: 12px;
+.dashboard-account-settings {
+  --border-color: var(--ion-border-color, var(--ion-color-light-shade));
+  --border-radius: 12px;
+  --padding-start: 0;
+  --padding-end: 0;
+  margin: 0;
+  min-height: 48px;
 }
-
-.dashboard-account-filter > ion-item ion-icon {
-  font-size: 20px;
-}
-
-.dashboard-account-filter > ion-item ion-icon[slot="start"] { margin-inline-end: 8px; }
-.dashboard-account-filter > ion-item ion-icon[slot="end"] { margin-inline-start: 8px; }
-.dashboard-account-filter > ion-item ion-label { margin-block: 4px; }
-.dashboard-account-filter > ion-item h2 { margin: 0; font-size: 0.875rem; line-height: 18px; white-space: normal; }
-.dashboard-account-filter > ion-item p { margin: 0; font-size: 0.75rem; line-height: 16px; }
-.dashboard-account-filter__options { grid-column: 1 / -1; min-width: 0; }
 
 .dashboard-period-controls .period-control__row { margin-bottom: 0; }
 .dashboard-period-controls .period-control-custom { margin-top: 12px; margin-bottom: 0; }
