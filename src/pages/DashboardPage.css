@@ -67,5 +67,9 @@ body.dark .dashboard-chart-card {
 .dashboard-account-filter > ion-item p { margin: 0; font-size: 0.75rem; line-height: 16px; }
 .dashboard-account-filter__options { grid-column: 1 / -1; min-width: 0; }
 
-.dashboard-view-controls .period-control__row { margin-bottom: 0; }
-.dashboard-view-controls .period-control-custom { margin-top: 12px; margin-bottom: 0; }
+.dashboard-period-controls .period-control__row { margin-bottom: 0; }
+.dashboard-period-controls .period-control-custom { margin-top: 12px; margin-bottom: 0; }
+
+.dashboard-period-controls {
+  margin-bottom: 16px;
+}

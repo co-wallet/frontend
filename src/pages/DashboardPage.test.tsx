@@ -8,9 +8,17 @@ import { filterFromParams, periodFromParams, type TransactionPeriod } from '@/li
 vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}, legendColor: 'black' }) }))
 
 const queryState = vi.hoisted(() => ({
+  chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   params: [] as Record<string, unknown>[],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useState: (initial: unknown) => actual.useState(initial === 'balance' ? queryState.chartMode : initial),
+  }
+})
 vi.mock('@/store/periodStore', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/store/periodStore')>(),
   usePeriodStore: () => ({ ...queryState.period, setPeriod: vi.fn(), setPeriodOffset: vi.fn(), setCustomFrom: vi.fn(), setCustomTo: vi.fn() }),
@@ -31,7 +39,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.period = initialPeriod; queryState.params = [] })
+afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.chartMode = 'balance' })
 
 describe('Dashboard tag navigation', () => {
   it.each([
@@ -45,7 +53,7 @@ describe('Dashboard tag navigation', () => {
     expect(header).not.toContain('Валюта')
     expect(header).not.toContain('Выйти')
     expect(header).not.toContain('ion-back-button')
-    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*aria-label="Предыдущий период"[^]*Текущие средства[^]*aria-label="Валюта"[^]*<\/section>/)
+    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*Текущие средства[^]*aria-label="Валюта"[^]*<\/section>/)
     expect(markup).not.toContain('label="Валюта" label-placement="stacked"')
     expect(markup).toMatch(/Текущие средства[^]*<ion-select[^>]*aria-label="Валюта"[^>]*selected-text=/)
     const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
@@ -55,5 +63,24 @@ describe('Dashboard tag navigation', () => {
     expect(periodFromParams(params, initialPeriod)).toEqual(source)
     const range = computeDateRange(source.period, source.periodOffset, source.customFrom, source.customTo)
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ date_from: range.dateFrom, date_to: range.dateTo })
+  })
+})
+
+
+describe('Dashboard period visibility', () => {
+  it('hides period controls in the initial balance view', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('Баланс по счетам')
+    expect(markup).not.toContain('Предыдущий период')
+    expect(markup).not.toContain('Период доходов и расходов')
+  })
+
+  it.each(['expenses', 'income'] as const)('places period controls below summary cards in %s mode', (mode) => {
+    queryState.chartMode = mode
+    queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toMatch(/Доходы[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*Другой период[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
+    expect(markup).toContain('Выбранный период: 01.08.26 - 20.08.26')
+    expect(queryState.params[queryState.params.length - 1]).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
   })
 })
