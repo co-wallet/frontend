@@ -1,3 +1,4 @@
+import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -153,21 +154,10 @@ export function AdminInvitesPage() {
 
 
         <IonModal isOpen={showForm} onDidDismiss={() => setShowForm(false)} onWillPresent={() => { setEmail(''); setApiError('') }}>
-          <IonHeader>
-            <IonToolbar>
-              <IonButtons slot="start">
-                <IonButton onClick={() => setShowForm(false)}>Отмена</IonButton>
-              </IonButtons>
-              <IonTitle>Новое приглашение</IonTitle>
-              <IonButtons slot="end">
-                <IonButton strong onClick={() => { setApiError(''); create.mutate() }} disabled={create.isPending || !email}>
-                  {create.isPending ? <IonSpinner name="crescent" /> : 'Создать'}
-                </IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <EntityFormHeader title="Новое приглашение" onCancel={() => setShowForm(false)}
+            onSubmit={() => { setApiError(''); create.mutate() }} pending={create.isPending} disabled={!email.trim()} />
           <AppContent>
-            <IonList>
+            <EntityFormSection title="Основное">
               <IonItem>
                 <IonInput
                   label="Email"
@@ -178,14 +168,8 @@ export function AdminInvitesPage() {
                   onIonInput={(e) => setEmail(e.detail.value ?? '')}
                 />
               </IonItem>
-            </IonList>
-            {apiError && (
-              <div className="ion-padding-top">
-                <IonText color="danger">
-                  <p style={{ fontSize: '0.85rem' }}>{apiError}</p>
-                </IonText>
-              </div>
-            )}
+            </EntityFormSection>
+            <EntityFormError>{apiError}</EntityFormError>
           </AppContent>
         </IonModal>
       </AppContent>

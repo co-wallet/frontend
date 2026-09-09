@@ -1,10 +1,11 @@
+import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle,
-  IonButtons, IonBackButton, IonButton, IonIcon,
+  IonButtons, IonBackButton, IonIcon,
   IonList, IonItem, IonLabel, IonInput, IonNote,
   IonSpinner, IonText, IonModal, IonAlert,
   IonItemSliding, IonItemOptions, IonItemOption,
@@ -310,61 +311,53 @@ export function AccountMembersPage() {
         />
 
         <IonModal isOpen={showForm} onDidDismiss={closeAddForm}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>Добавить участника</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={closeAddForm}>Закрыть</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <EntityFormHeader title="Добавить участника" onCancel={closeAddForm}
+            onSubmit={() => addMutation.mutate()} pending={addMutation.isPending} disabled={!selectedUser} />
           <AppContent>
-            {error && (
-              <IonText color="danger">
-                <p style={{ marginBottom: '0.5rem' }}>{error}</p>
-              </IonText>
-            )}
+            <EntityFormError>{error}</EntityFormError>
+            <EntityFormSection title="Участник">
+              <IonSearchbar
+                value={selectedUser ? `${selectedUser.username} (${selectedUser.email})` : search}
+                placeholder="Поиск по имени или email..."
+                onIonInput={(e) => {
+                  setSearch(e.detail.value ?? '')
+                  setSelectedUser(null)
+                }}
+                debounce={0}
+              />
 
-            <IonSearchbar
-              value={selectedUser ? `${selectedUser.username} (${selectedUser.email})` : search}
-              placeholder="Поиск по имени или email..."
-              onIonInput={(e) => {
-                setSearch(e.detail.value ?? '')
-                setSelectedUser(null)
-              }}
-              debounce={0}
-            />
+              {!selectedUser && filteredUsers.length > 0 && (
+                <IonList>
+                  {filteredUsers.map((u) => (
+                    <IonItem
+                      key={u.id}
+                      button
+                      onClick={() => {
+                        setSelectedUser(u)
+                        setSearch('')
+                      }}
+                    >
+                      <IonLabel>
+                        <h2>{u.username}</h2>
+                        <p>{u.email}</p>
+                      </IonLabel>
+                    </IonItem>
+                  ))}
+                </IonList>
+              )}
 
-            {!selectedUser && filteredUsers.length > 0 && (
-              <IonList>
-                {filteredUsers.map((u) => (
-                  <IonItem
-                    key={u.id}
-                    button
-                    onClick={() => {
-                      setSelectedUser(u)
-                      setSearch('')
-                    }}
-                  >
-                    <IonLabel>
-                      <h2>{u.username}</h2>
-                      <p>{u.email}</p>
-                    </IonLabel>
-                  </IonItem>
-                ))}
-              </IonList>
-            )}
+              {!selectedUser && search && filteredUsers.length === 0 && (
+                <IonText color="medium">
+                  <p style={{ textAlign: 'center', marginTop: '1rem' }}>Пользователи не найдены</p>
+                </IonText>
+              )}
 
-            {!selectedUser && search && filteredUsers.length === 0 && (
-              <IonText color="medium">
-                <p style={{ textAlign: 'center', marginTop: '1rem' }}>Пользователи не найдены</p>
-              </IonText>
-            )}
-
-            <IonList style={{ marginTop: '1rem' }}>
+            </EntityFormSection>
+            <EntityFormSection title="Доля">
               <IonItem>
-                <IonLabel position="stacked">Доля по умолчанию (0–1)</IonLabel>
                 <IonInput
+                  label="Доля по умолчанию (0–1)"
+                  labelPlacement="stacked"
                   type="text"
                   inputMode="decimal"
                   value={share}
@@ -375,16 +368,8 @@ export function AccountMembersPage() {
                   }}
                 />
               </IonItem>
-            </IonList>
+            </EntityFormSection>
 
-            <IonButton
-              expand="block"
-              onClick={() => addMutation.mutate()}
-              disabled={addMutation.isPending || !selectedUser}
-              style={{ marginTop: '1rem' }}
-            >
-              {addMutation.isPending ? <IonSpinner name="crescent" /> : 'Добавить'}
-            </IonButton>
           </AppContent>
         </IonModal>
       </AppContent>

@@ -1,3 +1,4 @@
+import { EntityFormPicker } from './EntityForm'
 import { useState } from 'react'
 import {
   IonButton,
@@ -12,7 +13,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react'
-import { checkmarkCircle, chevronExpandOutline } from 'ionicons/icons'
+import { checkmarkCircle } from 'ionicons/icons'
 
 import type { Category, CategoryType } from '@/api/categories'
 import {
@@ -48,36 +49,16 @@ export function CategorySelect({
 
   return (
     <>
-      <IonItem
-        key={selectedCategory?.id ?? 'uncategorized'}
-        className="category-select-trigger"
-        button
-        detail={false}
-        aria-label={`${label}: ${selectedLabel}`}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen(true)}
-      >
-        <span slot="start" className="category-select-icon">
-          <CategoryIcon
-            value={selectedCategory?.icon ?? UNCATEGORIZED_CATEGORY_ICON}
-            type={type}
-            size={38}
-            ariaLabel={selectedCategory?.name ?? 'Без категории'}
-          />
-        </span>
-        <IonLabel className="category-select-trigger__label">
-          <p>{label}</p>
-          <h2>{selectedLabel}</h2>
-        </IonLabel>
-        <IonIcon slot="end" icon={chevronExpandOutline} color="medium" aria-hidden="true" />
-      </IonItem>
+      <EntityFormPicker label={label} value={selectedLabel}
+        icon={<CategoryIcon value={selectedCategory?.icon ?? UNCATEGORIZED_CATEGORY_ICON}
+          type={type} size={24} ariaLabel={selectedLabel} />}
+        isOpen={isOpen} onOpen={() => setIsOpen(true)} />
 
       <IonModal
         className="category-select-modal"
         isOpen={isOpen}
-        initialBreakpoint={0.65}
-        breakpoints={[0, 0.65, 0.9]}
+        initialBreakpoint={0.5}
+        breakpoints={[0, 0.5, 0.85]}
         handleBehavior="cycle"
         onDidDismiss={() => setIsOpen(false)}
       >
