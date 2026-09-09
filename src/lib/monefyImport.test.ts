@@ -31,7 +31,7 @@ describe('MonefyImport public workflow', () => {
     expect(api.confirm).not.toHaveBeenCalled()
     model.accept(true)
     await Promise.all([model.confirm(), model.confirm()])
-    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1', true)
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1', true, false)
     expect(model.getSnapshot().result).toEqual(result)
     expect(success).toHaveBeenCalledOnce()
   })
@@ -42,7 +42,7 @@ describe('MonefyImport public workflow', () => {
     expect(canConfirmImport(model.getSnapshot())).toBe(true)
     await model.confirm()
     expect(api.configure).not.toHaveBeenCalled()
-    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1', false)
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1', false, false)
   })
   it('overrides one account and preserves other defaults and category icons through confirmation', async () => {
     const { model, api } = setup()
@@ -57,7 +57,7 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().preview?.categories[0].icon).toBe('preset:groceries|purple|none')
     model.accept(true)
     await model.confirm()
-    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1-next-next', true)
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1-next-next', true, false)
   })
   it('preserves manual account appearance and generated colors through other options and confirmation', async () => {
     const { model, api } = setup()
@@ -81,7 +81,7 @@ describe('MonefyImport public workflow', () => {
     expect(current.accounts[0].final_balance).toBe(preview.accounts[0].final_balance)
     model.accept(true)
     await model.confirm()
-    expect(api.confirm).toHaveBeenCalledExactlyOnceWith(current.preview_id, true)
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith(current.preview_id, true, false)
     expect(preview.accounts[0].icon).toBe('preset:cash|green|green')
   })
   it('blocks nonempty accounts with server reasons', async () => {
@@ -116,7 +116,7 @@ describe('MonefyImport public workflow', () => {
     request.resolve({ ...preview, preview_id: 'configured' }); await configuring
     expect(api.configure).toHaveBeenCalledWith('preview-1', { a: 'investment' }, {}, { a: 'preset:cash|green|green' })
     model.accept(true); await model.confirm()
-    expect(api.confirm).toHaveBeenCalledWith('configured', true)
+    expect(api.confirm).toHaveBeenCalledWith('configured', true, false)
   })
   it('supports legacy previews by collecting kinds for every initially untyped account before sending options', async () => {
     const { model, api } = setup()
@@ -187,7 +187,7 @@ describe('MonefyImport public workflow', () => {
     const restored = new MonefyImport('u', api, storage)
     expect(restored.getSnapshot().phase).toBe('unknown')
     await restored.recover()
-    expect(api.confirm.mock.calls).toEqual([['preview-1', true], ['preview-1', true]])
+    expect(api.confirm.mock.calls).toEqual([['preview-1', true, false], ['preview-1', true, false]])
     expect(restored.getSnapshot().phase).toBe('done')
     expect(new MonefyImport('another-user', api, storage).getSnapshot().phase).toBe('idle')
   })
@@ -217,5 +217,84 @@ describe('MonefyImport public workflow', () => {
     await model.check()
     expect(model.getSnapshot().availability?.available).toBe(true)
     expect(model.getSnapshot().error).toBeUndefined()
+  })
+})
+
+const replacement: ImportPreview = { ...preview, mode: 'replace', replacement: {
+  accounts: [{ id: 'old', name: 'Old', currency: 'RUB', deleted_at: '2026-01-01' }],
+  counts: { accounts: 1, deleted_accounts: 1, transactions: 2, transfers: 0, shares: 2, tag_links: 1, members: 1 }, blockers: {},
+} }
+function setupReplacement() {
+  const s = setup()
+  s.api.availability.mockResolvedValue({ available: false, reasons: ['owned_accounts'] })
+  s.api.preview.mockResolvedValue(structuredClone(replacement))
+  s.api.configure.mockResolvedValue({ ...replacement, preview_id: 'replacement-2' })
+  s.model.setMode('replace')
+  return s
+}
+describe('Monefy replacement workflow', () => {
+  it('previews a nonempty account and requires separate deletion consent', async () => {
+    const { model, api } = setupReplacement()
+    await model.upload(file)
+    expect(api.preview).toHaveBeenCalledExactlyOnceWith(file, 'replace')
+    model.accept(true)
+    await model.confirm()
+    expect(api.confirm).not.toHaveBeenCalled()
+    model.acceptDeletion(true)
+    await Promise.all([model.confirm(), model.confirm()])
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1', true, true)
+  })
+  it('deletion consent does not bypass exclusions or blocking shared relations', async () => {
+    const { model, api } = setupReplacement()
+    await model.upload(file); model.acceptDeletion(true); await model.confirm()
+    expect(api.confirm).not.toHaveBeenCalled()
+    api.preview.mockResolvedValue({ ...replacement, replacement: { ...replacement.replacement!, blockers: { shared_accounts: 1 } } })
+    await model.upload(file); model.accept(true); model.acceptDeletion(true); await model.confirm()
+    expect(api.confirm).not.toHaveBeenCalled()
+  })
+  it('clears deletion consent when options, file or mode change and supports cancellation', async () => {
+    const { model, api } = setupReplacement()
+    await model.upload(file); model.accept(true); model.acceptDeletion(true)
+    await model.configure('a', 'deposit')
+    expect(model.getSnapshot().deletionAccepted).toBe(false)
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    model.acceptDeletion(true); await model.upload(file)
+    expect(model.getSnapshot().deletionAccepted).toBe(false)
+    model.acceptDeletion(true); model.setMode('empty')
+    expect(model.getSnapshot().preview).toBeUndefined()
+    expect(model.getSnapshot().deletionAccepted).toBe(false)
+    model.setMode('replace'); await model.upload(file); model.accept(true); model.acceptDeletion(true); model.cancel()
+    await model.confirm(); expect(api.confirm).not.toHaveBeenCalled()
+  })
+  it('rejects a response for the wrong mode and failed source validation', async () => {
+    const { model, api } = setupReplacement()
+    api.preview.mockResolvedValue(preview)
+    await model.upload(file); model.accept(true); model.acceptDeletion(true)
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    api.preview.mockRejectedValue({ isAxiosError: true, response: { status: 400, data: { error: 'source_format' } } })
+    await model.upload(file); await model.confirm()
+    expect(model.getSnapshot().preview).toBeUndefined()
+    expect(api.confirm).not.toHaveBeenCalled()
+  })
+  it('recovers the same deletion consent after network loss and reload', async () => {
+    const { model, api, storage } = setupReplacement()
+    await model.upload(file); model.accept(true); model.acceptDeletion(true)
+    api.confirm.mockRejectedValueOnce(new Error('offline'))
+    await model.confirm()
+    model.setMode('empty'); model.cancel(); await model.upload(file)
+    expect(api.preview).toHaveBeenCalledOnce()
+    const restored = new MonefyImport('u', api, storage)
+    await restored.recover()
+    expect(api.confirm.mock.calls).toEqual([['preview-1', true, true], ['preview-1', true, true]])
+    expect(restored.getSnapshot().phase).toBe('done')
+  })
+  it('requires a fresh preview and fresh consent after a concurrent edit', async () => {
+    const { model, api } = setupReplacement()
+    await model.upload(file); model.accept(true); model.acceptDeletion(true)
+    api.confirm.mockRejectedValue({ isAxiosError: true, response: { status: 409, data: { error: 'replacement_changed' } } })
+    await model.confirm()
+    expect(model.getSnapshot().preview).toBeUndefined()
+    expect(model.getSnapshot().deletionAccepted).toBe(false)
+    expect(model.getSnapshot().error).toContain('Состав старых данных изменился')
   })
 })

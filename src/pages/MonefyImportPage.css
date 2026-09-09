@@ -20,3 +20,10 @@
 .import-diagnostics p { margin-block: 8px; }
 .import-technical { margin-top: 24px; }
 .import-technical summary { cursor: pointer; min-height: 44px; padding-block: 12px; }
+
+.monefy-import .import-deletion-warning {
+  border: 2px solid var(--ion-color-danger);
+  color: var(--ion-text-color);
+}
+.import-deletion-warning ion-card-title { color: var(--ion-color-danger); }
+.monefy-import > ion-button { white-space: normal; height: auto; min-height: 44px; }

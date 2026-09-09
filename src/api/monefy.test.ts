@@ -15,7 +15,7 @@ describe('Monefy API contract', () => {
     await monefyApi.configure('old', { a: 'deposit' })
     expect(client.post).toHaveBeenCalledWith('/imports/monefy/old/options', { account_kinds: { a: 'deposit' }, category_icons: {}, account_icons: {} })
     await monefyApi.confirm('new', true)
-    expect(client.post).toHaveBeenCalledWith('/imports/monefy/new/confirm', { acknowledge_exclusions: true }, { timeout: 30000 })
+    expect(client.post).toHaveBeenCalledWith('/imports/monefy/new/confirm', { acknowledge_exclusions: true, acknowledge_deletion: false }, { timeout: 30000 })
   })
   it('sends account and category appearance in the same options snapshot', async () => {
     await monefyApi.configure('p', { a: 'spending' }, { c: 'preset:cafe|red|none' }, { a: 'preset:cash|green|green' })
@@ -26,4 +26,13 @@ describe('Monefy API contract', () => {
     await expect(monefyApi.confirm('p', true)).rejects.toThrow('offline')
     expect(client.post).toHaveBeenCalledOnce()
   })
+})
+
+it('binds replace mode to the preview and sends a separate deletion acknowledgement', async () => {
+  client.post.mockResolvedValue({ data: {} })
+  const file = { name: 'history.db' } as File
+  await monefyApi.preview(file, 'replace')
+  expect(client.post).toHaveBeenCalledWith('/imports/monefy/preview?mode=replace', file, { headers: { 'Content-Type': 'application/octet-stream' }, timeout: 30000 })
+  await monefyApi.confirm('replacement', false, true)
+  expect(client.post).toHaveBeenCalledWith('/imports/monefy/replacement/confirm', { acknowledge_exclusions: false, acknowledge_deletion: true }, { timeout: 30000 })
 })

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { monefyApi, type ImportAvailability, type ImportPreview, type ImportResult } from '@/api/monefy'
+import { monefyApi, type ImportMode, type ImportAvailability, type ImportPreview, type ImportResult } from '@/api/monefy'
 import type { AccountKind } from '@/api/accounts'
 
 export const importReasons: Record<string, string> = {
@@ -9,6 +9,10 @@ export const importReasons: Record<string, string> = {
   transactions: 'У вас уже есть операции или доли в операциях.',
 }
 const errors: Record<string, string> = {
+  deletion_not_confirmed: 'Отдельно подтвердите безвозвратное удаление старых данных.',
+  replacement_changed: 'Состав старых данных изменился. Создайте новый предпросмотр и подтвердите удаление заново.',
+  replacement_blocked: 'Общие счета или внешние связи блокируют замену. Создайте новый предпросмотр.',
+  invalid_import_mode: 'Выберите режим импорта заново.',
   account_not_empty: 'Учётная запись больше не пуста. Импорт недоступен.',
   invalid_account_icons: 'Не удалось сохранить оформление счёта. Выберите иконку и цвета из списка co-wallet.',
   invalid_category_icons: 'Не удалось сохранить иконки категорий. Выберите иконку из списка co-wallet.',
@@ -31,8 +35,10 @@ function errorText(error: unknown) {
   }
   return 'Не удалось выполнить запрос. Попробуйте позже.'
 }
-type Pending = { id: string; accepted: boolean }
+type Pending = { id: string; accepted: boolean; deletion?: boolean }
 export interface ImportState {
+  mode?: ImportMode
+  deletionAccepted?: boolean
   phase: 'idle' | 'checking' | 'previewing' | 'configuring' | 'confirming' | 'unknown' | 'done'
   availability?: ImportAvailability
   preview?: ImportPreview
@@ -43,7 +49,9 @@ export interface ImportState {
 }
 export function canConfirmImport(s: ImportState) {
   const p = s.preview
-  return s.phase === 'idle' && s.availability?.available === true && !!p?.can_confirm &&
+  return s.phase === 'idle' && !!s.availability && (s.mode === 'replace' || s.availability.available === true) && !!p?.can_confirm &&
+    (p.mode || 'empty') === (s.mode || 'empty') &&
+    (p.mode !== 'replace' || (!!p.replacement && s.deletionAccepted === true && !Object.values(p.replacement.blockers).some(n => n > 0))) &&
     Date.parse(p.expires_at) > Date.now() && !p.diagnostics.some(d => d.severity === 'blocking') &&
     (!(p.requires_exclusion_confirmation || p.diagnostics.some(d => d.severity === 'confirmation')) || s.accepted)
 }
@@ -61,7 +69,7 @@ export class MonefyImport {
       const saved = JSON.parse(storage.getItem(this.key) || 'null')
       if (typeof saved?.id === 'string' && typeof saved?.accepted === 'boolean') this.pending = saved
     } catch { /* Storage may be unavailable; confirmation checks it before sending. */ }
-    this.state = { phase: this.pending ? 'unknown' : 'idle', accepted: false }
+    this.state = { phase: this.pending ? 'unknown' : 'idle', accepted: false, mode: 'empty', deletionAccepted: false }
   }
   getSnapshot = () => this.state
   subscribe = (listener: () => void) => { this.listeners.add(listener); return () => { this.listeners.delete(listener) } }
@@ -78,8 +86,14 @@ export class MonefyImport {
   cancel() {
     if (this.pending || this.state.phase === 'done') return
     ++this.generation
-    this.update({ phase: 'idle', preview: undefined, accepted: false, error: undefined, fileName: undefined })
+    this.update({ phase: 'idle', preview: undefined, accepted: false, deletionAccepted: false, error: undefined, fileName: undefined })
   }
+  setMode(mode: ImportMode) {
+    if (this.pending || this.state.phase === 'done' || !['empty', 'replace'].includes(mode)) return
+    this.cancel()
+    this.update({ mode })
+  }
+  acceptDeletion(value: boolean) { this.update({ deletionAccepted: value }) }
   accept(value: boolean) { this.update({ accepted: value }) }
   async upload(file?: File) {
     if (this.pending || this.state.phase === 'done') return
@@ -94,8 +108,8 @@ export class MonefyImport {
       const availability = await this.api.availability()
       if (version !== this.generation) return
       this.update({ availability })
-      if (!availability.available) { this.update({ phase: 'idle' }); return }
-      const preview = await this.api.preview(file)
+      if (this.state.mode !== 'replace' && !availability.available) { this.update({ phase: 'idle' }); return }
+      const preview = await this.api.preview(file, this.state.mode || 'empty')
       if (version === this.generation) this.update({ phase: 'idle', preview })
     } catch (e) { if (version === this.generation) this.update({ phase: 'idle', error: errorText(e) }) }
   }
@@ -121,7 +135,7 @@ export class MonefyImport {
     await this.saveOptions({ ...p, categories, can_confirm: false })
   }
   private async saveOptions(draft: ImportPreview) {
-    this.update({ preview: draft, accepted: false, error: undefined })
+    this.update({ preview: draft, accepted: false, deletionAccepted: false, error: undefined })
     // Older previews may still contain untyped accounts; submit only complete options.
     if (draft.accounts.some(a => !a.kind)) return
     const kinds = Object.fromEntries(draft.accounts.map(a => [a.source_id, a.kind as AccountKind]))
@@ -135,7 +149,7 @@ export class MonefyImport {
   }
   async confirm() {
     if (!canConfirmImport(this.state) || this.pending) return
-    const pending = { id: this.state.preview!.preview_id, accepted: this.state.accepted }
+    const pending = { id: this.state.preview!.preview_id, accepted: this.state.accepted, deletion: this.state.preview!.mode === 'replace' && this.state.deletionAccepted === true }
     try { this.storage.setItem(this.key, JSON.stringify(pending)) }
     catch { this.update({ error: 'Разрешите локальное хранилище браузера: оно нужно для восстановления результата импорта.' }); return }
     this.pending = pending
@@ -146,14 +160,14 @@ export class MonefyImport {
     const pending = this.pending!
     this.update({ phase: 'confirming', error: undefined })
     let result: ImportResult
-    try { result = await this.api.confirm(pending.id, pending.accepted) }
+    try { result = await this.api.confirm(pending.id, pending.accepted, pending.deletion === true) }
     catch (e) {
       // A timeout or server/network failure can follow a committed transaction.
       const status = axios.isAxiosError(e) ? e.response?.status : undefined
       if (status && [400, 404, 409, 413, 415, 422].includes(status)) {
         try { this.storage.removeItem(this.key) } catch { /* Retaining the same receipt cannot duplicate an import. */ }
         this.pending = undefined
-        this.update({ phase: 'idle', preview: undefined, accepted: false, error: errorText(e) })
+        this.update({ phase: 'idle', preview: undefined, accepted: false, deletionAccepted: false, error: errorText(e) })
         await this.checkAfterFailure()
       } else this.update({ phase: 'unknown', error: errorText(e) })
       return
