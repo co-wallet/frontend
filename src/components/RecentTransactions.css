@@ -1,6 +1,6 @@
-.recent-transactions {
+.app-content .recent-transactions {
   --recent-transactions-inset: 16px;
-  margin: 16px 0 0;
+  margin: 0;
 }
 
 .recent-transactions ion-list {
