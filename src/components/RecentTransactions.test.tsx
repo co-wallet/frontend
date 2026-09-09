@@ -4,6 +4,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { transactionsApi, type Transaction } from '@/api/transactions'
 import { RecentTransactions } from './RecentTransactions'
 
+vi.mock('@/lib/useRecentTransactionsFit', () => ({
+  useRecentTransactionsFit: () => ({ ref: { current: null }, count: 2, compact: false, hidden: false }),
+}))
+
 const state = vi.hoisted(() => ({
   loading: false,
   error: false,
@@ -37,12 +41,12 @@ afterEach(() => {
 })
 
 describe('RecentTransactions', () => {
-  it('requests only three transactions for the selected accounts without a date filter', async () => {
+  it('requests a bounded batch of transactions for the selected accounts without a date filter', async () => {
     render()
     const query = state.queries.find((query) => query.queryKey[0] === 'transactions')!
     expect(query.enabled).toBe(true)
     await query.queryFn()
-    expect(transactionsApi.list).toHaveBeenCalledWith({ accountIds: ['selected'], page: 1, limit: 3 })
+    expect(transactionsApi.list).toHaveBeenCalledWith({ accountIds: ['selected'], page: 1, limit: 20 })
   })
 
   it.each([
@@ -76,7 +80,7 @@ describe('RecentTransactions', () => {
     expect(markup).not.toContain('пока нет транзакций')
   })
 
-  it('groups dates above rows and hides tags, keeping the three latest operations', () => {
+  it('groups dates above rows and hides tags, only displaying the number of rows that fit', () => {
     state.items = [1, 2, 3, 4].map((id) => ({
       id: String(id), accountId: 'selected', accountName: 'Личная', type: 'expense', amount: id,
       currency: 'RUB', description: `Операция ${id}`, date: '2026-09-02T00:00:00Z',
@@ -84,7 +88,8 @@ describe('RecentTransactions', () => {
     } as unknown as Transaction))
     const markup = render()
     expect(markup).toMatch(/Операция 1[^]*Операция 2[^]*Операция 3/)
-    expect(markup).not.toContain('Операция 4')
+    expect(markup.match(/recent-transactions__row--hidden/g)).toHaveLength(2)
+    expect(markup).toMatch(/recent-transactions__row--hidden[^]*Операция 3/)
     expect(markup.match(/2 сентября/g)).toHaveLength(1)
     expect(markup).toMatch(/<h3[^>]*>[^<]*2 сентября<\/h3>[^]*Операция 1/)
     expect(markup).not.toContain('Скрытый тег')

@@ -21,3 +21,33 @@
 .recent-transactions .recent-transactions__footer {
   padding: 0 12px 4px;
 }
+
+/* Out-of-flow rows remain measurable at the same width, but cannot be seen or focused. */
+.recent-transactions__row--hidden,
+.recent-transactions--compact .recent-transactions__header,
+.recent-transactions--compact .recent-transactions__message {
+  position: absolute;
+  inset: 0 0 auto;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.app-content .recent-transactions--hidden {
+  position: absolute;
+  width: 100%;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.recent-transactions-slot {
+  position: relative;
+}
+
+.recent-transactions__header {
+  padding-block: 8px;
+}
+
+.app-content .recent-transactions--hidden {
+  max-height: 0;
+  overflow: hidden;
+}
