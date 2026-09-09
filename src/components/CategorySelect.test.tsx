@@ -25,7 +25,7 @@ describe('CategorySelect', () => {
     )
 
     expect(markup).toContain('aria-label="Категория: Кофейни"')
-    expect(markup).toContain('<h2>Кофейни</h2>')
+    expect(markup).toContain('<span>Кофейни</span>')
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-orange)')
   })
 
@@ -40,7 +40,7 @@ describe('CategorySelect', () => {
     )
 
     expect(markup).toContain('aria-label="Категория: Без категории"')
-    expect(markup).toContain('<h2>Без категории</h2>')
+    expect(markup).toContain('<span>Без категории</span>')
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
   })
 })

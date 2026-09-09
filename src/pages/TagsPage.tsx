@@ -1,3 +1,4 @@
+import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
@@ -153,16 +154,11 @@ export function TagsPage() {
 
         {/* Edit Modal */}
         <IonModal isOpen={!!editingTag} onDidDismiss={() => setEditingTag(null)}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>{editingTag?.id ? 'Переименовать тег' : 'Новый тег'}</IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={() => setEditingTag(null)}>Отмена</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <EntityFormHeader title={editingTag?.id ? 'Переименовать тег' : 'Новый тег'}
+            onCancel={() => setEditingTag(null)} onSubmit={handleEditSave}
+            pending={renameMutation.isPending} disabled={!editName.trim()} />
           <AppContent>
-            <IonList>
+            <EntityFormSection title="Основное">
               <IonItem>
                 <IonInput
                   label="Название"
@@ -174,20 +170,8 @@ export function TagsPage() {
                   }}
                 />
               </IonItem>
-            </IonList>
-            {editError && (
-              <IonText color="danger">
-                <p style={{ padding: '0 16px' }}>{editError}</p>
-              </IonText>
-            )}
-            <IonButton
-              expand="block"
-              style={{ marginTop: '16px' }}
-              onClick={handleEditSave}
-              disabled={renameMutation.isPending || !editName.trim()}
-            >
-              {renameMutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
-            </IonButton>
+            </EntityFormSection>
+            <EntityFormError>{editError}</EntityFormError>
           </AppContent>
         </IonModal>
 

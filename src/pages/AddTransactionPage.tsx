@@ -1,12 +1,11 @@
+import { EntityFormHeader, EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState, useEffect, useRef } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonBackButton, IonButton, IonSegment, IonSegmentButton, IonLabel,
-  IonList, IonItem, IonInput, IonToggle,
-  IonSpinner, IonText, IonNote, IonIcon,
+  IonPage, IonButton, IonLabel, IonSelectOption, IonItem, IonInput, IonToggle,
+  IonText, IonNote, IonIcon,
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
@@ -217,7 +216,7 @@ export function AddTransactionPage() {
       if (fromRate <= 0 || toRate <= 0) return null
       const rate = toRate / fromRate
       return (
-        <IonNote style={{ fontSize: '0.75rem', display: 'block', marginTop: 4 }}>
+        <IonNote className="entity-form-note">
           {rate >= 1
             ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
             : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
@@ -230,7 +229,7 @@ export function AddTransactionPage() {
     if (acctRate <= 0 || defRate <= 0) return null
     const rate = acctRate / defRate
     return (
-      <IonNote style={{ fontSize: '0.75rem', display: 'block', marginTop: 4 }}>
+      <IonNote className="entity-form-note">
         {rate >= 1
           ? `1 ${userDefaultCurrency} = ${rate.toFixed(4)} ${selectedAccount.currency}`
           : `1 ${selectedAccount.currency} = ${(1 / rate).toFixed(4)} ${userDefaultCurrency}`}
@@ -240,30 +239,20 @@ export function AddTransactionPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/transactions" text="Назад" />
-          </IonButtons>
-          <IonTitle>Новая транзакция</IonTitle>
-        </IonToolbar>
-        <IonToolbar>
-          <IonSegment
-            value={type}
-            onIonChange={(e) => setType(e.detail.value as TransactionType)}
-          >
-            {TYPE_OPTIONS.map((opt) => (
-              <IonSegmentButton key={opt.value} value={opt.value}>
-                <IonLabel>{opt.label}</IonLabel>
-              </IonSegmentButton>
-            ))}
-          </IonSegment>
-        </IonToolbar>
-      </IonHeader>
+      <EntityFormHeader title="Новая транзакция" onCancel={() => history.push('/transactions')}
+        onSubmit={handleSubmit} pending={createMutation.isPending} disabled={!amountValid || !sharesValid} />
 
       <AppContent>
         <div>
-          <IonList>
+          <EntityFormSection title="Основное">
+            <IonItem>
+              <EntityFormSelect label="Тип" value={type}
+                onIonChange={(event) => setType(event.detail.value as TransactionType)}>
+                {TYPE_OPTIONS.map((option) => (
+                  <IonSelectOption key={option.value} value={option.value}>{option.label}</IonSelectOption>
+                ))}
+              </EntityFormSelect>
+            </IonItem>
             {/* Account */}
             <AccountSelect
               label="Счёт"
@@ -324,7 +313,7 @@ export function AddTransactionPage() {
                     <IonIcon slot="icon-only" icon={refreshOutline} />
                   </IonButton>
                 </IonItem>
-                <IonNote style={{ padding: '0 16px', fontSize: '0.75rem', display: 'block' }}>
+                <IonNote className="entity-form-note">
                   Сумма, которая поступит на целевой счёт. Можно скорректировать вручную.
                 </IonNote>
               </>
@@ -362,7 +351,7 @@ export function AddTransactionPage() {
                     <IonIcon slot="icon-only" icon={refreshOutline} />
                   </IonButton>
                 </IonItem>
-                <IonNote style={{ padding: '0 16px', fontSize: '0.75rem', display: 'block' }}>
+                <IonNote className="entity-form-note">
                   Автоматически рассчитано по текущему курсу. Можно скорректировать вручную.
                 </IonNote>
               </>
@@ -400,129 +389,96 @@ export function AddTransactionPage() {
                 onIonInput={(e) => setDescription(e.detail.value ?? '')}
               />
             </IonItem>
-          </IonList>
+          </EntityFormSection>
 
-          {/* Tags */}
-          <div style={{ padding: '8px 0' }}>
-            <IonLabel style={{ fontSize: '0.875rem', fontWeight: 500, paddingLeft: 16, display: 'block', marginBottom: 4 }}>
-              Теги
-            </IonLabel>
-            <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
-          </div>
-
-          {/* Include in balance */}
-          <IonList>
+          <EntityFormSection title="Дополнительно">
+            <div className="entity-form-tags">
+              <IonLabel className="entity-form-field-label">Теги</IonLabel>
+              <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
+            </div>
             <IonItem>
-              <IonToggle
-                checked={includeInBalance}
-                onIonChange={(e) => setIncludeInBalance(e.detail.checked)}
-              >
+              <IonToggle checked={includeInBalance} onIonChange={(e) => setIncludeInBalance(e.detail.checked)}>
                 Учитывать в балансе
               </IonToggle>
             </IonItem>
-          </IonList>
+          </EntityFormSection>
 
           {/* Shares */}
           {isShared && members.length > 1 && (
-            <div style={{ margin: '16px 0' }}>
-              <IonList>
-                <IonItem lines="none">
-                  <IonLabel>Распределение долей</IonLabel>
-                  <IonButton
-                    slot="end"
-                    fill="clear"
-                    size="small"
-                    onClick={() => setCustomShares((v) => !v)}
-                  >
-                    {customShares ? 'Авто' : 'Настроить'}
-                  </IonButton>
+            <EntityFormSection title="Доли">
+              <IonItem lines="none">
+                <IonLabel>Распределение долей</IonLabel>
+                <IonButton
+                  slot="end"
+                  fill="clear"
+                  size="small"
+                  onClick={() => setCustomShares((v) => !v)}
+                >
+                  {customShares ? 'Авто' : 'Настроить'}
+                </IonButton>
+              </IonItem>
+              {members.map((m) => (
+                <IonItem key={m.userId}>
+                  <IonLabel>{m.username}</IonLabel>
+                  {customShares ? (
+                    <IonInput
+                      slot="end"
+                      type="text"
+                      inputMode="decimal"
+                      value={shareAmounts[m.userId] ?? ''}
+                      style={{ textAlign: 'right', maxWidth: 120 }}
+                      onIonInput={(e) => {
+                        const newVal = filterDecimalInput(e.detail.value ?? '')
+                        const newAmt = parseDecimal(newVal)
+                        setShareAmounts((prev) => {
+                          const others = members.filter((om) => om.userId !== m.userId)
+                          const otherSum = others.reduce((s, om) => s + parseDecimal(prev[om.userId] ?? '0'), 0)
+                          const remaining = Math.max(0, totalAmount - newAmt)
+                          const next: Record<string, string> = { ...prev, [m.userId]: newVal }
+                          if (others.length === 0) return next
+                          if (otherSum > 0.01) {
+                            let distributed = 0
+                            others.forEach((om, i) => {
+                              if (i < others.length - 1) {
+                                const part = roundCents(parseDecimal(prev[om.userId] ?? '0') * remaining / otherSum)
+                                next[om.userId] = String(part)
+                                distributed += part
+                              } else {
+                                next[om.userId] = String(roundCents(remaining - distributed))
+                              }
+                            })
+                          } else {
+                            let distributed = 0
+                            others.forEach((om, i) => {
+                              if (i < others.length - 1) {
+                                const part = roundCents(remaining / others.length)
+                                next[om.userId] = String(part)
+                                distributed += part
+                              } else {
+                                next[om.userId] = String(roundCents(remaining - distributed))
+                              }
+                            })
+                          }
+                          return next
+                        })
+                      }}
+                    />
+                  ) : (
+                    <IonNote slot="end">
+                      {shareAmounts[m.userId] ?? '0.00'} {selectedAccount?.currency}
+                    </IonNote>
+                  )}
                 </IonItem>
-                {members.map((m) => (
-                  <IonItem key={m.userId}>
-                    <IonLabel>{m.username}</IonLabel>
-                    {customShares ? (
-                      <IonInput
-                        slot="end"
-                        type="text"
-                        inputMode="decimal"
-                        value={shareAmounts[m.userId] ?? ''}
-                        style={{ textAlign: 'right', maxWidth: 120 }}
-                        onIonInput={(e) => {
-                          const newVal = filterDecimalInput(e.detail.value ?? '')
-                          const newAmt = parseDecimal(newVal)
-                          setShareAmounts((prev) => {
-                            const others = members.filter((om) => om.userId !== m.userId)
-                            const otherSum = others.reduce((s, om) => s + parseDecimal(prev[om.userId] ?? '0'), 0)
-                            const remaining = Math.max(0, totalAmount - newAmt)
-                            const next: Record<string, string> = { ...prev, [m.userId]: newVal }
-                            if (others.length === 0) return next
-                            if (otherSum > 0.01) {
-                              let distributed = 0
-                              others.forEach((om, i) => {
-                                if (i < others.length - 1) {
-                                  const part = roundCents(parseDecimal(prev[om.userId] ?? '0') * remaining / otherSum)
-                                  next[om.userId] = String(part)
-                                  distributed += part
-                                } else {
-                                  next[om.userId] = String(roundCents(remaining - distributed))
-                                }
-                              })
-                            } else {
-                              let distributed = 0
-                              others.forEach((om, i) => {
-                                if (i < others.length - 1) {
-                                  const part = roundCents(remaining / others.length)
-                                  next[om.userId] = String(part)
-                                  distributed += part
-                                } else {
-                                  next[om.userId] = String(roundCents(remaining - distributed))
-                                }
-                              })
-                            }
-                            return next
-                          })
-                        }}
-                      />
-                    ) : (
-                      <IonNote slot="end">
-                        {shareAmounts[m.userId] ?? '0.00'} {selectedAccount?.currency}
-                      </IonNote>
-                    )}
-                  </IonItem>
-                ))}
-              </IonList>
+              ))}
               {customShares && !sharesValid && (
                 <IonText color="danger" style={{ display: 'block', padding: '4px 16px', fontSize: '0.75rem' }}>
                   Сумма долей ({sharesSum.toFixed(2)}) должна равняться сумме транзакции ({totalAmount.toFixed(2)})
                 </IonText>
               )}
-            </div>
+            </EntityFormSection>
           )}
 
-          {createMutation.error && (
-            <IonText color="danger" style={{ display: 'block', padding: '8px 16px', fontSize: '0.875rem' }}>
-              Ошибка. Проверьте данные и попробуйте ещё раз.
-            </IonText>
-          )}
-
-          <div style={{ padding: '16px 0', display: 'flex', gap: 8 }}>
-            <IonButton
-              expand="block"
-              fill="outline"
-              style={{ flex: 1 }}
-              onClick={() => history.push('/transactions')}
-            >
-              Отмена
-            </IonButton>
-            <IonButton
-              expand="block"
-              style={{ flex: 1 }}
-              onClick={handleSubmit}
-              disabled={createMutation.isPending || !amountValid || !sharesValid}
-            >
-              {createMutation.isPending ? <IonSpinner name="crescent" /> : 'Создать'}
-            </IonButton>
-          </div>
+          <EntityFormError>{createMutation.error ? 'Ошибка. Проверьте данные и попробуйте ещё раз.' : null}</EntityFormError>
         </div>
       </AppContent>
     </IonPage>

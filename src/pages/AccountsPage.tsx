@@ -1,3 +1,4 @@
+import { EntityFormHeader, EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useRef, useState } from 'react'
 import { useHistory } from 'react-router-dom'
@@ -9,7 +10,6 @@ import {
   IonToolbar,
   IonTitle,
   IonList,
-  IonListHeader,
   IonItem,
   IonLabel,
   IonNote,
@@ -18,7 +18,6 @@ import {
   IonIcon,
   IonModal,
   IonInput,
-  IonSelect,
   IonSelectOption,
   IonToggle,
   IonButton,
@@ -178,35 +177,12 @@ function AccountFormModal({
 
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} onWillPresent={resetForm}>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonButton onClick={onClose}>Отмена</IonButton>
-          </IonButtons>
-          <IonTitle>{title}</IonTitle>
-          <IonButtons slot="end">
-            <IonButton
-              strong
-              onClick={handleSubmit}
-              disabled={
-                loading
-                || !name.trim()
-                || !isValidDecimal(initialBalance)
-                || (isEditing && !isDirty)
-              }
-            >
-              {loading ? <IonSpinner name="dots" /> : 'Сохранить'}
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
-      <AppContent className="account-form-content">
-        <IonList className="account-form-section">
-          <IonListHeader className="account-form-section__header">
-            <IonLabel>Основное</IonLabel>
-          </IonListHeader>
+      <EntityFormHeader title={title} onCancel={onClose} onSubmit={handleSubmit}
+        pending={loading} disabled={!name.trim() || !isValidDecimal(initialBalance) || (isEditing && !isDirty)} />
+      <AppContent>
+        <EntityFormSection title="Основное">
 
-          <IonItem className="account-form-row account-form-row--stacked">
+          <IonItem>
             <IonInput
               label="Название"
               labelPlacement="stacked"
@@ -224,13 +200,13 @@ function AccountFormModal({
           />
 
           <AccountKindField
-            className="account-form-row account-form-row--compact"
+
             value={kind}
             onChange={isEditing ? undefined : setKind}
           />
 
           {(!isEditing || canChangeAccessMode) && (
-            <IonItem className="account-form-row account-form-row--compact">
+            <IonItem>
               <IonToggle
                 checked={accessMode === 'shared'}
                 onIonChange={(event) => setAccessMode(
@@ -242,7 +218,7 @@ function AccountFormModal({
             </IonItem>
           )}
           {isEditing && !canChangeAccessMode && (
-            <IonItem className="account-form-row account-form-row--compact">
+            <IonItem>
               <IonLabel>Совместный счёт</IonLabel>
               <IonNote slot="end" className="account-form-readonly-value">
                 {accessMode === 'shared' ? 'Да' : 'Нет'}
@@ -257,12 +233,9 @@ function AccountFormModal({
           )}
 
           {!isEditing && (
-            <IonItem className="account-form-row account-form-row--compact">
-              <IonSelect
+            <IonItem>
+              <EntityFormSelect
                 label="Валюта"
-                labelPlacement="fixed"
-                interface="action-sheet"
-                cancelText="Отмена"
                 value={currency}
                 onIonChange={(e) => setCurrency(e.detail.value)}
               >
@@ -275,11 +248,11 @@ function AccountFormModal({
                   : ['RUB', 'USD', 'EUR', 'GBP', 'CNY'].map((c) => (
                       <IonSelectOption key={c} value={c}>{c}</IonSelectOption>
                     ))}
-              </IonSelect>
+              </EntityFormSelect>
             </IonItem>
           )}
           {isEditing && (
-            <IonItem className="account-form-row account-form-row--compact">
+            <IonItem>
               <IonLabel>Валюта</IonLabel>
               <IonNote slot="end" className="account-form-readonly-value">{currency}</IonNote>
             </IonItem>
@@ -289,21 +262,18 @@ function AccountFormModal({
             <IonItem
               button
               detail
-              className="account-form-row account-form-row--compact"
+
               onClick={onManageMembers}
             >
               <IonIcon icon={peopleOutline} slot="start" color="medium" />
               <IonLabel>Участники и доли</IonLabel>
             </IonItem>
           )}
-        </IonList>
+        </EntityFormSection>
 
-        <IonList className="account-form-section">
-          <IonListHeader className="account-form-section__header">
-            <IonLabel>Баланс</IonLabel>
-          </IonListHeader>
+        <EntityFormSection title="Баланс">
 
-          <IonItem className="account-form-row account-form-row--stacked">
+          <IonItem>
             <IonInput
               ref={initialBalanceInputRef}
               label="Стартовый баланс"
@@ -333,9 +303,8 @@ function AccountFormModal({
             </IonInput>
           </IonItem>
 
-          <IonItem className="account-form-row account-form-row--stacked">
+          <IonItem>
             <IonInput
-              className="account-form-date-input"
               label="Дата стартового баланса"
               labelPlacement="stacked"
               type="date"
@@ -344,13 +313,9 @@ function AccountFormModal({
             />
           </IonItem>
 
-        </IonList>
+        </EntityFormSection>
 
-        {error && (
-          <IonText color="danger">
-            <p className="account-form-error">{error}</p>
-          </IonText>
-        )}
+        <EntityFormError>{error}</EntityFormError>
 
         {isEditing && onDelete && (
           <IonButton

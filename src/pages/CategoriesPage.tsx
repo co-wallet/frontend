@@ -1,3 +1,4 @@
+import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -87,12 +88,16 @@ export default function CategoriesPage() {
   }
 
   function handleCreate() {
+    createMutation.reset();
+    updateMutation.reset();
     setEditingId(null);
     setFormData(emptyFormData(activeTab));
     setShowForm(true);
   }
 
   function handleEdit(cat: Category) {
+    createMutation.reset();
+    updateMutation.reset();
     setEditingId(cat.id);
     setFormData({
       name: cat.name,
@@ -191,20 +196,11 @@ export default function CategoriesPage() {
 
         {/* Add/Edit Modal */}
         <IonModal isOpen={showForm} onDidDismiss={resetForm}>
-          <IonHeader>
-            <IonToolbar>
-              <IonTitle>
-                {editingId
-                  ? 'Изменить категорию'
-                  : 'Новая категория'}
-              </IonTitle>
-              <IonButtons slot="end">
-                <IonButton onClick={resetForm}>Отмена</IonButton>
-              </IonButtons>
-            </IonToolbar>
-          </IonHeader>
+          <EntityFormHeader title={editingId ? 'Изменить категорию' : 'Новая категория'}
+            onCancel={resetForm} onSubmit={handleSubmit}
+            pending={createMutation.isPending || updateMutation.isPending} disabled={!formData.name.trim()} />
           <AppContent>
-            <IonList>
+            <EntityFormSection title="Основное">
               <IonItem>
                 <IonInput
                   label="Название"
@@ -214,32 +210,14 @@ export default function CategoriesPage() {
                 />
               </IonItem>
 
-            </IonList>
-
-            <CategoryIconSettings
-              value={formData.icon}
-              type={activeTab}
-              sessionKey={editingId ?? `new-${activeTab}`}
-              onChange={(icon) => setFormData((current) => ({ ...current, icon }))}
-            />
-
-            {(createMutation.error || updateMutation.error) && (
-              <IonText color="danger">
-                <p style={{ padding: '0 16px' }}>Ошибка. Попробуйте ещё раз.</p>
-              </IonText>
-            )}
-
-            <IonButton
-              expand="block"
-              style={{ marginTop: '16px' }}
-              onClick={handleSubmit}
-              disabled={createMutation.isPending || updateMutation.isPending || !formData.name.trim()}
-            >
-              {(createMutation.isPending || updateMutation.isPending)
-                ? <IonSpinner name="crescent" />
-                : editingId ? 'Сохранить' : 'Создать'
-              }
-            </IonButton>
+              <CategoryIconSettings
+                value={formData.icon}
+                type={activeTab}
+                sessionKey={showForm ? (editingId ?? `new-${activeTab}`) : 'closed'}
+                onChange={(icon) => setFormData((current) => ({ ...current, icon }))}
+              />
+            </EntityFormSection>
+            <EntityFormError>{(createMutation.error || updateMutation.error) ? 'Ошибка. Попробуйте ещё раз.' : null}</EntityFormError>
           </AppContent>
         </IonModal>
 

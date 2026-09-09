@@ -1,10 +1,11 @@
+import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
   IonBackButton, IonButton, IonIcon, IonList, IonItem, IonLabel,
-  IonNote, IonToggle, IonSpinner, IonModal, IonInput, IonText,
+  IonNote, IonToggle, IonSpinner, IonModal, IonInput,
   IonFab, IonFabButton, IonItemGroup, IonItemDivider,
 } from '@ionic/react'
 import { refreshOutline, addOutline, cashOutline } from 'ionicons/icons'
@@ -41,21 +42,10 @@ function AddCurrencyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
         setCode(''); setName(''); setSymbol(''); setIsActive(true); setApiError(null)
       }}
     >
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonButton onClick={onClose}>Отмена</IonButton>
-          </IonButtons>
-          <IonTitle>Новая валюта</IonTitle>
-          <IonButtons slot="end">
-            <IonButton strong onClick={handleSubmit} disabled={mutation.isPending || !code || !name}>
-              {mutation.isPending ? <IonSpinner name="crescent" /> : 'Добавить'}
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <EntityFormHeader title="Новая валюта" onCancel={onClose} onSubmit={handleSubmit}
+        pending={mutation.isPending} disabled={!code.trim() || !name.trim()} />
       <AppContent>
-        <IonList>
+        <EntityFormSection title="Основное">
           <IonItem>
             <IonInput
               label="Код (ISO)"
@@ -94,14 +84,8 @@ function AddCurrencyModal({ isOpen, onClose }: { isOpen: boolean; onClose: () =>
               Активна
             </IonToggle>
           </IonItem>
-        </IonList>
-        {apiError && (
-          <div className="ion-padding-horizontal">
-            <IonText color="danger">
-              <p style={{ fontSize: '0.85rem' }}>{apiError}</p>
-            </IonText>
-          </div>
-        )}
+        </EntityFormSection>
+        <EntityFormError>{apiError}</EntityFormError>
       </AppContent>
     </IonModal>
   )

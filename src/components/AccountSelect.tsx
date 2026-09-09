@@ -1,3 +1,4 @@
+import { EntityFormPicker } from './EntityForm'
 import { useState } from 'react'
 import {
   IonButton,
@@ -12,7 +13,7 @@ import {
   IonTitle,
   IonToolbar,
 } from '@ionic/react'
-import { checkmarkCircle, chevronExpandOutline } from 'ionicons/icons'
+import { checkmarkCircle } from 'ionicons/icons'
 
 import type { Account } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
@@ -40,31 +41,11 @@ export function AccountSelect({
 
   return (
     <>
-      <IonItem
-        key={selectedAccount?.id ?? 'empty'}
-        className="account-select-trigger"
-        button
-        detail={false}
-        aria-label={`${label}: ${selectedAccount?.name ?? 'не выбран'}`}
-        aria-haspopup="dialog"
-        aria-expanded={isOpen}
-        onClick={() => setIsOpen(true)}
-      >
-        {selectedAccount && (
-          <span slot="start" className="account-select-icon">
-            <AccountIcon value={selectedAccount.icon} size={38} />
-          </span>
-        )}
-        <IonLabel className="account-select-trigger__label">
-          <p>{label}</p>
-          <h2>
-            {selectedAccount
-              ? `${selectedAccount.name} · ${selectedAccount.currency}`
-              : 'Выберите счёт'}
-          </h2>
-        </IonLabel>
-        <IonIcon slot="end" icon={chevronExpandOutline} color="medium" aria-hidden="true" />
-      </IonItem>
+      <EntityFormPicker label={label}
+        value={selectedAccount ? `${selectedAccount.name} · ${selectedAccount.currency}` : 'Выберите счёт'}
+        accessibleValue={selectedAccount?.name ?? 'не выбран'}
+        icon={selectedAccount && <AccountIcon value={selectedAccount.icon} size={24} />}
+        isOpen={isOpen} onOpen={() => setIsOpen(true)} />
 
       <IonModal
         className="account-select-modal"

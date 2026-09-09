@@ -1,10 +1,10 @@
+import { EntityFormSelect } from './EntityForm'
 import { useId } from 'react'
 import {
   IonIcon,
   IonItem,
   IonNote,
   IonPopover,
-  IonSelect,
   IonSelectOption,
 } from '@ionic/react'
 import { helpCircleOutline } from 'ionicons/icons'
@@ -55,12 +55,10 @@ export function AccountKindField({
         </button>
 
         {onChange ? (
-          <IonSelect
+          <EntityFormSelect
             slot="end"
             className="account-kind-field__select"
             aria-label="Тип средств"
-            interface="action-sheet"
-            cancelText="Отмена"
             value={value}
             selectedText={accountKindLabel(value)}
             onIonChange={(event) => onChange(event.detail.value as AccountKind)}
@@ -70,7 +68,7 @@ export function AccountKindField({
                 {option.label}
               </IonSelectOption>
             ))}
-          </IonSelect>
+          </EntityFormSelect>
         ) : (
           <IonNote slot="end" className="account-form-readonly-value">
             {accountKindLabel(value)}
