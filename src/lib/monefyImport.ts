@@ -114,7 +114,7 @@ export class MonefyImport {
   }
   private async saveOptions(draft: ImportPreview) {
     this.update({ preview: draft, accepted: false, error: undefined })
-    // The initial API preview has no kinds. Submit only after every account is selected.
+    // Older previews may still contain untyped accounts; submit only complete options.
     if (draft.accounts.some(a => !a.kind)) return
     const kinds = Object.fromEntries(draft.accounts.map(a => [a.source_id, a.kind as AccountKind]))
     const categoryIcons = Object.fromEntries(draft.categories.filter(c => !c.existing_id).map(c => [c.source_id, c.icon]))

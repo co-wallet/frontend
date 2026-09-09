@@ -35,6 +35,30 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().result).toEqual(result)
     expect(success).toHaveBeenCalledOnce()
   })
+  it('confirms default account types without configuring options', async () => {
+    const { model, api } = setup()
+    api.preview.mockResolvedValue({ ...preview, requires_exclusion_confirmation: false, exclusions: [] })
+    await model.upload(file)
+    expect(canConfirmImport(model.getSnapshot())).toBe(true)
+    await model.confirm()
+    expect(api.configure).not.toHaveBeenCalled()
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1', false)
+  })
+  it('overrides one account and preserves other defaults and category icons through confirmation', async () => {
+    const { model, api } = setup()
+    const initial = { ...preview, accounts: [preview.accounts[0], { ...preview.accounts[0], source_id: 'b' }], categories: [{ ...preview.categories[0], existing_id: undefined }] }
+    api.preview.mockResolvedValue(initial)
+    api.configure.mockImplementation(async (id, kinds, icons) => ({ ...initial, preview_id: `${id}-next`, accounts: initial.accounts.map(a => ({ ...a, kind: kinds[a.source_id] })), categories: initial.categories.map(c => ({ ...c, icon: icons[c.source_id] })) }))
+    await model.upload(file)
+    await model.configureCategory('c', 'preset:groceries|purple|none')
+    await model.configure('b', 'deposit')
+    expect(api.configure).toHaveBeenLastCalledWith('preview-1-next', { a: 'spending', b: 'deposit' }, { c: 'preset:groceries|purple|none' })
+    expect(model.getSnapshot().preview?.accounts.map(a => a.kind)).toEqual(['spending', 'deposit'])
+    expect(model.getSnapshot().preview?.categories[0].icon).toBe('preset:groceries|purple|none')
+    model.accept(true)
+    await model.confirm()
+    expect(api.confirm).toHaveBeenCalledExactlyOnceWith('preview-1-next-next', true)
+  })
   it('blocks nonempty accounts with server reasons', async () => {
     const { model, api } = setup()
     api.availability.mockResolvedValue({ available: false, reasons: ['owned_accounts'] })
@@ -69,7 +93,7 @@ describe('MonefyImport public workflow', () => {
     model.accept(true); await model.confirm()
     expect(api.confirm).toHaveBeenCalledWith('configured', true)
   })
-  it('collects kinds for every initially untyped account before sending options', async () => {
+  it('supports legacy previews by collecting kinds for every initially untyped account before sending options', async () => {
     const { model, api } = setup()
     api.preview.mockResolvedValue({ ...preview, can_confirm: false, accounts: [
       { ...preview.accounts[0], source_id: 'first', kind: '' },
