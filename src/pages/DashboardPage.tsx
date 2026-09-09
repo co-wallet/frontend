@@ -582,7 +582,7 @@ export function DashboardPage() {
                       disabled={accountsLoading || filteredAccounts.length === 0}
                       detail
                       lines="none"
-                      style={{ '--min-height': '44px' } as React.CSSProperties}
+                      className="dashboard-tag-row"
                     >
                       <IonLabel color="medium" style={{ fontSize: '0.75rem' }}>#{s.tagName}</IonLabel>
                       <IonNote slot="end" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{formatAmount(s.amount, sym)}</IonNote>
