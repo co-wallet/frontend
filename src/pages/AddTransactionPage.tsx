@@ -5,7 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonToolbar, IonButtons, IonSpinner, IonButton, IonLabel, IonSelectOption, IonItem, IonInput, IonToggle,
+  IonPage, IonToolbar, IonButtons, IonSpinner, IonButton, IonLabel, IonSelectOption, IonItem, IonInput,
   IonText, IonNote, IonIcon,
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
@@ -49,7 +49,6 @@ export function AddTransactionPage() {
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
   const [date, setDate] = useState(searchParams.get('date') || todayISO())
-  const [includeInBalance, setIncludeInBalance] = useState(true)
   const [tags, setTags] = useState<string[]>([])
   const pendingTagRef = useRef('')
 
@@ -187,7 +186,6 @@ export function AddTransactionPage() {
       amount: totalAmount,
       currency: txCurrency,
       date: date + 'T00:00:00Z',
-      includeInBalance,
       ...(categoryId ? { categoryId } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
       ...(type === 'transfer' && toAccountId ? { toAccountId, ...(isCrossCurrencyTransfer && parseDecimal(toAmountStr) > 0 ? { toAmount: parseDecimal(toAmountStr) } : {}) } : {}),
@@ -405,11 +403,6 @@ export function AddTransactionPage() {
               <IonLabel className="entity-form-field-label">Теги</IonLabel>
               <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
             </div>
-            <IonItem>
-              <IonToggle checked={includeInBalance} onIonChange={(e) => setIncludeInBalance(e.detail.checked)}>
-                Учитывать в балансе
-              </IonToggle>
-            </IonItem>
           </EntityFormSection>
 
           {/* Shares */}
