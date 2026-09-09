@@ -18,18 +18,33 @@
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
-  flex-wrap: wrap;
-  gap: 8px;
+  gap: 4px;
 }
 
 .transactions-active-filters ion-button {
-  min-width: max-content;
+  min-width: 0;
   min-height: 44px;
   margin: 0;
+  flex: 0 1 auto;
+  font-size: 0.8125rem;
   text-transform: none;
-  --border-color: var(--transaction-transfer-text);
-  --border-radius: 999px;
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --border-radius: 8px;
   --color: var(--transaction-transfer-text);
+}
+
+.transactions-filter-group__name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transactions-filter-group__count {
+  flex: 0 0 auto;
+  margin-inline-start: 4px;
+  font-variant-numeric: tabular-nums;
 }
 
 .transactions-summary {

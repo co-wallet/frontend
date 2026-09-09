@@ -31,7 +31,6 @@ import {
 import {
   addOutline,
   alertCircleOutline,
-  closeOutline,
   receiptOutline,
   trendingDownOutline,
   trendingUpOutline,
@@ -106,6 +105,7 @@ export function TransactionsPage() {
     if (next.customFrom !== undefined) storedPeriod.setCustomFrom(next.customFrom)
     if (next.customTo !== undefined) storedPeriod.setCustomTo(next.customTo)
   }
+  const [showFilters, setShowFilters] = useState(false)
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
@@ -211,13 +211,14 @@ export function TransactionsPage() {
       }
     })
   const hasFilters = hasTransactionFilters(filter)
-
-  function removeFilter(kind: 'accountIds' | 'categoryIds' | 'tagIds', id: string) {
-    const nextValues = filter[kind]?.filter((value) => value !== id)
-    const nextFilter = { ...filter, [kind]: nextValues }
-    if (kind === 'tagIds' && nextValues?.length === 0) delete nextFilter.tagMode
-    setFilter(nextFilter)
-  }
+  const filterGroups = [
+    { kind: 'accountIds', label: 'Счета',
+      items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },
+    { kind: 'categoryIds', label: 'Категории',
+      items: (filter.categoryIds ?? []).map((id) => ({ id, name: categoriesById.get(id)?.name ?? 'Категория' })) },
+    { kind: 'tagIds', label: 'Теги',
+      items: (filter.tagIds ?? []).map((id) => ({ id, name: tags.find((tag) => tag.id === id)?.name ?? 'Тег' })) },
+  ] as const
 
   function addTransaction() {
     const selectedDate = periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''
@@ -239,54 +240,32 @@ export function TransactionsPage() {
       >
         <div>
           <PeriodControl value={navigationPeriod} onChange={updatePeriod}
-            trailingControl={<FilterSheet value={filter} onChange={setFilter} />} />
+            trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
-            <span className="transactions-filter-status__label">Фильтры:</span>
             {hasFilters ? (
               <div className="transactions-active-filters" aria-label="Активные фильтры">
-              {filter.accountIds?.map((id) => (
-                <IonButton
-                  key={`account-${id}`}
-                  fill="outline"
-                  size="small"
-                  onClick={() => removeFilter('accountIds', id)}
-                  aria-label={`Убрать фильтр по счёту ${accountsById.get(id)?.name ?? ''}`}
-                >
-                  {accountsById.get(id)?.name ?? 'Счёт'}
-                  <IonIcon slot="end" icon={closeOutline} />
-                </IonButton>
-              ))}
-              {filter.categoryIds?.map((id) => (
-                <IonButton
-                  key={`category-${id}`}
-                  fill="outline"
-                  size="small"
-                  onClick={() => removeFilter('categoryIds', id)}
-                  aria-label={`Убрать фильтр по категории ${categoriesById.get(id)?.name ?? ''}`}
-                >
-                  {categoriesById.get(id)?.name ?? 'Категория'}
-                  <IonIcon slot="end" icon={closeOutline} />
-                </IonButton>
-              ))}
-              {filter.tagIds?.map((id) => (
-                <IonButton
-                  key={`tag-${id}`}
-                  fill="outline"
-                  size="small"
-                  onClick={() => removeFilter('tagIds', id)}
-                  aria-label={`Убрать фильтр по тегу ${tags.find((tag) => tag.id === id)?.name ?? ''}`}
-                >
-                  #{tags.find((tag) => tag.id === id)?.name ?? 'Тег'}
-                  <IonIcon slot="end" icon={closeOutline} />
-                </IonButton>
-              ))}
-              <IonButton fill="clear" size="small" onClick={() => setFilter({})}>
-                Сбросить все
-              </IonButton>
+                {filterGroups.filter((group) => group.items.length > 0).map((group) => {
+                  const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
+                  const remaining = group.items.length - 1
+                  return (
+                    <IonButton
+                      key={group.kind}
+                      className="transactions-filter-group"
+                      fill="clear"
+                      size="small"
+                      onClick={() => setShowFilters(true)}
+                      aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
+                      title={`${group.label}: ${name}`}
+                    >
+                      <span className="transactions-filter-group__name">{name}</span>
+                      {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
+                    </IonButton>
+                  )
+                })}
               </div>
             ) : (
-              <span>все счета, категории и теги</span>
+              <><span className="transactions-filter-status__label">Фильтры:</span><span>все счета, категории и теги</span></>
             )}
           </div>
 

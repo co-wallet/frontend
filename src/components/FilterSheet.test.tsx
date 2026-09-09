@@ -6,7 +6,7 @@ import { FilterSheet } from '@/components/FilterSheet'
 
 vi.mock('@ionic/react', async (importOriginal) => ({
   ...await importOriginal<typeof import('@ionic/react')>(),
-  IonModal: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  IonModal: ({ children, isOpen }: { children: ReactNode; isOpen: boolean }) => <div data-open={isOpen}>{children}</div>,
 }))
 
 vi.mock('@tanstack/react-query', () => ({
@@ -74,4 +74,15 @@ it('announces selected hidden filters without expanding their lists', () => {
   expect(markup).toContain('Скрытые категории (1) · выбрано: 1')
   expect(markup).toContain('Скрытые теги (1) · выбрано: 1')
   expect(markup).not.toMatch(/<details[^>]* open/)
+})
+
+
+it.each([true, false])('supports externally controlled open state: %s', (isOpen) => {
+  const markup = renderToStaticMarkup(
+    <FilterSheet value={{ accountIds: ['account-1'], tagIds: ['tag-1'] }}
+      onChange={vi.fn()} isOpen={isOpen} onOpenChange={vi.fn()} />,
+  )
+  expect(markup).toContain(`data-open="${isOpen}"`)
+  expect(markup).toContain('aria-label="Фильтры, активно: 2"')
+  expect(markup.match(/aria-pressed="true"/g)).toHaveLength(2)
 })
