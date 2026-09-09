@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { PieChartTooltip } from '@/components/PieChartTooltip'
 import {
   IonAccordion,
   IonAccordionGroup,
@@ -386,8 +387,8 @@ export function TransactionsPage() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: number) => formatCurrencyAmount(value, defaultCurrency, 2)}
                           contentStyle={chartTheme.tooltipStyle}
+                          content={<PieChartTooltip formatAmount={(amount) => formatCurrencyAmount(amount, defaultCurrency, 2)} />}
                         />
                       </PieChart>
                     </ResponsiveContainer>

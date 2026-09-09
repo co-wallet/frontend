@@ -1,4 +1,5 @@
 import { PeriodControl } from '@/components/PeriodControl'
+import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
@@ -121,12 +122,8 @@ function ChartBlock({
               ))}
             </Pie>
             <Tooltip
-              formatter={(value, _name, item) => {
-                const signedAmount = item.payload?.amount
-                return formatAmount(typeof signedAmount === 'number' ? signedAmount : Number(value), sym)
-              }}
-              labelFormatter={(label) => String(label)}
               contentStyle={tooltipStyle}
+              content={<PieChartTooltip formatAmount={(amount) => formatAmount(amount, sym)} />}
             />
           </PieChart>
         </ResponsiveContainer>
