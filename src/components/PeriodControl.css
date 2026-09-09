@@ -1,0 +1,114 @@
+.period-control__row {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.period-control-arrow {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  margin: 0;
+}
+
+.period-control-selector {
+  min-width: 0;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(var(--ion-color-primary-rgb), 0.07);
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.period-control-selector ion-select {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  --padding-start: 12px;
+  --padding-end: 12px;
+}
+
+.period-control-selector ion-select::part(container) {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  width: auto;
+  align-items: center;
+  justify-content: center;
+  padding-inline: 36px;
+  box-sizing: border-box;
+}
+
+.period-control-selector ion-select::part(text) {
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 1 auto;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.period-control-selector ion-select::part(icon) {
+  position: absolute;
+  inset-inline-end: 12px;
+  margin: 0;
+}
+
+.period-control-custom {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
+  border-radius: 12px;
+}
+
+.period-control-custom__field {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  color: var(--transaction-secondary-text);
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.period-control-custom ion-datetime-button {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.period-control-custom ion-datetime-button::part(native) {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.24);
+  border-radius: 10px;
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 500;
+  opacity: 1;
+}
+
+.period-control-custom ion-datetime-button::part(native):focus-visible {
+  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
+  outline-offset: 2px;
+}
+
+
+.period-control { min-width: 0; }
+.period-control__row--trailing { grid-template-columns: 44px minmax(0, 1fr) 44px 44px; }
+@media (max-width: 420px) {
+  .period-control__row { gap: 4px; }
+  .period-control-selector ion-select { font-size: 0.8125rem; }
+}

@@ -1,10 +1,10 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState, useEffect, useRef } from 'react'
 import { useHistory, useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonBackButton, IonButton, IonList, IonItem, IonInput,
+  IonPage, IonButton, IonList, IonItem, IonInput,
   IonToggle, IonSpinner, IonText, IonNote, IonLabel,
   IonIcon, IonAlert,
 } from '@ionic/react'
@@ -217,14 +217,7 @@ export function EditTransactionPage() {
   if (txLoading) {
     return (
       <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonButtons slot="start">
-              <IonBackButton defaultHref="/transactions" text="Назад" />
-            </IonButtons>
-            <IonTitle>Редактирование</IonTitle>
-          </IonToolbar>
-        </IonHeader>
+        <PageHeader title="Редактирование" backHref="/transactions" />
         <AppContent>
           <div className="app-state">
             <IonSpinner name="crescent" />
@@ -237,14 +230,7 @@ export function EditTransactionPage() {
   if (!tx) {
     return (
       <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonButtons slot="start">
-              <IonBackButton defaultHref="/transactions" text="Назад" />
-            </IonButtons>
-            <IonTitle>Редактирование</IonTitle>
-          </IonToolbar>
-        </IonHeader>
+        <PageHeader title="Редактирование" backHref="/transactions" />
         <AppContent>
           <div className="app-state">
             <IonText color="medium">Транзакция не найдена</IonText>
@@ -256,14 +242,7 @@ export function EditTransactionPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/transactions" text="Назад" />
-          </IonButtons>
-          <IonTitle>Редактирование</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Редактирование" backHref="/transactions" />
 
       <AppContent>
         <div>

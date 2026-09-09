@@ -1,30 +1,19 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import {
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonCard,
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
   IonIcon,
-  IonButtons,
-  IonMenuButton,
-} from '@ionic/react'
+  } from '@ionic/react'
 import { peopleOutline, cashOutline, mailOutline } from 'ionicons/icons'
 
 export function AdminPage() {
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton />
-          </IonButtons>
-          <IonTitle>Администрирование</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Администрирование" backHref="/dashboard" />
       <AppContent>
         <IonCard routerLink="/admin/users" button>
           <IonCardHeader>

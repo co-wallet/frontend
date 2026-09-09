@@ -6,6 +6,7 @@ import {
   IonItemSliding,
   IonLabel,
   IonNote,
+  IonRouterLink,
 } from '@ionic/react'
 import {
   createOutline,
@@ -38,6 +39,7 @@ interface TransactionItemProps {
   category?: Category
   currentUserId?: string
   defaultCurrency: string
+  tagHref?: (id: string) => string
   onEdit: (id: string) => void
   onDelete: (id: string) => void
 }
@@ -51,6 +53,7 @@ export function TransactionItem({
   defaultCurrency,
   onEdit,
   onDelete,
+  tagHref,
 }: TransactionItemProps) {
   const description = tx.description?.trim()
   const categoryName = category?.name ?? 'Без категории'
@@ -73,19 +76,20 @@ export function TransactionItem({
   )
   const showConvertedAmount = convertedAmount != null && tx.currency !== defaultCurrency
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
-  const firstTag = tx.tags?.[0]
-  const extraTags = Math.max((tx.tags?.length ?? 0) - 1, 0)
 
   return (
     <IonItemSliding>
       <IonItem
-        button
         detail={false}
         lines="full"
         className="transaction-item"
         onClick={() => onEdit(tx.id)}
-        aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}`}
       >
+        <button
+          type="button"
+          className="transaction-item__open"
+          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}`}
+        />
         {tx.type === 'transfer' ? (
           <div slot="start" className="transaction-item__icon transaction-item__icon--transfer">
             <IonIcon icon={swapHorizontalOutline} aria-hidden="true" />
@@ -108,9 +112,19 @@ export function TransactionItem({
         <IonLabel className="transaction-item__label">
           <h2>{title}</h2>
           <p>{meta}</p>
-          {firstTag && (
+          {!!tx.tags?.length && (
             <p className="transaction-item__tags">
-              #{firstTag.name}{extraTags > 0 ? ` +${extraTags}` : ''}
+              {tx.tags.map((tag) => tagHref ? (
+                <IonRouterLink
+                  key={tag.id}
+                  routerLink={tagHref(tag.id)}
+                  routerDirection="forward"
+                  onClick={(event) => event.stopPropagation()}
+                  aria-label={`Транзакции с тегом ${tag.name}`}
+                >
+                  #{tag.name}
+                </IonRouterLink>
+              ) : <span key={tag.id}>#{tag.name}</span>)}
             </p>
           )}
         </IonLabel>

@@ -1,6 +1,8 @@
+import { PeriodControl } from '@/components/PeriodControl'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { useHistory, useLocation } from 'react-router-dom'
+import { useCallback, useMemo, useState } from 'react'
+import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import {
@@ -8,37 +10,25 @@ import {
   IonAccordionGroup,
   IonAlert,
   IonButton,
-  IonButtons,
-  IonDatetime,
-  IonDatetimeButton,
   IonFab,
   IonFabButton,
-  IonHeader,
   IonIcon,
   IonItem,
   IonItemDivider,
   IonItemGroup,
   IonLabel,
   IonList,
-  IonMenuButton,
-  IonModal,
   IonNote,
   IonPage,
   IonSegment,
   IonSegmentButton,
-  IonSelect,
-  IonSelectOption,
   IonSkeletonText,
   IonText,
-  IonTitle,
   IonToast,
-  IonToolbar,
-} from '@ionic/react'
+  } from '@ionic/react'
 import {
   addOutline,
   alertCircleOutline,
-  chevronBackOutline,
-  chevronForwardOutline,
   closeOutline,
   receiptOutline,
   trendingDownOutline,
@@ -60,7 +50,6 @@ import { TransactionItem } from '@/components/TransactionItem'
 import {
   buildTransactionAnalyticsParams,
   formatCurrencyAmount,
-  formatPeriodControlLabel,
   groupTransactionsByDate,
   hasTransactionFilters,
   transactionDefaultCurrencyAmount,
@@ -69,69 +58,56 @@ import { useChartTheme } from '@/lib/useChartTheme'
 import { useAuthStore } from '@/store/authStore'
 import {
   computeDateRange,
-  PERIOD_LABELS,
-  type Period,
   usePeriodStore,
 } from '@/store/periodStore'
 
+import {
+  filterFromParams,
+  filterToParams,
+  filteredTransactionsHref,
+  periodFromParams,
+  periodToParams,
+  type TransactionPeriod,
+} from '@/lib/transactionNavigation'
+
 import './TransactionsPage.css'
-
-const PERIOD_SELECT_LABELS: Record<Period, string> = {
-  ...PERIOD_LABELS,
-  custom: 'Другой',
-}
-
-function filterFromParams(searchParams: URLSearchParams): TransactionFilter {
-  const filter: TransactionFilter = {}
-  if (searchParams.get('account_ids')) filter.accountIds = searchParams.get('account_ids')!.split(',')
-  if (searchParams.get('category_ids')) filter.categoryIds = searchParams.get('category_ids')!.split(',')
-  if (searchParams.get('tag_ids')) filter.tagIds = searchParams.get('tag_ids')!.split(',')
-  if (searchParams.get('tag_mode') === 'and') filter.tagMode = 'and'
-  return filter
-}
-
-function filterToParams(filter: TransactionFilter): URLSearchParams {
-  const searchParams = new URLSearchParams()
-  if (filter.accountIds?.length) searchParams.set('account_ids', filter.accountIds.join(','))
-  if (filter.categoryIds?.length) searchParams.set('category_ids', filter.categoryIds.join(','))
-  if (filter.tagIds?.length) searchParams.set('tag_ids', filter.tagIds.join(','))
-  if (filter.tagMode === 'and') searchParams.set('tag_mode', 'and')
-  return searchParams
-}
-
-function valueFromDatetime(value: string | string[] | null | undefined): string {
-  return typeof value === 'string' ? value.slice(0, 10) : ''
-}
 
 export function TransactionsPage() {
   const queryClient = useQueryClient()
-  const location = useLocation()
+  const currentLocation = useLocation()
+  const route = useRouteMatch()
+  // Ionic keeps previous pages mounted during forward navigation and swipe-back.
+  const [pageLocation, setPageLocation] = useState(currentLocation)
+  const isCurrentPage = currentLocation.pathname === route.url
+  if (isCurrentPage && pageLocation !== currentLocation) setPageLocation(currentLocation)
+  const location = isCurrentPage ? currentLocation : pageLocation
   const history = useHistory()
   const searchParams = new URLSearchParams(location.search)
   const filter = filterFromParams(searchParams)
   const setFilter = useCallback((nextFilter: TransactionFilter) => {
-    history.replace({ search: filterToParams(nextFilter).toString() })
-  }, [history])
+    history.replace({ ...location, search: filterToParams(nextFilter, new URLSearchParams(location.search)).toString() })
+  }, [history, location])
   const currentUserId = useAuthStore((state) => state.user?.id)
   const defaultCurrency = useAuthStore((state) => state.user?.defaultCurrency ?? 'USD')
-  const {
-    period,
-    periodOffset,
-    customFrom,
-    customTo,
-    setPeriod,
-    setPeriodOffset,
-    setCustomFrom,
-    setCustomTo,
-  } = usePeriodStore()
+  const storedPeriod = usePeriodStore()
+  const isFilteredView = location.pathname.startsWith('/transactions/filtered/')
+  const navigationPeriod = isFilteredView ? periodFromParams(searchParams, storedPeriod) : storedPeriod
+  const { period, periodOffset, customFrom, customTo } = navigationPeriod
+  function updatePeriod(next: Partial<TransactionPeriod>) {
+    if (isFilteredView) {
+      history.replace({ ...location, search: periodToParams({ ...navigationPeriod, ...next }, searchParams).toString() })
+      return
+    }
+    if (next.period !== undefined) storedPeriod.setPeriod(next.period)
+    if (next.periodOffset !== undefined) storedPeriod.setPeriodOffset(next.periodOffset)
+    if (next.customFrom !== undefined) storedPeriod.setCustomFrom(next.customFrom)
+    if (next.customTo !== undefined) storedPeriod.setCustomTo(next.customTo)
+  }
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
-  const customFromModalRef = useRef<HTMLIonModalElement>(null)
-  const customToModalRef = useRef<HTMLIonModalElement>(null)
   const chartTheme = useChartTheme()
 
-  const isCustomPeriod = period === 'custom'
   const { dateFrom, dateTo } = computeDateRange(
     period,
     periodOffset,
@@ -247,14 +223,7 @@ export function TransactionsPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton />
-          </IonButtons>
-          <IonTitle>Транзакции</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Транзакции" backHref={isFilteredView ? '/transactions' : '/dashboard'} />
 
       <AppContent fullscreen withFab
         fixed={
@@ -266,86 +235,8 @@ export function TransactionsPage() {
         }
       >
         <div>
-          <div className="transactions-controls" aria-label="Период и фильтры">
-            <IonButton
-              fill="clear"
-              className="transactions-period-arrow"
-              onClick={() => setPeriodOffset((offset) => offset - 1)}
-              disabled={isCustomPeriod}
-              aria-label="Предыдущий период"
-            >
-              <IonIcon slot="icon-only" icon={chevronBackOutline} />
-            </IonButton>
-
-            <div className="transactions-period-selector">
-              <IonSelect
-                aria-label={`Выбранный период: ${formatPeriodControlLabel(period, dateFrom, dateTo)}`}
-                interface="popover"
-                value={period}
-                selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
-                onIonChange={(event) => setPeriod(event.detail.value as Period)}
-              >
-                {(Object.keys(PERIOD_SELECT_LABELS) as Period[]).map((option) => (
-                  <IonSelectOption key={option} value={option}>
-                    {PERIOD_SELECT_LABELS[option]}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </div>
-
-            <IonButton
-              fill="clear"
-              className="transactions-period-arrow"
-              onClick={() => setPeriodOffset((offset) => offset + 1)}
-              disabled={isCustomPeriod || periodOffset >= 0}
-              aria-label="Следующий период"
-            >
-              <IonIcon slot="icon-only" icon={chevronForwardOutline} />
-            </IonButton>
-
-            <FilterSheet value={filter} onChange={setFilter} />
-          </div>
-
-          {isCustomPeriod && (
-            <div className="transactions-custom-period" aria-label="Другой период">
-              <div className="transactions-custom-period__field">
-                <span>С</span>
-                <IonDatetimeButton datetime="transactions-date-from" />
-              </div>
-              <div className="transactions-custom-period__field">
-                <span>По</span>
-                <IonDatetimeButton datetime="transactions-date-to" />
-              </div>
-              <IonModal ref={customFromModalRef} keepContentsMounted>
-                <IonDatetime
-                  id="transactions-date-from"
-                  presentation="date"
-                  value={customFrom}
-                  max={customTo}
-                  onIonChange={(event) => {
-                    const value = valueFromDatetime(event.detail.value)
-                    if (!value) return
-                    setCustomFrom(value)
-                    void customFromModalRef.current?.dismiss()
-                  }}
-                />
-              </IonModal>
-              <IonModal ref={customToModalRef} keepContentsMounted>
-                <IonDatetime
-                  id="transactions-date-to"
-                  presentation="date"
-                  value={customTo}
-                  min={customFrom}
-                  onIonChange={(event) => {
-                    const value = valueFromDatetime(event.detail.value)
-                    if (!value) return
-                    setCustomTo(value)
-                    void customToModalRef.current?.dismiss()
-                  }}
-                />
-              </IonModal>
-            </div>
-          )}
+          <PeriodControl value={navigationPeriod} onChange={updatePeriod}
+            trailingControl={<FilterSheet value={filter} onChange={setFilter} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
             <span className="transactions-filter-status__label">Фильтры:</span>
@@ -584,6 +475,9 @@ export function TransactionsPage() {
                   {items.map((tx) => (
                     <TransactionItem
                       key={tx.id}
+                      tagHref={(tagId) => filteredTransactionsHref(
+                        { ...filter, tagIds: [tagId], tagMode: 'or' }, navigationPeriod, location.pathname,
+                      )}
                       tx={tx}
                       account={accountsById.get(tx.accountId)}
                       toAccount={tx.toAccountId ? accountsById.get(tx.toAccountId) : undefined}

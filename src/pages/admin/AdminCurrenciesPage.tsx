@@ -1,10 +1,10 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonBackButton, IonButton, IonIcon, IonList, IonItem, IonLabel,
+  IonPage, IonButton, IonIcon, IonList, IonItem, IonLabel,
   IonNote, IonToggle, IonSpinner, IonModal, IonInput,
   IonFab, IonFabButton, IonItemGroup, IonItemDivider,
 } from '@ionic/react'
@@ -142,19 +142,11 @@ export function AdminCurrenciesPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/admin" />
-          </IonButtons>
-          <IonTitle>Валюты</IonTitle>
-          <IonButtons slot="end">
-            <IonButton onClick={() => refresh.mutate()} disabled={refresh.isPending}>
-              {refresh.isPending ? <IonSpinner name="crescent" /> : <IonIcon icon={refreshOutline} />}
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Валюты" backHref="/admin" actions={
+        <IonButton onClick={() => refresh.mutate()} disabled={refresh.isPending}>
+          {refresh.isPending ? <IonSpinner name="crescent" /> : <IonIcon icon={refreshOutline} />}
+        </IonButton>
+      } />
 
       <AppContent withFab
         fixed={

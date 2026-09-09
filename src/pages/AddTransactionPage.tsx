@@ -1,10 +1,11 @@
-import { EntityFormHeader, EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState, useEffect, useRef } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonButton, IonLabel, IonSelectOption, IonItem, IonInput, IonToggle,
+  IonPage, IonToolbar, IonButtons, IonSpinner, IonButton, IonLabel, IonSelectOption, IonItem, IonInput, IonToggle,
   IonText, IonNote, IonIcon,
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
@@ -239,8 +240,16 @@ export function AddTransactionPage() {
 
   return (
     <IonPage>
-      <EntityFormHeader title="Новая транзакция" onCancel={() => history.push('/transactions')}
-        onSubmit={handleSubmit} pending={createMutation.isPending} disabled={!amountValid || !sharesValid} />
+      <PageHeader title="Новая транзакция" backHref="/transactions">
+        <IonToolbar>
+          <IonButtons slot="end">
+            <IonButton strong onClick={handleSubmit}
+              disabled={createMutation.isPending || !amountValid || !sharesValid} aria-label="Сохранить">
+              {createMutation.isPending ? <IonSpinner name="dots" /> : 'Сохранить'}
+            </IonButton>
+          </IonButtons>
+        </IonToolbar>
+      </PageHeader>
 
       <AppContent>
         <div>

@@ -73,8 +73,8 @@ describe('TransactionItem', () => {
     expect(markup).toContain('<h2>Магнит</h2>')
     expect(markup).toContain('<p>Продукты · Личная</p>')
     expect(markup).toContain('−1 000 ₽')
-    expect(markup).toContain('#дом +1')
-    expect(markup).not.toContain('#важное')
+    expect(markup).toContain('#дом')
+    expect(markup).toContain('#важное')
   })
 
   it('keeps visible and labelled alternatives to swipe actions', () => {
@@ -89,7 +89,7 @@ describe('TransactionItem', () => {
       />,
     )
 
-    expect(markup).toContain('button="true"')
+    expect(markup).toContain('<button type="button"')
     expect(markup).toContain('aria-label="Изменить: Магнит"')
     expect(markup).toContain('aria-label="Удалить: Магнит"')
     expect(markup).toContain('Изменить')
@@ -137,4 +137,17 @@ describe('TransactionItem', () => {
     expect(markup).toContain('aria-label="Без категории"')
     expect(markup).toContain('--account-icon-foreground:var(--account-icon-color-red)')
   })
+})
+
+// Links are independent controls so following a tag never activates the row button.
+it('renders every tag as a separate forward link with an accessible label', () => {
+  const markup = renderToStaticMarkup(
+    <TransactionItem tx={transaction()} defaultCurrency="RUB"
+      onEdit={vi.fn()} onDelete={vi.fn()}
+      tagHref={(id) => `/transactions/filtered/1?tag_ids=${id}`} />,
+  )
+  expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-1"')
+  expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-2"')
+  expect(markup).toContain('aria-label="Транзакции с тегом важное"')
+  expect(markup).not.toMatch(/<button[^>]*>[\s\S]*?<a[\s\S]*?<\/button>/)
 })

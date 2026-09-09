@@ -25,16 +25,18 @@ describe('TagsPage', () => {
 
     const markup = renderToStaticMarkup(<TagsPage />)
 
-    expect(markup).toContain('href="/transactions?tag_ids=tag-1"')
-    expect(markup).toContain('href="/transactions?tag_ids=tag-2"')
-    expect(markup).toContain('Операции (4)')
-    expect(markup).toContain('Операции (0)')
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-1&amp;period=')
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-2&amp;period=')
+    expect(markup).toContain('Транзакций: 4')
+    expect(markup).not.toContain('Операции')
+    expect(markup).toMatch(/<ion-router-link[^>]*href="[^"]+"[^>]*><h2>#Отпуск<\/h2>/)
+    expect(markup).toContain('Транзакций: 0')
     expect(markup).not.toContain('ion-item-sliding')
     expect(markup).not.toMatch(/<ion-item[^>]*href=/)
     expect(markup).toContain('aria-label="Редактировать тег Отпуск"')
     expect(markup).toContain('aria-label="Скрыть тег Отпуск"')
     expect(markup).toContain('aria-label="Удалить тег Отпуск"')
-    expect(markup).toContain('aria-label="Операции с тегом Отпуск"')
+    expect(markup).toContain('aria-label="Транзакции с тегом Отпуск"')
   })
 
   it('encodes the tag ID so it cannot introduce additional filters', () => {
@@ -42,21 +44,21 @@ describe('TagsPage', () => {
 
     const markup = renderToStaticMarkup(<TagsPage />)
 
-    expect(markup).toContain('href="/transactions?tag_ids=tag%26account_ids%3Dother"')
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag%26account_ids%3Dother&amp;period=')
   })
 
   it('shows the empty state without transaction links when there are no tags', () => {
     const markup = renderToStaticMarkup(<TagsPage />)
 
     expect(markup).toContain('Нет тегов. Добавьте теги к транзакциям.')
-    expect(markup).not.toContain('/transactions?')
+    expect(markup).not.toContain('/transactions/filtered/')
   })
 })
 
 it('omits hidden tags by default and offers a reveal button even when all are hidden', () => {
   queryState.tags = [{ id: 'hidden-tag', name: 'отпуск', hidden: true }]
   const markup = renderToStaticMarkup(<TagsPage />)
-  expect(markup).not.toContain('/transactions?tag_ids=hidden-tag')
+  expect(markup).not.toContain('/transactions/filtered/1?tag_ids=hidden-tag')
   expect(markup).not.toContain('Редактировать тег отпуск')
   expect(markup).toContain('Показать скрытые теги (1)')
   expect(markup).toContain('aria-expanded="false"')

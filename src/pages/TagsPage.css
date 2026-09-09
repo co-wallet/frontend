@@ -18,10 +18,15 @@
   white-space: nowrap;
 }
 
-.tag-list-row__history {
-  margin: 0;
-  --padding-start: 0;
-  min-height: 36px;
+.tag-list-row__link {
+  display: block;
+  padding-block: 8px;
+  min-height: 44px;
+  color: var(--ion-text-color);
+}
+
+.tag-list-row__link h2 {
+  color: var(--ion-color-primary);
 }
 
 .tag-list-row__actions {
