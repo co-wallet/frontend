@@ -74,8 +74,8 @@ describe('dashboard chart data', () => {
 describe('transfer colors', () => {
   it.each(['expense', 'income'] as const)('always uses blue for %s transfers', (categoryType) => {
     const entries: DashboardPieEntry[] = [
-      { name: 'На счёт «Банк»', amount: 30, iconType: 'transfer', categoryType, icon: 'preset:salary|red|red' },
-      { name: 'Со счёта «Другой банк»', amount: 10, iconType: 'transfer', categoryType },
+      { name: "В 'Банк'", amount: 30, iconType: 'transfer', categoryType, icon: 'preset:salary|red|red' },
+      { name: "Из 'Другой банк'", amount: 10, iconType: 'transfer', categoryType },
     ]
     const { chartEntries, legendEntries } = prepareDashboardChart(entries)
     for (const entry of [...chartEntries, ...legendEntries]) {
