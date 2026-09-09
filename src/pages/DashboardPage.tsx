@@ -504,6 +504,19 @@ export function DashboardPage() {
                 if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
                 if (next.customTo !== undefined) setCustomTo(next.customTo)
               }} />
+              <div className="dashboard-transfer-control">
+                <IonCheckbox
+                  className="dashboard-transfer-checkbox"
+                  labelPlacement="end"
+                  justify="start"
+                  checked={transferVisibility[chartMode]}
+                  onIonChange={(event) => setTransferVisibility((previous) => ({
+                    ...previous, [chartMode]: event.detail.checked,
+                  }))}
+                >
+                  Отображать переводы
+                </IonCheckbox>
+              </div>
             </section>
           )}
 
@@ -511,27 +524,6 @@ export function DashboardPage() {
           <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
             <IonCardHeader>
               <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
-              {chartMode !== 'balance' && (
-                <div className="dashboard-transfer-control">
-                  <IonCheckbox
-                    className="dashboard-transfer-checkbox"
-                    labelPlacement="end"
-                    justify="start"
-                    aria-describedby="dashboard-transfer-hint"
-                    checked={transferVisibility[chartMode]}
-                    onIonChange={(event) => setTransferVisibility((previous) => ({
-                      ...previous, [chartMode]: event.detail.checked,
-                    }))}
-                  >
-                    Отображать переводы
-                  </IonCheckbox>
-                  <p id="dashboard-transfer-hint" className="dashboard-transfer-hint">
-                    {chartMode === 'expenses'
-                      ? 'С выбранных счетов на остальные счета'
-                      : 'С остальных счетов на выбранные счета'}
-                  </p>
-                </div>
-              )}
             </IonCardHeader>
             <IonCardContent>
               <ChartBlock

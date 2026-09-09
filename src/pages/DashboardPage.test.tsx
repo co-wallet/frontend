@@ -96,11 +96,13 @@ describe('Dashboard transfer visibility', () => {
     expect(checkbox).toBeDefined()
     expect(checkbox).toContain('label-placement="end"')
     expect(checkbox).toContain('justify="start"')
-    expect(checkbox).toContain('aria-describedby="dashboard-transfer-hint"')
-    expect(markup).toMatch(/<ion-card-header[^>]*>[^]*Отображать переводы[^]*id="dashboard-transfer-hint"[^]*<\/ion-card-header>/)
-    expect(markup).toContain(mode === 'expenses'
-      ? 'С выбранных счетов на остальные счета'
-      : 'С остальных счетов на выбранные счета')
+    expect(markup).not.toContain('dashboard-transfer-hint')
+    expect(markup).not.toContain('С выбранных счетов на остальные счета')
+    expect(markup).not.toContain('С остальных счетов на выбранные счета')
+    expect(markup).toMatch(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Отображать переводы[^]*<\/section>/)
+    const chartHeader = markup.match(/<ion-card-header[^>]*>[^]*?(Расходы|Доходы) по категориям[^]*?<\/ion-card-header>/)?.[0]
+    expect(chartHeader).toBeDefined()
+    expect(chartHeader).not.toContain('ion-checkbox')
     expect(checkbox!.includes('checked="true"')).toBe(mode === 'income')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
   })
@@ -109,7 +111,7 @@ describe('Dashboard transfer visibility', () => {
     queryState.chartMode = 'expenses'
     queryState.transferVisibility = { expenses: true, income: false }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toContain('С выбранных счетов на остальные счета')
+    expect(markup).toContain('Отображать переводы')
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ include_transfer_expenses: true, include_transfer_income: false })
   })
 

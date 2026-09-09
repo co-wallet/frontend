@@ -75,7 +75,10 @@ body.dark .dashboard-chart-card {
 }
 
 .dashboard-transfer-control {
-  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
+  padding-inline: 8px;
+  margin-top: 4px;
 }
 
 .dashboard-transfer-checkbox {
@@ -86,7 +89,8 @@ body.dark .dashboard-chart-card {
   width: fit-content;
   max-width: 100%;
   min-height: 44px;
-  font-size: 0.8125rem;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
   font-weight: 400;
 }
 
@@ -97,11 +101,4 @@ body.dark .dashboard-chart-card {
 .dashboard-transfer-checkbox::part(label) {
   margin: 0;
   white-space: normal;
-}
-
-.dashboard-transfer-hint {
-  margin: -4px 0 0 26px;
-  color: var(--ion-color-medium);
-  font-size: 0.75rem;
-  line-height: 1.4;
 }
