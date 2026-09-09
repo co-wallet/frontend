@@ -69,3 +69,17 @@ describe('dashboard chart data', () => {
     expect(result.chartEntries.map((entry) => entry.chartAmount)).toEqual([50, 20, 80, 10])
   })
 })
+
+
+describe('transfer colors', () => {
+  it.each(['expense', 'income'] as const)('always uses blue for %s transfers', (categoryType) => {
+    const entries: DashboardPieEntry[] = [
+      { name: 'На счёт «Банк»', amount: 30, iconType: 'transfer', categoryType, icon: 'preset:salary|red|red' },
+      { name: 'Со счёта «Другой банк»', amount: 10, iconType: 'transfer', categoryType },
+    ]
+    const { chartEntries, legendEntries } = prepareDashboardChart(entries)
+    for (const entry of [...chartEntries, ...legendEntries]) {
+      expect(dashboardEntryColor(entry)).toBe('var(--account-icon-color-blue)')
+    }
+  })
+})

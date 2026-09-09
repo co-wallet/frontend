@@ -42,6 +42,7 @@ import {
   chevronUpOutline,
   shieldCheckmarkOutline,
   optionsOutline,
+  swapHorizontalOutline,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
@@ -59,6 +60,7 @@ import {
 } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
+  TRANSFER_CHART_COLOR,
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
@@ -153,10 +155,13 @@ function ChartBlock({
                 {s.iconType === 'account' && (
                   <AccountIcon value={s.icon} size={20} shape="rectangle" />
                 )}
+                {s.iconType === 'transfer' && (
+                  <IonIcon icon={swapHorizontalOutline} aria-label="Перевод" style={{ fontSize: 20, flexShrink: 0, color: TRANSFER_CHART_COLOR }} />
+                )}
                 {s.iconType === 'category' && (
                   <CategoryIcon value={s.icon} type={s.categoryType} size={20} />
                 )}
-                <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: 160 }}>
+                <span style={{ color: legendColor, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: s.iconType === 'transfer' ? 'normal' : 'nowrap', overflowWrap: 'anywhere', maxWidth: 160 }}>
                   {s.name}
                 </span>
               </div>
@@ -282,22 +287,20 @@ export function DashboardPage() {
 
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
-    .slice(0, 8)
     .map((s) => ({
       name: s.categoryName,
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-      iconType: 'category' as const,
+      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'expense',
       amount: s.amount,
     }))
 
   const incomePieData: DashboardPieEntry[] = byIncome
     .filter((s) => s.amount > 0)
-    .slice(0, 8)
     .map((s) => ({
       name: s.categoryName,
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-      iconType: 'category' as const,
+      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'income',
       amount: s.amount,
     }))

@@ -34,6 +34,9 @@ vi.mock('@tanstack/react-query', () => ({
       queryState.params.push(queryKey[2] as Record<string, unknown>)
       return { data: [{ tagId: 'travel', tagName: 'Поездка', amount: 10 }] }
     }
+    if (queryKey[1] === 'by-category') return { data: [
+      { categoryId: 'transfers:bank', categoryName: queryKey[2] === 'expense' ? 'На счёт «Банк»' : 'Со счёта «Банк»', amount: 50 },
+    ] }
     if (queryKey[1] === 'summary') return { data: { balance: 10, expenses: 10, income: 0 } }
     return { data: [] }
   },
@@ -116,4 +119,14 @@ describe('Dashboard transfer visibility', () => {
     expect(markup).not.toContain('Отображать переводы')
     expect(markup).not.toContain('dashboard-chart-settings')
   })
+})
+
+
+it.each(['expenses', 'income'] as const)('shows account names and a fixed transfer icon in %s', (mode) => {
+  queryState.chartMode = mode
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  expect(markup).toContain(mode === 'expenses' ? 'На счёт «Банк»' : 'Со счёта «Банк»')
+  expect(markup).toContain('aria-label="Перевод"')
+  expect(markup).toContain('color:var(--account-icon-color-blue)')
+  expect(markup).not.toContain('ion-card-title>Переводы')
 })
