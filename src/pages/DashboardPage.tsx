@@ -1,3 +1,4 @@
+import { RecentTransactions } from '@/components/RecentTransactions'
 import { PeriodControl } from '@/components/PeriodControl'
 import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
@@ -206,7 +207,7 @@ export function DashboardPage() {
     mutationFn: (code: string) => authApi.updateMe(code),
     onSuccess: (updatedUser) => updateUser(updatedUser),
   })
-  const { data: accounts = [], isLoading: accountsLoading } = useQuery({
+  const { data: accounts = [], isLoading: accountsLoading, isError: accountsError } = useQuery({
     queryKey: ['accounts', displayCurrency],
     queryFn: () => accountsApi.list(displayCurrency),
   })
@@ -592,6 +593,16 @@ export function DashboardPage() {
             </IonCard>
           )}
 
+          {chartMode === 'balance' && (
+            <RecentTransactions
+              accounts={accounts}
+              accountIds={filteredAccounts.map((account) => account.id)}
+              accountsLoading={accountsLoading}
+              accountsError={accountsError}
+              currentUserId={user?.id}
+              defaultCurrency={displayCurrency}
+            />
+          )}
         </div>
 
         {/* FAB */}

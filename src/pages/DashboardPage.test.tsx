@@ -44,6 +44,7 @@ vi.mock('@tanstack/react-query', () => ({
     if (queryKey[1] === 'summary') return { data: { balance: 10, expenses: 10, income: 0 } }
     return { data: [] }
   },
+  useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
@@ -160,5 +161,22 @@ describe('Dashboard tag breakdown', () => {
     queryState.emptyTags = true
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).not.toContain('по тегам')
+  })
+})
+
+
+describe('Dashboard recent transactions', () => {
+  it('places recent transactions after the balance chart', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toMatch(/Баланс по счетам[^]*Последние транзакции/)
+    expect(markup).toContain('Все транзакции')
+  })
+
+  it.each(['expenses', 'income'] as const)('omits recent transactions in %s mode', (mode) => {
+    queryState.chartMode = mode
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).not.toContain('Последние транзакции')
+    expect(markup).not.toContain('Все транзакции')
+    expect(markup).toContain('по тегам')
   })
 })

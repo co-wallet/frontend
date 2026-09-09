@@ -24,6 +24,7 @@ import {
 } from '@/components/CategoryIcon'
 import {
   formatTransactionAmount,
+  formatTransactionDate,
   isSharedTransaction,
   TRANSACTION_TYPE_LABELS,
   transactionDefaultCurrencyAmount,
@@ -41,7 +42,8 @@ interface TransactionItemProps {
   defaultCurrency: string
   tagHref?: (id: string) => string
   onEdit: (id: string) => void
-  onDelete: (id: string) => void
+  onDelete?: (id: string) => void
+  showDate?: boolean
 }
 
 export function TransactionItem({
@@ -54,6 +56,7 @@ export function TransactionItem({
   onEdit,
   onDelete,
   tagHref,
+  showDate = false,
 }: TransactionItemProps) {
   const description = tx.description?.trim()
   const categoryName = category?.name ?? 'Без категории'
@@ -114,6 +117,7 @@ export function TransactionItem({
         <IonLabel className="transaction-item__label">
           <h2>{title}</h2>
           <p>{meta}</p>
+          {showDate && <p>{formatTransactionDate(tx.date.slice(0, 10))}</p>}
           {!!tx.tags?.length && (
             <p className="transaction-item__tags">
               {tx.tags.map((tag) => tagHref ? (
@@ -147,7 +151,7 @@ export function TransactionItem({
         </IonNote>
       </IonItem>
 
-      {!tx.readOnly && <IonItemOptions side="end">
+      {!tx.readOnly && onDelete && <IonItemOptions side="end">
         <IonItemOption
           color="primary"
           onClick={() => onEdit(tx.id)}
