@@ -1,9 +1,10 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonBackButton, IonList, IonItem, IonLabel, IonBadge, IonItemSliding,
+  IonList, IonItem, IonLabel, IonBadge, IonItemSliding,
   IonItemOptions, IonItemOption, IonModal, IonInput, IonButton, IonSpinner,
   IonText, IonAlert, IonIcon,
 } from '@ionic/react'
@@ -95,14 +96,7 @@ export function AdminUsersPage() {
   if (isLoading) {
     return (
       <IonPage>
-        <IonHeader>
-          <IonToolbar>
-            <IonButtons slot="start">
-              <IonBackButton defaultHref="/admin" />
-            </IonButtons>
-            <IonTitle>Пользователи</IonTitle>
-          </IonToolbar>
-        </IonHeader>
+        <PageHeader title="Пользователи" backHref="/admin" />
         <AppContent>
           <div className="app-state"><IonSpinner name="crescent" /></div>
         </AppContent>
@@ -112,14 +106,7 @@ export function AdminUsersPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/admin" />
-          </IonButtons>
-          <IonTitle>Пользователи</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Пользователи" backHref="/admin" />
       <AppContent>
         <IonList>
           {users.map((u) => (

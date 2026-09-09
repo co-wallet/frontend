@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useHistory } from 'react-router-dom'
@@ -5,10 +6,6 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
-  IonButtons,
   IonButton,
   IonIcon,
   IonSegment,
@@ -23,7 +20,6 @@ import {
   IonSelect,
   IonSelectOption,
   IonChip,
-  IonMenuButton,
   IonItem,
   IonList,
   IonNote,
@@ -348,13 +344,8 @@ export function DashboardPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton />
-          </IonButtons>
-          <IonTitle>co-wallet</IonTitle>
-          <IonButtons slot="end">
+      <PageHeader title="co-wallet" backHref={false} actions={
+        <>
             <IonSelect
               aria-label="Валюта"
               interface="popover"
@@ -377,9 +368,8 @@ export function DashboardPage() {
             <IonButton onClick={handleLogout} aria-label="Выйти">
               <IonIcon slot="icon-only" icon={logOutOutline} />
             </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </IonHeader>
+        </>
+      } />
 
       <AppContent fullscreen withFab
         fixed={

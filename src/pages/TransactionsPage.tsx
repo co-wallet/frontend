@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useCallback, useId, useMemo, useRef, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
@@ -7,21 +8,17 @@ import {
   IonAccordion,
   IonAccordionGroup,
   IonAlert,
-  IonBackButton,
   IonButton,
-  IonButtons,
   IonDatetime,
   IonDatetimeButton,
   IonFab,
   IonFabButton,
-  IonHeader,
   IonIcon,
   IonItem,
   IonItemDivider,
   IonItemGroup,
   IonLabel,
   IonList,
-  IonMenuButton,
   IonModal,
   IonNote,
   IonPage,
@@ -31,10 +28,8 @@ import {
   IonSelectOption,
   IonSkeletonText,
   IonText,
-  IonTitle,
   IonToast,
-  IonToolbar,
-} from '@ionic/react'
+  } from '@ionic/react'
 import {
   addOutline,
   alertCircleOutline,
@@ -254,19 +249,7 @@ export function TransactionsPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            {isFilteredView ? <IonBackButton defaultHref="/transactions" text="Назад" /> : <IonMenuButton />}
-          </IonButtons>
-          <IonTitle>Транзакции</IonTitle>
-          {isFilteredView && (
-            <IonButtons slot="end">
-              <IonMenuButton aria-label="Главное меню" />
-            </IonButtons>
-          )}
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Транзакции" backHref={isFilteredView ? '/transactions' : '/dashboard'} />
 
       <AppContent fullscreen withFab
         fixed={

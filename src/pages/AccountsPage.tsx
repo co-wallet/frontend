@@ -1,3 +1,4 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useRef, useState } from 'react'
@@ -6,9 +7,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
 import {
   IonPage,
-  IonHeader,
-  IonToolbar,
-  IonTitle,
   IonList,
   IonItem,
   IonLabel,
@@ -21,10 +19,8 @@ import {
   IonSelectOption,
   IonToggle,
   IonButton,
-  IonButtons,
   IonSpinner,
   IonText,
-  IonMenuButton,
   IonItemSliding,
   IonItemOptions,
   IonItemOption,
@@ -389,14 +385,7 @@ export function AccountsPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton />
-          </IonButtons>
-          <IonTitle>Счета</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Счета" backHref="/dashboard" />
       <AppContent withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">

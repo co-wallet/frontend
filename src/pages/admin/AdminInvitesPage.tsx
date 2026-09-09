@@ -1,10 +1,10 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons,
-  IonBackButton, IonList, IonItem, IonLabel, IonBadge,
+  IonPage, IonList, IonItem, IonLabel, IonBadge,
   IonButton, IonIcon, IonSpinner, IonText, IonFab, IonFabButton,
   IonModal, IonInput,
 } from '@ionic/react'
@@ -101,14 +101,7 @@ export function AdminInvitesPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref="/admin" text="Назад" />
-          </IonButtons>
-          <IonTitle>Приглашения</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Приглашения" backHref="/admin" />
       <AppContent withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">

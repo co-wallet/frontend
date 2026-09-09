@@ -1,11 +1,11 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle,
-  IonList, IonItem, IonLabel, IonIcon, IonRouterLink,
-  IonMenuButton, IonButtons, IonSpinner, IonText,
+  IonPage, IonList, IonItem, IonLabel, IonIcon, IonRouterLink,
+  IonButtons, IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton, IonFab, IonFabButton,
 } from '@ionic/react'
 import { pricetagOutline, createOutline, trashOutline, addOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons'
@@ -82,14 +82,7 @@ export function TagsPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton />
-          </IonButtons>
-          <IonTitle>Теги</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Теги" backHref="/dashboard" />
       <AppContent withFab fixed={
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton aria-label="Добавить тег" onClick={() => handleEditOpen('', '')}>

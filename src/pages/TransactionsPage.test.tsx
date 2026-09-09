@@ -29,9 +29,9 @@ describe('transaction navigation controls', () => {
     expect(markup).toMatch(/<ion-buttons slot="end"><ion-menu-button[^>]*aria-label="Главное меню"/)
   })
 
-  it('keeps the main menu in the primary transaction list', () => {
+  it('offers back to the dashboard and the menu in the primary transaction list', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('<ion-menu-button')
-    expect(markup).not.toContain('<ion-back-button')
+    expect(markup).toContain('<ion-back-button default-href="/dashboard"')
   })
 })

@@ -1,11 +1,11 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle,
-  IonButtons, IonBackButton, IonIcon,
+  IonPage, IonIcon,
   IonList, IonItem, IonLabel, IonInput, IonNote,
   IonSpinner, IonText, IonModal, IonAlert,
   IonItemSliding, IonItemOptions, IonItemOption,
@@ -209,7 +209,7 @@ export function AccountMembersPage() {
   if (isLoading) {
     return (
       <IonPage>
-        <IonHeader><IonToolbar><IonTitle>Участники</IonTitle></IonToolbar></IonHeader>
+        <PageHeader title="Участники" backHref="/accounts" />
         <AppContent>
           <div className="app-state"><IonSpinner /></div>
         </AppContent>
@@ -219,14 +219,7 @@ export function AccountMembersPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonBackButton defaultHref={`/accounts/${accountID}`} text="Назад" />
-          </IonButtons>
-          <IonTitle>Участники</IonTitle>
-        </IonToolbar>
-      </IonHeader>
+      <PageHeader title="Участники" backHref="/accounts" />
 
       <AppContent withFab={isOwner}
         fixed={isOwner && (

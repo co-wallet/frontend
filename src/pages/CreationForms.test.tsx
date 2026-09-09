@@ -43,7 +43,12 @@ describe.each(forms)('%s creation form', (title, Page) => {
     const markup = renderToStaticMarkup(<Page />)
     const header = Array.from(markup.matchAll(/<ion-header>([^]*?)<\/ion-header>/g), (match) => match[1]).find((header) => header.includes(title))
     expect(header).toContain(title)
-    expect(header).toMatch(/slot="start"[^]*Отмена[^]*slot="end"[^]*Сохранить/)
+    if (title === 'Новая транзакция') {
+      expect(header).toContain('<ion-back-button default-href="/transactions"')
+      expect(header).toContain('aria-label="Главное меню"')
+    } else {
+      expect(header).toMatch(/slot="start"[^]*Отмена[^]*slot="end"[^]*Сохранить/)
+    }
     expect(header).toMatch(/<ion-button[^>]*disabled="true"[^>]*aria-label="Сохранить"/)
     expect(markup).toContain('<ion-list-header><ion-label>')
   })

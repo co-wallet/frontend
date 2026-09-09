@@ -1,11 +1,11 @@
+import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle,
-  IonList, IonItem, IonIcon,
-  IonMenuButton, IonButtons, IonSpinner, IonText,
+  IonPage, IonToolbar, IonList, IonItem, IonIcon,
+  IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton,
   IonSegment, IonSegmentButton, IonFab, IonFabButton,
 } from '@ionic/react';
@@ -132,13 +132,7 @@ export default function CategoriesPage() {
 
   return (
     <IonPage>
-      <IonHeader>
-        <IonToolbar>
-          <IonButtons slot="start">
-            <IonMenuButton />
-          </IonButtons>
-          <IonTitle>Категории</IonTitle>
-        </IonToolbar>
+      <PageHeader title="Категории" backHref="/dashboard">
         <IonToolbar>
           <IonSegment
             value={activeTab}
@@ -148,7 +142,7 @@ export default function CategoriesPage() {
             <IonSegmentButton value="income">Доходы</IonSegmentButton>
           </IonSegment>
         </IonToolbar>
-      </IonHeader>
+      </PageHeader>
       <AppContent withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
