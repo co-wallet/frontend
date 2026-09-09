@@ -44,7 +44,7 @@ describe('Monefy preview UI', () => {
   })
   it('shows a blocking error and disables confirmation', () => {
     const html = render({ ...state, accepted: true, preview: { ...state.preview!, can_confirm: false, diagnostics: [{ severity: 'blocking', code: 'invalid_currency', message: 'Неизвестная валюта', entity: '', source_id: '' }] } })
-    expect(html).toContain('Ошибки блокируют импорт')
+    expect(html).toContain('Что мешает импорту')
     expect(html).toMatch(/ion-button[^>]*disabled="true"/)
   })
 })

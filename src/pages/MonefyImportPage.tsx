@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonCheckbox, IonContent, IonItem, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
+import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthStore } from '@/store/authStore'
 import { canConfirmImport, importReasons, MonefyImport, type ImportState } from '@/lib/monefyImport'
 import type { AccountKind } from '@/api/accounts'
 import { CategoryIconSettings } from '@/components/CategoryIconSettings'
 import { CategoryIcon } from '@/components/CategoryIcon'
+import { MonefyImportDiagnostics, importAccountAnchor, scrollToImportAccount } from '@/components/MonefyImportDiagnostics'
 import './MonefyImportPage.css'
 
 const countNames: Record<string, string> = { accounts: 'Счета', categories: 'Категории', transactions: 'Операции', transfers: 'Переводы' }
@@ -27,14 +28,23 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <p>Предпросмотр действует до {new Date(p.expires_at).toLocaleString('ru-RU')}.</p>
       </IonCardContent>
     </IonCard>
+    {p.accounts.some(a => !a.kind) && <IonCard>
+      <IonCardHeader><IonCardTitle>Выберите тип каждого счёта</IonCardTitle></IonCardHeader>
+      <IonCardContent>
+        <p>Текущий — повседневные деньги; накопительный — сбережения; инвестиционный — инвестиции. Это настройка импорта, а не ошибка файла.</p>
+        <p>Осталось заполнить: {p.accounts.filter(a => !a.kind).length}.</p>
+        {p.accounts.filter(a => !a.kind).map(a => <IonButton key={a.source_id} size="small" fill="outline" onClick={() => scrollToImportAccount(a.source_id)}>{a.name}</IonButton>)}
+      </IonCardContent>
+    </IonCard>}
     <h2>Личные счета</h2>
     <p>Все счета будут личными и активными. Название счёта не определяет совместный доступ. Флаг Monefy «Включать в общий баланс» не переносится и не определяет тип счёта. Отключённые счета также станут активными.</p>
-    {p.accounts.map(a => <IonCard key={a.source_id}>
+    {p.accounts.map(a => <IonCard key={a.source_id} id={importAccountAnchor(a.source_id)}>
       <IonCardHeader><IonCardTitle>{a.name} · {a.currency}</IonCardTitle></IonCardHeader>
       <IonCardContent>
         <p>Начальный баланс: {a.initial_balance} {a.currency} на {date(a.initial_balance_date)}</p>
         <p>Итоговый баланс: {a.final_balance} {a.currency}</p>
         <p>В общем балансе Monefy: {a.source_included_in_total ? 'да' : 'нет'}; {a.source_disabled_at ? `отключён с ${date(a.source_disabled_at)}` : 'активен'}.</p>
+        {!a.kind && <p>Выберите тип этого счёта ниже.</p>}
         <IonItem lines="none"><IonSelect label={`Тип счёта «${a.name}»`} labelPlacement="stacked" interface="action-sheet" placeholder="Выберите тип" value={a.kind || undefined} disabled={locked} onIonChange={e => void controller.configure(a.source_id, e.detail.value as AccountKind)}>
           <IonSelectOption value="spending">Текущий</IonSelectOption><IonSelectOption value="deposit">Накопительный</IonSelectOption><IonSelectOption value="investment">Инвестиционный</IonSelectOption>
         </IonSelect></IonItem>
@@ -49,15 +59,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
           <fieldset disabled={locked}><CategoryIconSettings value={c.icon} type={c.type} sessionKey={c.source_id} onChange={icon => void controller.configureCategory(c.source_id, icon)} /></fieldset>}
       </section>)}
     </IonCardContent></IonCard>
-    <IonCard><IonCardHeader><IonCardTitle>Предупреждения и исключения</IonCardTitle></IonCardHeader><IonCardContent>
-      {!p.diagnostics.length && !p.exclusions.length && <p>Предупреждений и исключений нет.</p>}
-      <ul>{p.diagnostics.map((d, i) => <li key={i}><IonText color={d.severity === 'blocking' ? 'danger' : undefined}>{d.severity === 'blocking' ? 'Ошибка: ' : ''}{d.message} {d.entity} {d.source_id}</IonText></li>)}</ul>
-      <ul>{p.exclusions.map((e, i) => <li key={i}>Не переносится: {e.entity} {e.source_id} — {e.reason}</li>)}</ul>
-      {Object.entries(p.deleted || {}).map(([key, value]) => <p key={key}>Удалённые записи {key}: {value} — не переносятся.</p>)}
-      {(p.requires_exclusion_confirmation || p.diagnostics.some(d => d.severity === 'confirmation')) && <IonCheckbox className="import-ack" checked={state.accepted} disabled={locked} onIonChange={e => controller.accept(e.detail.checked)}>Принимаю все перечисленные исключения</IonCheckbox>}
-      {p.accounts.some(a => !a.kind) && <p>Выберите тип каждого счёта. После этого предпросмотр обновится.</p>}
-      {!p.can_confirm && p.diagnostics.some(d => d.severity === 'blocking' && d.code !== 'target_account_kind') && <IonText color="danger"><p>Ошибки блокируют импорт. Исправьте исходный файл и загрузите его заново.</p></IonText>}
-    </IonCardContent></IonCard>
+    <MonefyImportDiagnostics state={state} controller={controller} />
     <p>После подтверждения счета и история будут добавлены в co-wallet. Отменить применение на этом экране нельзя.</p>
     <IonButton expand="block" disabled={!canConfirmImport(state)} onClick={() => void controller.confirm()}>Подтвердить импорт</IonButton>
   </>

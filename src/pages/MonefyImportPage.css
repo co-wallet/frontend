@@ -14,3 +14,9 @@
 
 .import-category { margin-block: 20px; }
 .import-category fieldset { min-width: 0; padding: 0; border: 0; }
+
+.import-diagnostics { padding-left: 20px; }
+.import-diagnostics li { margin-block: 20px; }
+.import-diagnostics p { margin-block: 8px; }
+.import-technical { margin-top: 24px; }
+.import-technical summary { cursor: pointer; min-height: 44px; padding-block: 12px; }
