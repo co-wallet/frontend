@@ -309,6 +309,12 @@ export function DashboardPage() {
     income: 'Доходы по категориям',
   }
 
+  const chartSettingsLabels: Record<ChartMode, string> = {
+    balance: 'Настройки баланса',
+    expenses: 'Настройки расходов',
+    income: 'Настройки доходов',
+  }
+
   const chartEmptyTexts: Record<ChartMode, string> = {
     balance: 'Нет данных о балансе',
     expenses: 'Нет расходов за период',
@@ -421,14 +427,6 @@ export function DashboardPage() {
                       )
                     })}
                   </div>
-                  <IonItem lines="none">
-                    <IonCheckbox
-                      checked={includeShared}
-                      onIonChange={(event) => setIncludeShared(event.detail.checked)}
-                    >
-                      Учитывать общие счета
-                    </IonCheckbox>
-                  </IonItem>
                   <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
                   <IonSegment
                     value={accountFilter}
@@ -515,18 +513,16 @@ export function DashboardPage() {
             <IonCardHeader className="dashboard-chart-header">
               <div className="dashboard-chart-heading">
                 <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
-                {chartMode !== 'balance' && (
-                  <IonButton
-                    id="dashboard-chart-settings"
-                    className="dashboard-chart-settings"
-                    fill="clear"
-                    color="medium"
-                    aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
-                    aria-haspopup="dialog"
+                <IonButton
+                  id="dashboard-chart-settings"
+                  className="dashboard-chart-settings"
+                  fill="clear"
+                  color="medium"
+                  aria-label={chartSettingsLabels[chartMode]}
+                  aria-haspopup="dialog"
                   >
-                    <IonIcon slot="icon-only" icon={optionsOutline} />
-                  </IonButton>
-                )}
+                  <IonIcon slot="icon-only" icon={optionsOutline} />
+                </IonButton>
               </div>
             </IonCardHeader>
             <IonCardContent>
@@ -540,16 +536,25 @@ export function DashboardPage() {
             </IonCardContent>
           </IonCard>
 
-          {chartMode !== 'balance' && (
-            <IonPopover
-              key={chartMode}
-              trigger="dashboard-chart-settings"
-              className="dashboard-chart-popover"
-              side="bottom"
-              alignment="end"
-              aria-label={chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'}
-            >
-              <div className="dashboard-chart-popover-content">
+          <IonPopover
+            key={chartMode}
+            trigger="dashboard-chart-settings"
+            className="dashboard-chart-popover"
+            side="bottom"
+            alignment="end"
+            aria-label={chartSettingsLabels[chartMode]}
+          >
+            <div className="dashboard-chart-popover-content">
+              <IonCheckbox
+                className="dashboard-transfer-checkbox"
+                labelPlacement="end"
+                justify="start"
+                checked={includeShared}
+                onIonChange={(event) => setIncludeShared(event.detail.checked)}
+              >
+                Учитывать общие счета
+              </IonCheckbox>
+              {chartMode !== 'balance' && (
                 <IonCheckbox
                   className="dashboard-transfer-checkbox"
                   labelPlacement="end"
@@ -561,9 +566,9 @@ export function DashboardPage() {
                 >
                   Отображать переводы
                 </IonCheckbox>
-              </div>
-            </IonPopover>
-          )}
+              )}
+            </div>
+          </IonPopover>
 
           {/* Tags breakdown */}
           {chartMode !== 'balance' && byTag.length > 0 && (

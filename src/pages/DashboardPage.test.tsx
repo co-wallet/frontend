@@ -133,7 +133,8 @@ describe('Dashboard transfer visibility', () => {
   it('hides the transfer control for balance', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).not.toContain('Отображать переводы')
-    expect(markup).not.toContain('dashboard-chart-settings')
+    expect(markup).toContain('aria-label="Настройки баланса"')
+    expect(markup).toContain('dashboard-chart-settings')
   })
 })
 
@@ -208,7 +209,7 @@ describe('Dashboard shared accounts', () => {
     for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe('spending,shared')
     expect(markup).toContain('Общий кошелёк')
     expect(markup).not.toContain('Общий вклад')
-    expect(markup).toContain('Учитывать общие счета')
+    expect(markup).not.toContain('Учитывать общие счета')
   })
 
   it.each([false, true])('intersects custom selection with shared visibility %s', (includeShared) => {
