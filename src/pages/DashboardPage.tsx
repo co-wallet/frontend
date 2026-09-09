@@ -1,7 +1,6 @@
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
-import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
@@ -26,7 +25,6 @@ import {
   IonText,
 } from '@ionic/react'
 import {
-  logOutOutline,
   addOutline,
   walletOutline,
   listOutline,
@@ -183,9 +181,7 @@ function ChartBlock({
 
 export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
-  const logout = useAuthStore((s) => s.logout)
   const updateUser = useAuthStore((s) => s.updateUser)
-  const history = useHistory()
 
   const { period, periodOffset, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
@@ -264,11 +260,6 @@ export function DashboardPage() {
   const byIncome = isEmptyCustom ? [] : byIncomeRaw
   const byTag = isEmptyCustom ? [] : byTagRaw
 
-  const handleLogout = () => {
-    logout()
-    history.replace('/login')
-  }
-
   const filteredAccounts = accountFilter === 'all'
     ? kindFilteredAccounts
     : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
@@ -344,32 +335,7 @@ export function DashboardPage() {
 
   return (
     <IonPage>
-      <PageHeader title="co-wallet" backHref={false} actions={
-        <>
-            <IonSelect
-              aria-label="Валюта"
-              interface="popover"
-              value={displayCurrency}
-              onIonChange={(e) => {
-                const code = e.detail.value as string
-                if (code && code !== displayCurrency) {
-                  setDisplayCurrency(code)
-                  saveCurrency.mutate(code)
-                }
-              }}
-              style={{ maxWidth: 110 }}
-            >
-              {currencies.map((c) => (
-                <IonSelectOption key={c.code} value={c.code}>
-                  {c.symbol} {c.code}
-                </IonSelectOption>
-              ))}
-            </IonSelect>
-            <IonButton onClick={handleLogout} aria-label="Выйти">
-              <IonIcon slot="icon-only" icon={logOutOutline} />
-            </IonButton>
-        </>
-      } />
+      <PageHeader title="co-wallet" backHref={false} />
 
       <AppContent fullscreen withFab
         fixed={
@@ -381,161 +347,183 @@ export function DashboardPage() {
         }
       >
         <div>
-          {/* Period switcher */}
-          <IonList style={{ marginBottom: 8 }}>
-            <IonItem>
+          <section className="dashboard-view-controls" aria-label="Параметры отображения">
+            <div className="dashboard-view-controls__row">
               <IonSelect
-                aria-label="Период"
+                  aria-label="Период"
+                  interface="popover"
+                  value={period}
+                  selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
+                  onIonChange={(e) => setPeriod(e.detail.value as Period)}
+                  label="Период"
+                  labelPlacement="stacked"
+                  className="dashboard-view-select"
+                >
+                  {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
+                    <IonSelectOption key={p} value={p}>
+                      {PERIOD_LABELS[p]}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+              <IonSelect
+                aria-label="Валюта"
                 interface="popover"
-                value={period}
-                selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
-                onIonChange={(e) => setPeriod(e.detail.value as Period)}
-                label="Период"
-                labelPlacement="start"
+                value={displayCurrency}
+                onIonChange={(e) => {
+                  const code = e.detail.value as string
+                  if (code && code !== displayCurrency) {
+                    setDisplayCurrency(code)
+                    saveCurrency.mutate(code)
+                  }
+                }}
+                label="Валюта"
+                labelPlacement="stacked"
+                className="dashboard-view-select"
               >
-                {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-                  <IonSelectOption key={p} value={p}>
-                    {PERIOD_LABELS[p]}
+                {currencies.map((c) => (
+                  <IonSelectOption key={c.code} value={c.code}>
+                    {c.symbol} {c.code}
                   </IonSelectOption>
                 ))}
               </IonSelect>
-            </IonItem>
-          </IonList>
+            </div>
 
-          {/* Custom date range */}
-          {period === 'custom' && (
-            <IonList style={{ marginBottom: 8 }}>
-              <IonItem>
-                <IonLabel position="stacked">С</IonLabel>
-                <input
-                  type="date"
-                  value={customFrom}
-                  onChange={(e) => setCustomFrom(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--ion-text-color)',
-                    fontSize: '0.875rem',
-                    padding: '8px 0',
-                  }}
-                />
-              </IonItem>
-              <IonItem>
-                <IonLabel position="stacked">По</IonLabel>
-                <input
-                  type="date"
-                  value={customTo}
-                  onChange={(e) => setCustomTo(e.target.value)}
-                  style={{
-                    width: '100%',
-                    background: 'transparent',
-                    border: 'none',
-                    color: 'var(--ion-text-color)',
-                    fontSize: '0.875rem',
-                    padding: '8px 0',
-                  }}
-                />
-              </IonItem>
-            </IonList>
-          )}
+            {/* Custom date range */}
+            {period === 'custom' && (
+              <IonList style={{ marginBottom: 8 }}>
+                <IonItem>
+                  <IonLabel position="stacked">С</IonLabel>
+                  <input
+                    type="date"
+                    value={customFrom}
+                    onChange={(e) => setCustomFrom(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--ion-text-color)',
+                      fontSize: '0.875rem',
+                      padding: '8px 0',
+                    }}
+                  />
+                </IonItem>
+                <IonItem>
+                  <IonLabel position="stacked">По</IonLabel>
+                  <input
+                    type="date"
+                    value={customTo}
+                    onChange={(e) => setCustomTo(e.target.value)}
+                    style={{
+                      width: '100%',
+                      background: 'transparent',
+                      border: 'none',
+                      color: 'var(--ion-text-color)',
+                      fontSize: '0.875rem',
+                      padding: '8px 0',
+                    }}
+                  />
+                </IonItem>
+              </IonList>
+            )}
 
-          {/* Account filter */}
-          <div style={{ marginBottom: 16, marginTop: 12 }}>
-            <IonItem button detail={false} onClick={() => setShowAccountFilter((v) => !v)}>
-              <IonIcon icon={optionsOutline} slot="start" />
-              <IonLabel>
-                <h2>
-                  {selectedKinds.length === 1
-                    ? accountKindShortLabel(selectedKinds[0])
-                    : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
-                      ? 'Все типы средств'
-                      : `Типов средств: ${selectedKinds.length}`}
-                </h2>
-                <p>
-                  {accountFilter === 'all' && 'Все счета выбранных типов'}
-                  {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
-                    ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
-                    : 'Счета не выбраны'
-                  )}
-                </p>
-              </IonLabel>
-              <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
-            </IonItem>
-            {showAccountFilter && (
-              <div style={{ marginTop: 8 }}>
-                <IonText color="medium" style={{ fontSize: '0.75rem' }}>Тип средств</IonText>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0 12px' }}>
-                  {ACCOUNT_KIND_OPTIONS.map((option) => {
-                    const active = selectedKinds.includes(option.value)
-                    const toggleKind = () => setSelectedKinds((previous) =>
-                      toggleAccountKind(previous, option.value)
-                    )
-                    return (
-                      <IonChip
-                        key={option.value}
-                        color={active ? 'primary' : 'medium'}
-                        outline={!active}
-                        role="button"
-                        tabIndex={0}
-                        aria-pressed={active}
-                        onClick={toggleKind}
-                        onKeyDown={(event) => {
-                          if (event.key === 'Enter' || event.key === ' ') {
-                            event.preventDefault()
-                            toggleKind()
-                          }
-                        }}
-                      >
-                        <IonLabel>{option.shortLabel}</IonLabel>
-                      </IonChip>
-                    )
-                  })}
-                </div>
-                <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
-                <IonSegment
-                  value={accountFilter}
-                  onIonChange={(e) => setAccountFilter(e.detail.value as AccountFilter)}
-                >
-                  <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
-                  <IonSegmentButton value="custom"><IonLabel>Выбрать</IonLabel></IonSegmentButton>
-                </IonSegment>
-                {accountFilter === 'custom' && (
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 8 }}>
-                    {kindFilteredAccounts.map((a) => {
-                      const active = selectedAccountIds.includes(a.id)
-                      const toggleAccount = () => setSelectedAccountIds((previous) =>
-                        previous.includes(a.id)
-                          ? previous.filter((id) => id !== a.id)
-                          : [...previous, a.id]
+            {/* Account filter */}
+            <div className="dashboard-account-filter">
+              <IonItem button lines="none" detail={false} aria-expanded={showAccountFilter} onClick={() => setShowAccountFilter((v) => !v)}>
+                <IonIcon icon={optionsOutline} slot="start" />
+                <IonLabel>
+                  <h2>
+                    {selectedKinds.length === 1
+                      ? accountKindShortLabel(selectedKinds[0])
+                      : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
+                        ? 'Все типы средств'
+                        : `Типов средств: ${selectedKinds.length}`}
+                  </h2>
+                  <p>
+                    {accountFilter === 'all' && 'Все счета выбранных типов'}
+                    {accountFilter === 'custom' && (effectiveSelectedAccountIds.length > 0
+                      ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
+                      : 'Счета не выбраны'
+                    )}
+                  </p>
+                </IonLabel>
+                <IonIcon icon={showAccountFilter ? chevronUpOutline : chevronDownOutline} slot="end" />
+              </IonItem>
+              {showAccountFilter && (
+                <div style={{ marginTop: 8 }}>
+                  <IonText color="medium" style={{ fontSize: '0.75rem' }}>Тип средств</IonText>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, padding: '8px 0 12px' }}>
+                    {ACCOUNT_KIND_OPTIONS.map((option) => {
+                      const active = selectedKinds.includes(option.value)
+                      const toggleKind = () => setSelectedKinds((previous) =>
+                        toggleAccountKind(previous, option.value)
                       )
                       return (
                         <IonChip
-                          key={a.id}
-                          className="dashboard-account-chip"
+                          key={option.value}
                           color={active ? 'primary' : 'medium'}
                           outline={!active}
                           role="button"
                           tabIndex={0}
                           aria-pressed={active}
-                          onClick={toggleAccount}
+                          onClick={toggleKind}
                           onKeyDown={(event) => {
                             if (event.key === 'Enter' || event.key === ' ') {
                               event.preventDefault()
-                              toggleAccount()
+                              toggleKind()
                             }
                           }}
                         >
-                          <AccountIcon value={a.icon} size={20} shape="rectangle" />
-                          <IonLabel>{a.name}</IonLabel>
+                          <IonLabel>{option.shortLabel}</IonLabel>
                         </IonChip>
                       )
                     })}
                   </div>
-                )}
-              </div>
-            )}
-          </div>
+                  <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
+                  <IonSegment
+                    value={accountFilter}
+                    onIonChange={(e) => setAccountFilter(e.detail.value as AccountFilter)}
+                  >
+                    <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
+                    <IonSegmentButton value="custom"><IonLabel>Выбрать</IonLabel></IonSegmentButton>
+                  </IonSegment>
+                  {accountFilter === 'custom' && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 8 }}>
+                      {kindFilteredAccounts.map((a) => {
+                        const active = selectedAccountIds.includes(a.id)
+                        const toggleAccount = () => setSelectedAccountIds((previous) =>
+                          previous.includes(a.id)
+                            ? previous.filter((id) => id !== a.id)
+                            : [...previous, a.id]
+                        )
+                        return (
+                          <IonChip
+                            key={a.id}
+                            className="dashboard-account-chip"
+                            color={active ? 'primary' : 'medium'}
+                            outline={!active}
+                            role="button"
+                            tabIndex={0}
+                            aria-pressed={active}
+                            onClick={toggleAccount}
+                            onKeyDown={(event) => {
+                              if (event.key === 'Enter' || event.key === ' ') {
+                                event.preventDefault()
+                                toggleAccount()
+                              }
+                            }}
+                          >
+                            <AccountIcon value={a.icon} size={20} shape="rectangle" />
+                            <IonLabel>{a.name}</IonLabel>
+                          </IonChip>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+          </section>
 
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>

@@ -22,6 +22,7 @@ describe('PageHeader', () => {
     )
     expect(html).not.toContain('ion-back-button')
     expect(html).not.toContain('slot="start"')
+    expect(html).toContain('text-align:start;padding-inline:20px')
     expect(html).toMatch(/slot="end">[^]*Валюта[^]*<ion-menu-button aria-label="Главное меню"/)
   })
 

@@ -40,6 +40,12 @@ describe('Dashboard tag navigation', () => {
   ])('links to the tag using the same period as the dashboard: $period', (source) => {
     queryState.period = source
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    const header = markup.match(/<ion-header>([^]*?)<\/ion-header>/)?.[1]
+    expect(header).toContain('Главное меню')
+    expect(header).not.toContain('Валюта')
+    expect(header).not.toContain('Выйти')
+    expect(header).not.toContain('ion-back-button')
+    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*aria-label="Период"[^]*aria-label="Валюта"[^]*Текущие средства[^]*<\/section>/)
     const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
     expect(href).toBeDefined()
     const params = new URL(href!, 'http://localhost').searchParams
