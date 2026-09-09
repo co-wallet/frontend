@@ -13,7 +13,8 @@ describe('PageHeader', () => {
   it.each(['/accounts', '/transactions', '/admin'])('uses %s as the parent when opened directly', (backHref) => {
     const html = renderToStaticMarkup(<PageHeader title="Раздел" backHref={backHref} />)
     expect(html).toContain(`default-href="${backHref}"`)
-    expect(html).toContain('text="Назад"')
+    expect(html).toContain('text=""')
+    expect(html).toContain('aria-label="Назад"')
   })
 
   it('hides back only on the dashboard and keeps actions before the menu', () => {
