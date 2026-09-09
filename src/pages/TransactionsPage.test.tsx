@@ -25,7 +25,8 @@ describe('transaction navigation controls', () => {
     const markup = renderPage('/transactions/filtered/1?tag_ids=travel')
     expect(markup).toContain('<ion-back-button')
     expect(markup).toContain('text="Назад"')
-    expect(markup).toContain('<ion-menu-button')
+    expect(markup).toMatch(/<ion-buttons slot="start"><ion-back-button[^>]*><\/ion-back-button><\/ion-buttons>/)
+    expect(markup).toMatch(/<ion-buttons slot="end"><ion-menu-button[^>]*aria-label="Главное меню"/)
   })
 
   it('keeps the main menu in the primary transaction list', () => {
