@@ -4,17 +4,20 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle,
-  IonList, IonItem, IonLabel, IonIcon,
+  IonList, IonItem, IonLabel, IonIcon, IonRouterLink,
   IonMenuButton, IonButtons, IonSpinner, IonText,
   IonAlert, IonModal, IonInput, IonButton, IonFab, IonFabButton,
 } from '@ionic/react'
 import { pricetagOutline, createOutline, trashOutline, addOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons'
 import axios from 'axios'
 import { tagsApi, type Tag } from '@/api/tags'
+import { usePeriodStore } from '@/store/periodStore'
+import { filteredTransactionsHref } from '@/lib/transactionNavigation'
 import './TagsPage.css'
 
 export function TagsPage() {
   const qc = useQueryClient()
+  const period = usePeriodStore()
   const [editingTag, setEditingTag] = useState<{ id: string; name: string } | null>(null)
   const [editName, setEditName] = useState('')
   const [editError, setEditError] = useState<string | null>(null)
@@ -119,13 +122,16 @@ export function TagsPage() {
               <IonItem key={tag.id} className="tag-list-row">
                 <IonIcon icon={pricetagOutline} slot="start" color="primary" />
                 <IonLabel className="tag-list-row__label">
-                  <h2>#{tag.name}</h2>
-                  {tag.hidden && <p>Скрыт для меня</p>}
-                  <IonButton fill="clear" size="small" className="tag-list-row__history"
-                    routerLink={`/transactions?${new URLSearchParams({ tag_ids: tag.id })}`}
-                    routerDirection="forward" aria-label={`Операции с тегом ${tag.name}`}>
-                    Операции{tag.txCount !== undefined ? ` (${tag.txCount})` : ''}
-                  </IonButton>
+                  <IonRouterLink
+                    className="tag-list-row__link"
+                    routerLink={filteredTransactionsHref({ tagIds: [tag.id] }, period)}
+                    routerDirection="forward"
+                    aria-label={`Транзакции с тегом ${tag.name}`}
+                  >
+                    <h2>#{tag.name}</h2>
+                    {tag.txCount !== undefined && <p>Транзакций: {tag.txCount}</p>}
+                    {tag.hidden && <p>Скрыт для меня</p>}
+                  </IonRouterLink>
                 </IonLabel>
                 <IonButtons slot="end" className="tag-list-row__actions">
                   <IonButton fill="clear" color="medium" disabled={visibilityMutation.isPending}

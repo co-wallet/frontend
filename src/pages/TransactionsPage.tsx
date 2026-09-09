@@ -257,7 +257,8 @@ export function TransactionsPage() {
       <IonHeader>
         <IonToolbar>
           <IonButtons slot="start">
-            {isFilteredView ? <IonBackButton defaultHref="/transactions" text="Назад" /> : <IonMenuButton />}
+            {isFilteredView && <IonBackButton defaultHref="/transactions" text="Назад" />}
+            <IonMenuButton />
           </IonButtons>
           <IonTitle>Транзакции</IonTitle>
         </IonToolbar>
