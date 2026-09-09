@@ -13,7 +13,7 @@ const queryState = vi.hoisted(() => ({
 }))
 vi.mock('@/store/periodStore', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/store/periodStore')>(),
-  usePeriodStore: () => ({ ...queryState.period, setPeriod: vi.fn(), setCustomFrom: vi.fn(), setCustomTo: vi.fn() }),
+  usePeriodStore: () => ({ ...queryState.period, setPeriod: vi.fn(), setPeriodOffset: vi.fn(), setCustomFrom: vi.fn(), setCustomTo: vi.fn() }),
 }))
 vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
@@ -45,7 +45,7 @@ describe('Dashboard tag navigation', () => {
     expect(header).not.toContain('Валюта')
     expect(header).not.toContain('Выйти')
     expect(header).not.toContain('ion-back-button')
-    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*aria-label="Период"[^]*aria-label="Валюта"[^]*Текущие средства[^]*<\/section>/)
+    expect(markup).toMatch(/<section[^>]*aria-label="Параметры отображения"[^>]*>[^]*aria-label="Предыдущий период"[^]*aria-label="Валюта"[^]*Текущие средства[^]*<\/section>/)
     const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
     expect(href).toBeDefined()
     const params = new URL(href!, 'http://localhost').searchParams

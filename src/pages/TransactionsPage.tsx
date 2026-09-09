@@ -1,6 +1,7 @@
+import { PeriodControl } from '@/components/PeriodControl'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { useCallback, useId, useMemo, useRef, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
@@ -9,8 +10,6 @@ import {
   IonAccordionGroup,
   IonAlert,
   IonButton,
-  IonDatetime,
-  IonDatetimeButton,
   IonFab,
   IonFabButton,
   IonIcon,
@@ -19,13 +18,10 @@ import {
   IonItemGroup,
   IonLabel,
   IonList,
-  IonModal,
   IonNote,
   IonPage,
   IonSegment,
   IonSegmentButton,
-  IonSelect,
-  IonSelectOption,
   IonSkeletonText,
   IonText,
   IonToast,
@@ -33,8 +29,6 @@ import {
 import {
   addOutline,
   alertCircleOutline,
-  chevronBackOutline,
-  chevronForwardOutline,
   closeOutline,
   receiptOutline,
   trendingDownOutline,
@@ -56,7 +50,6 @@ import { TransactionItem } from '@/components/TransactionItem'
 import {
   buildTransactionAnalyticsParams,
   formatCurrencyAmount,
-  formatPeriodControlLabel,
   groupTransactionsByDate,
   hasTransactionFilters,
   transactionDefaultCurrencyAmount,
@@ -65,8 +58,6 @@ import { useChartTheme } from '@/lib/useChartTheme'
 import { useAuthStore } from '@/store/authStore'
 import {
   computeDateRange,
-  PERIOD_LABELS,
-  type Period,
   usePeriodStore,
 } from '@/store/periodStore'
 
@@ -81,15 +72,6 @@ import {
 
 import './TransactionsPage.css'
 
-const PERIOD_SELECT_LABELS: Record<Period, string> = {
-  ...PERIOD_LABELS,
-  custom: 'Другой',
-}
-
-function valueFromDatetime(value: string | string[] | null | undefined): string {
-  return typeof value === 'string' ? value.slice(0, 10) : ''
-}
-
 export function TransactionsPage() {
   const queryClient = useQueryClient()
   const currentLocation = useLocation()
@@ -99,7 +81,6 @@ export function TransactionsPage() {
   const isCurrentPage = currentLocation.pathname === route.url
   if (isCurrentPage && pageLocation !== currentLocation) setPageLocation(currentLocation)
   const location = isCurrentPage ? currentLocation : pageLocation
-  const dateControlId = useId()
   const history = useHistory()
   const searchParams = new URLSearchParams(location.search)
   const filter = filterFromParams(searchParams)
@@ -122,18 +103,11 @@ export function TransactionsPage() {
     if (next.customFrom !== undefined) storedPeriod.setCustomFrom(next.customFrom)
     if (next.customTo !== undefined) storedPeriod.setCustomTo(next.customTo)
   }
-  const setPeriod = (value: Period) => updatePeriod({ period: value, periodOffset: 0 })
-  const setPeriodOffset = (value: (offset: number) => number) => updatePeriod({ periodOffset: value(periodOffset) })
-  const setCustomFrom = (value: string) => updatePeriod({ customFrom: value })
-  const setCustomTo = (value: string) => updatePeriod({ customTo: value })
   const [showChart, setShowChart] = useState(false)
   const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
-  const customFromModalRef = useRef<HTMLIonModalElement>(null)
-  const customToModalRef = useRef<HTMLIonModalElement>(null)
   const chartTheme = useChartTheme()
 
-  const isCustomPeriod = period === 'custom'
   const { dateFrom, dateTo } = computeDateRange(
     period,
     periodOffset,
@@ -261,86 +235,8 @@ export function TransactionsPage() {
         }
       >
         <div>
-          <div className="transactions-controls" aria-label="Период и фильтры">
-            <IonButton
-              fill="clear"
-              className="transactions-period-arrow"
-              onClick={() => setPeriodOffset((offset) => offset - 1)}
-              disabled={isCustomPeriod}
-              aria-label="Предыдущий период"
-            >
-              <IonIcon slot="icon-only" icon={chevronBackOutline} />
-            </IonButton>
-
-            <div className="transactions-period-selector">
-              <IonSelect
-                aria-label={`Выбранный период: ${formatPeriodControlLabel(period, dateFrom, dateTo)}`}
-                interface="popover"
-                value={period}
-                selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
-                onIonChange={(event) => setPeriod(event.detail.value as Period)}
-              >
-                {(Object.keys(PERIOD_SELECT_LABELS) as Period[]).map((option) => (
-                  <IonSelectOption key={option} value={option}>
-                    {PERIOD_SELECT_LABELS[option]}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </div>
-
-            <IonButton
-              fill="clear"
-              className="transactions-period-arrow"
-              onClick={() => setPeriodOffset((offset) => offset + 1)}
-              disabled={isCustomPeriod || periodOffset >= 0}
-              aria-label="Следующий период"
-            >
-              <IonIcon slot="icon-only" icon={chevronForwardOutline} />
-            </IonButton>
-
-            <FilterSheet value={filter} onChange={setFilter} />
-          </div>
-
-          {isCustomPeriod && (
-            <div className="transactions-custom-period" aria-label="Другой период">
-              <div className="transactions-custom-period__field">
-                <span>С</span>
-                <IonDatetimeButton datetime={`${dateControlId}-from`} />
-              </div>
-              <div className="transactions-custom-period__field">
-                <span>По</span>
-                <IonDatetimeButton datetime={`${dateControlId}-to`} />
-              </div>
-              <IonModal ref={customFromModalRef} keepContentsMounted>
-                <IonDatetime
-                  id={`${dateControlId}-from`}
-                  presentation="date"
-                  value={customFrom}
-                  max={customTo}
-                  onIonChange={(event) => {
-                    const value = valueFromDatetime(event.detail.value)
-                    if (!value) return
-                    setCustomFrom(value)
-                    void customFromModalRef.current?.dismiss()
-                  }}
-                />
-              </IonModal>
-              <IonModal ref={customToModalRef} keepContentsMounted>
-                <IonDatetime
-                  id={`${dateControlId}-to`}
-                  presentation="date"
-                  value={customTo}
-                  min={customFrom}
-                  onIonChange={(event) => {
-                    const value = valueFromDatetime(event.detail.value)
-                    if (!value) return
-                    setCustomTo(value)
-                    void customToModalRef.current?.dismiss()
-                  }}
-                />
-              </IonModal>
-            </div>
-          )}
+          <PeriodControl value={navigationPeriod} onChange={updatePeriod}
+            trailingControl={<FilterSheet value={filter} onChange={setFilter} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
             <span className="transactions-filter-status__label">Фильтры:</span>

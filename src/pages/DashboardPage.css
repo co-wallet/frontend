@@ -31,7 +31,8 @@ body.dark .dashboard-chart-card {
 
 .dashboard-view-controls__row {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) 160px;
+  align-items: start;
   gap: 12px;
 }
 
@@ -57,8 +58,11 @@ body.dark .dashboard-chart-card {
   border-radius: 12px;
 }
 
-@media (max-width: 359px) {
+@media (max-width: 600px) {
   .dashboard-view-controls__row {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.dashboard-view-controls .period-control__row { margin-bottom: 0; }
+.dashboard-view-controls .period-control-custom { margin-top: 12px; margin-bottom: 0; }

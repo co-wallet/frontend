@@ -1,3 +1,4 @@
+import { PeriodControl } from '@/components/PeriodControl'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
@@ -39,7 +40,7 @@ import {
   optionsOutline,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
-import { usePeriodStore, type Period, PERIOD_LABELS, computeDateRange } from '@/store/periodStore'
+import { usePeriodStore, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import { currenciesApi, type Currency } from '@/api/currencies'
@@ -59,7 +60,6 @@ import {
 } from '@/lib/dashboardChart'
 
 import { filteredTransactionsHref } from '@/lib/transactionNavigation'
-import { formatPeriodControlLabel } from '@/lib/transactionList'
 
 import './DashboardPage.css'
 
@@ -183,7 +183,7 @@ export function DashboardPage() {
   const user = useAuthStore((s) => s.user)
   const updateUser = useAuthStore((s) => s.updateUser)
 
-  const { period, periodOffset, customFrom, customTo, setPeriod, setCustomFrom, setCustomTo } = usePeriodStore()
+  const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
@@ -349,22 +349,12 @@ export function DashboardPage() {
         <div>
           <section className="dashboard-view-controls" aria-label="Параметры отображения">
             <div className="dashboard-view-controls__row">
-              <IonSelect
-                  aria-label="Период"
-                  interface="popover"
-                  value={period}
-                  selectedText={formatPeriodControlLabel(period, dateFrom, dateTo)}
-                  onIonChange={(e) => setPeriod(e.detail.value as Period)}
-                  label="Период"
-                  labelPlacement="stacked"
-                  className="dashboard-view-select"
-                >
-                  {(Object.keys(PERIOD_LABELS) as Period[]).map((p) => (
-                    <IonSelectOption key={p} value={p}>
-                      {PERIOD_LABELS[p]}
-                    </IonSelectOption>
-                  ))}
-                </IonSelect>
+              <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
+                if (next.period !== undefined) setPeriod(next.period)
+                if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
+                if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
+                if (next.customTo !== undefined) setCustomTo(next.customTo)
+              }} />
               <IonSelect
                 aria-label="Валюта"
                 interface="popover"
@@ -387,44 +377,6 @@ export function DashboardPage() {
                 ))}
               </IonSelect>
             </div>
-
-            {/* Custom date range */}
-            {period === 'custom' && (
-              <IonList style={{ marginBottom: 8 }}>
-                <IonItem>
-                  <IonLabel position="stacked">С</IonLabel>
-                  <input
-                    type="date"
-                    value={customFrom}
-                    onChange={(e) => setCustomFrom(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--ion-text-color)',
-                      fontSize: '0.875rem',
-                      padding: '8px 0',
-                    }}
-                  />
-                </IonItem>
-                <IonItem>
-                  <IonLabel position="stacked">По</IonLabel>
-                  <input
-                    type="date"
-                    value={customTo}
-                    onChange={(e) => setCustomTo(e.target.value)}
-                    style={{
-                      width: '100%',
-                      background: 'transparent',
-                      border: 'none',
-                      color: 'var(--ion-text-color)',
-                      fontSize: '0.875rem',
-                      padding: '8px 0',
-                    }}
-                  />
-                </IonItem>
-              </IonList>
-            )}
 
             {/* Account filter */}
             <div className="dashboard-account-filter">
