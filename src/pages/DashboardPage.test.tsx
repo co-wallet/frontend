@@ -11,6 +11,8 @@ const queryState = vi.hoisted(() => ({
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
   params: [] as Record<string, unknown>[],
+  tagsEnabled: [] as boolean[],
+  emptyTags: false,
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
 vi.mock('react', async (importOriginal) => {
@@ -25,14 +27,16 @@ vi.mock('@/store/periodStore', async (importOriginal) => ({
   usePeriodStore: () => ({ ...queryState.period, setPeriod: vi.fn(), setPeriodOffset: vi.fn(), setCustomFrom: vi.fn(), setCustomTo: vi.fn() }),
 }))
 vi.mock('@tanstack/react-query', () => ({
-  useQuery: ({ queryKey }: { queryKey: unknown[] }) => {
+  useQuery: ({ queryKey, enabled }: { queryKey: unknown[]; enabled?: boolean }) => {
     if (queryKey[0] === 'accounts') return { data: [
       { id: 'spending', name: 'Личная', kind: 'spending', currency: 'USD', balance: { display: 10 } },
       { id: 'deposit', name: 'Вклад', kind: 'deposit', currency: 'USD', balance: { display: 10 } },
     ] }
     if (queryKey[1] === 'by-tag') {
       queryState.params.push(queryKey[2] as Record<string, unknown>)
-      return { data: [{ tagId: 'travel', tagName: 'Поездка', amount: 10 }] }
+      queryState.tagsEnabled.push(Boolean(enabled))
+      const income = (queryKey[2] as Record<string, unknown>).type === 'income'
+      return { data: queryState.emptyTags ? [] : [{ tagId: 'travel', tagName: income ? 'Зарплата' : 'Поездка', amount: income ? 20 : 10 }] }
     }
     if (queryKey[1] === 'by-category') return { data: [
       { categoryId: 'transfers:bank', categoryName: queryKey[2] === 'expense' ? "В 'Банк'" : "Из 'Банк'", amount: 50 },
@@ -43,13 +47,14 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
+afterEach(() => { queryState.period = initialPeriod; queryState.params = []; queryState.tagsEnabled = []; queryState.emptyTags = false; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 describe('Dashboard tag navigation', () => {
   it.each([
     { period: 'month' as const, periodOffset: -1, customFrom: '2026-08-01', customTo: '2026-08-20' },
     { period: 'custom' as const, periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' },
   ])('links to the tag using the same period as the dashboard: $period', (source) => {
+    queryState.chartMode = 'expenses'
     queryState.period = source
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     const header = markup.match(/<ion-header>([^]*?)<\/ion-header>/)?.[1]
@@ -129,4 +134,31 @@ it.each(['expenses', 'income'] as const)('shows account names and a fixed transf
   expect(markup).toContain('aria-label="Перевод"')
   expect(markup).toMatch(/<span class="account-icon" role="img" aria-label="Перевод"[^>]*--account-icon-foreground:var\(--account-icon-color-blue\)[^>]*--account-icon-border:var\(--account-icon-color-blue\)/)
   expect(markup).not.toContain('ion-card-title>Переводы')
+})
+
+
+describe('Dashboard tag breakdown', () => {
+  it('hides tags and disables their query in balance mode', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).not.toContain('по тегам')
+    expect(queryState.tagsEnabled).toEqual([false])
+  })
+
+  it.each(['expenses', 'income'] as const)('uses matching data and title in %s mode', (mode) => {
+    queryState.chartMode = mode
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain(mode === 'income' ? 'Доходы по тегам' : 'Расходы по тегам')
+    expect(markup).not.toContain(mode === 'income' ? 'Расходы по тегам' : 'Доходы по тегам')
+    expect(markup).toContain(mode === 'income' ? '#Зарплата' : '#Поездка')
+    expect(markup).not.toContain(mode === 'income' ? '#Поездка' : '#Зарплата')
+    expect(queryState.params[queryState.params.length - 1]).toMatchObject({ type: mode === 'income' ? 'income' : 'expense' })
+    expect(queryState.tagsEnabled).toEqual([true])
+  })
+
+  it.each(['expenses', 'income'] as const)('hides an empty tag breakdown in %s mode', (mode) => {
+    queryState.chartMode = mode
+    queryState.emptyTags = true
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).not.toContain('по тегам')
+  })
 })
