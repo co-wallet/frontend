@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
+import { IonButton, IonCheckbox, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthStore } from '@/store/authStore'
 import { canConfirmImport, importReasons, MonefyImport, type ImportState } from '@/lib/monefyImport'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
+import type { ImportMode } from '@/api/monefy'
 import type { AccountKind } from '@/api/accounts'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
 import { CategoryIconSettings } from '@/components/CategoryIconSettings'
@@ -12,7 +13,7 @@ import { CategoryIcon } from '@/components/CategoryIcon'
 import { MonefyImportDiagnostics, importAccountAnchor, scrollToImportAccount } from '@/components/MonefyImportDiagnostics'
 import './MonefyImportPage.css'
 
-const countNames: Record<string, string> = { accounts: 'Счета', categories: 'Категории', transactions: 'Операции', transfers: 'Переводы' }
+const countNames: Record<string, string> = { accounts: 'Счета', categories: 'Категории', transactions: 'Операции', transfers: 'Переводы', deleted_accounts: 'Из них ранее удалённые счета', members: 'Участие в счетах', shares: 'Доли операций', tag_links: 'Связи операций с тегами' }
 const date = (value: string | null) => value ? value.slice(0, 10) : 'нет данных'
 
 export function ImportPreviewDetails({ state, controller }: { state: ImportState; controller: MonefyImport }) {
@@ -36,6 +37,16 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <p>Текущие средства — повседневные деньги; вклад — средства на банковском вкладе; инвестиции — инвестиционные активы. Это настройка импорта, а не ошибка файла.</p>
         <p>Осталось заполнить: {p.accounts.filter(a => !a.kind).length}.</p>
         {p.accounts.filter(a => !a.kind).map(a => <IonButton key={a.source_id} size="small" fill="outline" onClick={() => scrollToImportAccount(a.source_id)}>{a.name}</IonButton>)}
+      </IonCardContent>
+    </IonCard>}
+    {p.mode === 'replace' && p.replacement && <IonCard>
+      <IonCardHeader><IonCardTitle>Полная замена: старые данные</IonCardTitle></IonCardHeader>
+      <IonCardContent>
+        <p>Состав проверяемой истории (при наличии блокировок удаление запрещено):</p>
+        <dl className="import-summary">{Object.entries(p.replacement.counts).map(([key, value]) => <div key={key}><dt>{countNames[key] || key}</dt><dd>{value}</dd></div>)}</dl>
+        <ul>{p.replacement.accounts.map(a => <li key={a.id}>{a.name} · {a.currency}{a.deleted_at ? ' · ранее удалён' : ''}</li>)}</ul>
+        <p>Старые личные счета, операции, переводы, доли и связи с тегами будут удалены физически. Общий справочник категорий и тегов, профиль, вход и настройки сохраняются.</p>
+        <p>Общие счета и внешние связи блокируют замену.</p>
       </IonCardContent>
     </IonCard>}
     <h2>Личные счета</h2>
@@ -63,8 +74,11 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
       </section>)}
     </IonCardContent></IonCard>
     <MonefyImportDiagnostics state={state} controller={controller} />
-    <p>После подтверждения счета и история будут добавлены в co-wallet. Отменить применение на этом экране нельзя.</p>
-    <IonButton expand="block" disabled={!canConfirmImport(state)} onClick={() => void controller.confirm()}>Подтвердить импорт</IonButton>
+    {p.mode === 'replace' ? <IonCard className="import-deletion-warning"><IonCardHeader><IonCardTitle>Безвозвратное удаление</IonCardTitle></IonCardHeader><IonCardContent>
+      <p>Старые данные будут удалены безвозвратно. Резервная копия не создаётся. Отменить замену после завершения нельзя.</p>
+      <IonCheckbox className="import-ack" disabled={locked} checked={state.deletionAccepted === true} onIonChange={e => controller.acceptDeletion(e.detail.checked)}>Подтверждаю безвозвратное удаление перечисленных старых данных без резервной копии</IonCheckbox>
+    </IonCardContent></IonCard> : <p>После подтверждения счета и история будут добавлены в co-wallet. Отменить применение на этом экране нельзя.</p>}
+    <IonButton expand="block" disabled={!canConfirmImport(state)} onClick={() => void controller.confirm()} color={p.mode === 'replace' ? 'danger' : 'primary'}>{p.mode === 'replace' ? 'Удалить старые данные и импортировать' : 'Подтвердить импорт'}</IonButton>
   </>
 }
 
@@ -72,7 +86,7 @@ export function MonefyImportPage() {
   const userID = useAuthStore(s => s.user?.id) || ''
   const qc = useQueryClient()
   const controller = useMemo(() => new MonefyImport(userID, undefined, localStorage, () => {
-    for (const key of ['accounts', 'transfer-accounts', 'categories', 'transactions', 'analytics']) void qc.invalidateQueries({ queryKey: [key] })
+    for (const key of ['accounts', 'account', 'account-members', 'transfer-accounts', 'categories', 'tags', 'transactions', 'analytics']) void qc.invalidateQueries({ queryKey: [key] })
   }), [userID, qc])
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   useEffect(() => { void controller.check() }, [controller])
@@ -83,10 +97,14 @@ export function MonefyImportPage() {
     <p id="import-file-format">Перенесите историю из одной резервной копии Monefy: файл базы SQLite с расширением .db (до 64 МБ). CSV, архивы и зашифрованные копии не подходят. Сначала файл проверяется без изменения ваших данных.</p>
     {busy && <div role="status"><IonSpinner /> {state.phase === 'confirming' ? 'Применяем импорт…' : 'Проверяем данные…'}</div>}
     {state.error && <IonText color="danger"><p role="alert">{state.error}</p></IonText>}
-    {!applying && state.availability?.available === false && <IonCard><IonCardHeader><IonCardTitle>Импорт недоступен</IonCardTitle></IonCardHeader><IonCardContent><p>Нужна пустая учётная запись.</p><ul>{state.availability.reasons.map(reason => <li key={reason}>{importReasons[reason] || `Ограничение сервера: ${reason}`}</li>)}</ul></IonCardContent></IonCard>}
+    {!applying && state.mode !== 'replace' && state.availability?.available === false && <IonCard><IonCardHeader><IonCardTitle>Импорт недоступен</IonCardTitle></IonCardHeader><IonCardContent><p>Нужна пустая учётная запись или режим полной замены данных.</p><ul>{state.availability.reasons.map(reason => <li key={reason}>{importReasons[reason] || `Ограничение сервера: ${reason}`}</li>)}</ul></IonCardContent></IonCard>}
     {!applying && <>
+      <IonItem><IonSelect label="Режим импорта" labelPlacement="stacked" interface="alert" cancelText="Отмена" okText="Выбрать" value={state.mode || 'empty'} disabled={busy} onIonChange={e => controller.setMode(e.detail.value as ImportMode)}>
+        <IonSelectOption value="empty">Импорт в пустую учётную запись</IonSelectOption>
+        <IonSelectOption value="replace">Полная замена моих данных</IonSelectOption>
+      </IonSelect></IonItem>
       {!busy && !state.availability && state.error && <IonButton fill="outline" onClick={() => void controller.check()}>Повторить проверку</IonButton>}
-      <div className="import-file"><input aria-label="База Monefy (.db)" aria-describedby="import-file-format" type="file" accept=".db" disabled={!state.availability?.available} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; void controller.upload(file) }} /></div>
+      <div className="import-file"><input aria-label="База Monefy (.db)" aria-describedby="import-file-format" type="file" accept=".db" disabled={!state.availability || (state.mode !== 'replace' && !state.availability.available)} onChange={e => { const file = e.target.files?.[0]; e.target.value = ''; void controller.upload(file) }} /></div>
       <ImportPreviewDetails state={state} controller={controller} />
       {(state.preview || state.fileName) && <IonButton expand="block" fill="clear" onClick={() => controller.cancel()}>Отменить подготовку</IonButton>}
     </>}

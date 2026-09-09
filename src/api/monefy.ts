@@ -2,7 +2,15 @@ import { apiClient } from './client'
 import type { AccountKind } from './accounts'
 
 export interface ImportAvailability { available: boolean; reasons: string[] }
+export type ImportMode = 'empty' | 'replace'
+export interface ImportReplacement {
+  accounts: { id: string; name: string; currency: string; deleted_at: string | null }[]
+  counts: Record<string, number>
+  blockers: Record<string, number>
+}
 export interface ImportPreview {
+  mode?: ImportMode
+  replacement?: ImportReplacement
   preview_id: string
   expires_at: string
   can_confirm: boolean
@@ -24,7 +32,7 @@ export interface ImportResult {
 const base = '/imports/monefy'
 export const monefyApi = {
   availability: async () => (await apiClient.get<ImportAvailability>(`${base}/availability`)).data,
-  preview: async (file: File) => (await apiClient.post<ImportPreview>(`${base}/preview`, file, { headers: { 'Content-Type': 'application/octet-stream' }, timeout: 30000 })).data,
+  preview: async (file: File, mode: ImportMode = 'empty') => (await apiClient.post<ImportPreview>(`${base}/preview${mode === 'replace' ? '?mode=replace' : ''}`, file, { headers: { 'Content-Type': 'application/octet-stream' }, timeout: 30000 })).data,
   configure: async (id: string, kinds: Record<string, AccountKind>, categoryIcons: Record<string, string> = {}, accountIcons: Record<string, string> = {}) => (await apiClient.post<ImportPreview>(`${base}/${encodeURIComponent(id)}/options`, { account_kinds: kinds, category_icons: categoryIcons, account_icons: accountIcons })).data,
-  confirm: async (id: string, accepted: boolean) => (await apiClient.post<ImportResult>(`${base}/${encodeURIComponent(id)}/confirm`, { acknowledge_exclusions: accepted }, { timeout: 30000 })).data,
+  confirm: async (id: string, accepted: boolean, deletion = false) => (await apiClient.post<ImportResult>(`${base}/${encodeURIComponent(id)}/confirm`, { acknowledge_exclusions: accepted, acknowledge_deletion: deletion }, { timeout: 30000 })).data,
 }

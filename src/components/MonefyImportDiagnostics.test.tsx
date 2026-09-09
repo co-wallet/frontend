@@ -59,3 +59,10 @@ describe('Monefy import diagnostic guidance', () => {
     expect(html).toContain('не редактируйте базу наугад')
   })
 })
+
+it('explains external relations as account restrictions rather than a malformed source', () => {
+  const html = visible(render({ ...preview, diagnostics: [{ code: 'target_replace_shared_accounts', severity: 'blocking', entity: '', source_id: '', message: 'Есть общие счета' }] }))
+  expect(html).toContain('Есть общие счета')
+  expect(html).toContain('Загрузка другого файла Monefy не устранит эти связи')
+  expect(html).not.toContain('проверки совместимости файла')
+})

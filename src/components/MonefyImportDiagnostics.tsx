@@ -15,6 +15,10 @@ function explain(p: ImportPreview, d: Diagnostic) {
   const account = d.entity === 'Account' ? p.accounts.find(a => a.source_id === d.source_id) : undefined
   const category = d.entity === 'Category' ? p.categories.find(c => c.source_id === d.source_id) : undefined
   const name = account ? `Счёт «${account.name}»` : category ? `Категория «${category.name}»` : entityNames[d.entity] || 'Данные файла'
+  if (d.code.startsWith('target_replace_')) return {
+    title: d.message,
+    action: 'Замена остановлена из-за связей в текущей учётной записи co-wallet. Загрузка другого файла Monefy не устранит эти связи. Общая история и данные других пользователей сохраняются.',
+  }
   switch (d.code) {
     case 'unknown_currency': return {
       title: `${name}: ${account?.currency ? `валюта ${account.currency} не поддерживается` : 'не указана валюта'}`,

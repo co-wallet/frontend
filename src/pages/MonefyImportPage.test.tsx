@@ -5,6 +5,16 @@ import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import { ImportPreviewDetails, MonefyImportPage } from './MonefyImportPage'
 import type { MonefyImport, ImportState } from '@/lib/monefyImport'
 
+const callbacks = vi.hoisted(() => ({ success: undefined as (() => void) | undefined }))
+vi.mock('@/lib/monefyImport', async importOriginal => {
+  const actual = await importOriginal<typeof import('@/lib/monefyImport')>()
+  return { ...actual, MonefyImport: class extends actual.MonefyImport {
+    constructor(...args: ConstructorParameters<typeof actual.MonefyImport>) {
+      super(...args)
+      callbacks.success = args[3]
+    }
+  } }
+})
 vi.mock('react', async importOriginal => ({ ...await importOriginal<typeof import('react')>(), useSyncExternalStore: (_subscribe: unknown, getSnapshot: () => unknown) => getSnapshot() }))
 vi.mock('@/components/layout/PageHeader', () => ({ PageHeader: () => null }))
 vi.mock('@/api/monefy', () => ({ monefyApi: {} }))
@@ -75,4 +85,26 @@ describe('Monefy preview UI', () => {
     expect(html).toContain('Что мешает импорту')
     expect(html).toMatch(/ion-button[^>]*disabled="true"/)
   })
+})
+
+it('warns about irreversible deletion without a backup and shows the old manifest', () => {
+  const s: ImportState = { ...state, mode: 'replace', accepted: true, deletionAccepted: false, availability: { available: false, reasons: ['owned_accounts'] }, preview: { ...state.preview!, mode: 'replace', replacement: {
+    counts: { accounts: 1, deleted_accounts: 1, transactions: 2, tag_links: 3 },
+    accounts: [{ id: 'old', name: 'Старый счёт', currency: 'RUB', deleted_at: '2025-01-01' }], blockers: {},
+  } } }
+  const html = render(s)
+  for (const text of ['Старый счёт', 'ранее удалён', 'Резервная копия не создаётся', 'Отменить замену после завершения нельзя', 'Подтверждаю безвозвратное удаление', 'Общие счета и внешние связи блокируют', 'Удалить старые данные и импортировать']) expect(html).toContain(text)
+  expect(html).toMatch(/ion-button[^>]*disabled="true"[^>]*color="danger"/)
+  expect(render({ ...s, deletionAccepted: true })).not.toMatch(/ion-button[^>]*disabled="true"/)
+})
+
+it('invalidates cached balances, history, details, memberships and catalog after success', () => {
+  const qc = new QueryClient()
+  const keys = [['accounts', 'RUB'], ['account', 'old'], ['account-members', 'old'], ['transfer-accounts', 'search'], ['categories', 'expense'], ['tags', 'autocomplete', 'a'], ['transactions', 'recent'], ['analytics', 'summary']]
+  for (const key of keys) qc.setQueryData(key, ['old-data'])
+  qc.setQueryData(['currencies'], ['RUB'])
+  renderToStaticMarkup(<QueryClientProvider client={qc}><MonefyImportPage /></QueryClientProvider>)
+  callbacks.success!()
+  for (const key of keys) expect(qc.getQueryState(key)?.isInvalidated).toBe(true)
+  expect(qc.getQueryState(['currencies'])?.isInvalidated).toBe(false)
 })
