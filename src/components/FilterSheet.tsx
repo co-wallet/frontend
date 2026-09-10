@@ -222,15 +222,17 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                 )
               })}
             </div>
-            <IonCheckbox
-              className="filter-sheet-checkbox"
-              labelPlacement="end"
-              justify="start"
-              checked={includeShared}
-              onIonChange={(event) => setIncludeShared(event.detail.checked)}
-            >
-              Учитывать общие счета
-            </IonCheckbox>
+            <div className="filter-sheet-checkboxes">
+              <IonCheckbox
+                className="filter-sheet-checkbox"
+                labelPlacement="end"
+                justify="start"
+                checked={includeShared}
+                onIonChange={(event) => setIncludeShared(event.detail.checked)}
+              >
+                Учитывать общие счета
+              </IonCheckbox>
+            </div>
           </section>
 
           {/* Accounts */}

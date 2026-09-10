@@ -59,6 +59,7 @@ describe('FilterSheet', () => {
     expect(markup).toContain('Переводы в суммах')
     expect(markup).toContain('Учитывать в расходах')
     expect(markup).toContain('Учитывать в доходах')
+    expect(markup.match(/class="filter-sheet-checkboxes"/g)).toHaveLength(2)
   })
 })
 
