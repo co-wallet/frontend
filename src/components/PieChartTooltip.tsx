@@ -18,7 +18,11 @@ export function PieChartTooltip({ active, payload, contentStyle, formatAmount, c
   return (
     <div role="tooltip" style={{ ...contentStyle, padding: '10px 12px', maxWidth: 260, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, marginBottom: 4 }}>
-        {entry.payload?.iconType === 'account' ? (
+        {entry.payload?.iconType === 'untagged' ? (
+          <span aria-hidden="true">∅</span>
+        ) : entry.payload?.iconType === 'tag' ? (
+          <span aria-hidden="true">#</span>
+        ) : entry.payload?.iconType === 'account' ? (
           <AccountIcon value={entry.payload.icon} size={20} shape="rectangle" />
         ) : (
           <CategoryIcon

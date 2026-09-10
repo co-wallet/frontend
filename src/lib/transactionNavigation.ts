@@ -18,6 +18,7 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
     if (values?.length) filter[field] = values
   }
   if (params.get('tag_mode') === 'and') filter.tagMode = 'and'
+  if (params.get('without_tags') === 'true') filter.withoutTags = true
   const accountKinds = params.get('account_kinds')
   if (accountKinds === 'none') filter.accountKinds = []
   else if (accountKinds) {
@@ -40,6 +41,8 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
   }
   result.delete('tag_mode')
   if (filter.tagMode === 'and') result.set('tag_mode', 'and')
+  result.delete('without_tags')
+  if (filter.withoutTags) result.set('without_tags', 'true')
   result.delete('account_kinds')
   if (filter.accountKinds) {
     result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'none')

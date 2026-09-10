@@ -156,9 +156,19 @@ describe('transaction list helpers', () => {
       tag_mode: 'and',
     })
     expect(hasTransactionFilters({ tagIds: ['tag-1'] })).toBe(true)
+    expect(hasTransactionFilters({ withoutTags: true })).toBe(true)
     expect(hasTransactionFilters({ accountKinds: [] })).toBe(true)
     expect(hasTransactionFilters({ includeTransferExpenses: true })).toBe(true)
     expect(hasTransactionFilters({})).toBe(false)
+  })
+
+  it('includes the without-tags condition in analytics parameters', () => {
+    expect(buildTransactionAnalyticsParams(
+      { withoutTags: true },
+      '2026-09-01',
+      '2026-09-02',
+      'RUB',
+    )).toMatchObject({ without_tags: true })
   })
 
   it('uses independent transfer visibility preferences in analytics', () => {

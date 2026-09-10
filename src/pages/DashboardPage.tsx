@@ -25,9 +25,6 @@ import {
   IonSelect,
   IonSelectOption,
   IonChip,
-  IonItem,
-  IonList,
-  IonNote,
   IonText,
 } from '@ionic/react'
 import {
@@ -56,8 +53,6 @@ import {
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
-
-import { filteredTransactionsHref } from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
 
@@ -257,18 +252,9 @@ export function DashboardPage() {
     enabled: hasAnalyticsAccounts,
   })
 
-  const tagParams: AnalyticsParams = { ...params, type: chartMode === 'income' ? 'income' : 'expense' }
-
-  const { data: byTagRaw = [] } = useQuery({
-    queryKey: ['analytics', 'by-tag', tagParams],
-    queryFn: () => analyticsApi.byTag(tagParams),
-    enabled: chartMode !== 'balance' && hasAnalyticsAccounts,
-  })
-
   const summary = !hasAnalyticsAccounts ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
   const byExpense = !hasAnalyticsAccounts ? [] : byExpenseRaw
   const byIncome = !hasAnalyticsAccounts ? [] : byIncomeRaw
-  const byTag = !hasAnalyticsAccounts ? [] : byTagRaw
 
   const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
@@ -552,43 +538,6 @@ export function DashboardPage() {
               )}
             </div>
           </IonPopover>
-
-          {/* Tags breakdown */}
-          {chartMode !== 'balance' && byTag.length > 0 && (
-            <IonCard style={{ margin: '0 0 16px 0' }}>
-              <IonCardHeader>
-                <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartMode === 'income' ? 'Доходы по тегам' : 'Расходы по тегам'}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  {byTag.slice(0, 6).map((s) => (
-                    <IonItem
-                      key={s.tagId}
-                      routerLink={filteredTransactionsHref(
-                        {
-                          accountIds: filteredAccounts.map((account) => account.id),
-                          accountKinds: selectedKinds,
-                          includeShared,
-                          includeTransferExpenses: transferVisibility.expenses,
-                          includeTransferIncome: transferVisibility.income,
-                          tagIds: [s.tagId],
-                        },
-                        { period, periodOffset, customFrom, customTo },
-                      )}
-                      routerDirection="forward"
-                      disabled={accountsLoading || filteredAccounts.length === 0}
-                      detail
-                      lines="none"
-                      className="dashboard-tag-row"
-                    >
-                      <IonLabel color="medium" style={{ fontSize: '0.75rem' }}>#{s.tagName}</IonLabel>
-                      <IonNote slot="end" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{formatAmount(s.amount, sym)}</IonNote>
-                    </IonItem>
-                  ))}
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-          )}
 
           {chartMode === 'balance' && (
             <RecentTransactions
