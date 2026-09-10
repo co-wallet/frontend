@@ -10,12 +10,16 @@ const pagination = vi.hoisted(() => ({
   isError: false,
   isFetchNextPageError: false,
   hasNextPage: false,
+  options: undefined as undefined | { queryKey: unknown[]; enabled: boolean },
+  analyticsQueries: [] as { queryKey: unknown[]; enabled?: boolean }[],
 }))
 beforeEach(() => {
   pagination.data = { pages: [[]] }
   pagination.isError = false
   pagination.isFetchNextPageError = false
   pagination.hasNextPage = false
+  pagination.options = undefined
+  pagination.analyticsQueries = []
 })
 
 vi.mock('@/lib/useChartTheme', () => ({
@@ -23,17 +27,27 @@ vi.mock('@/lib/useChartTheme', () => ({
 }))
 vi.mock('@tanstack/react-query', () => ({
   infiniteQueryOptions: (options: unknown) => options,
-  useInfiniteQuery: () => pagination,
-  useQuery: ({ queryKey }: { queryKey: string[] }) => ({
+  useInfiniteQuery: (options: typeof pagination.options) => {
+    pagination.options = options
+    return pagination
+  },
+  useQuery: ({ queryKey, enabled }: { queryKey: string[]; enabled?: boolean }) => {
+    if (queryKey[0] === 'analytics') pagination.analyticsQueries.push({ queryKey, enabled })
+    return ({
     data: queryKey[0] === 'accounts'
-      ? [{ id: 'a1', name: 'Личная' }, { id: 'a2', name: 'Кредитный' }, { id: 'a3', name: 'Инвестиции' }]
+      ? [
+        { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
+        { id: 'a2', name: 'Общая', kind: 'spending', accessMode: 'shared' },
+        { id: 'a3', name: 'Инвестиции', kind: 'investment', accessMode: 'personal' },
+      ]
       : queryKey[0] === 'categories' && queryKey[1] === 'expense'
         ? [{ id: 'c1', name: 'Продукты' }, { id: 'c2', name: 'Кафе' }]
         : queryKey[0] === 'tags'
           ? [{ id: 't1', name: 'путешествия' }, { id: 't2', name: 'япония' }]
           : [],
     isLoading: false,
-  }),
+    })
+  },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }))
@@ -67,9 +81,11 @@ describe('transaction navigation controls', () => {
 describe('active filter summary', () => {
   it('shows a clear unfiltered state without empty groups', () => {
     const markup = renderPage('/transactions')
-    expect(markup).toContain('все счета, категории и теги')
-    expect(markup).not.toContain('class="transactions-filter-group"')
+    expect(markup).toContain('Текущие средства · личные счета')
+    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(1)
     expect(markup).not.toContain('Сбросить все')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a1'] })
+    expect(pagination.options?.enabled).toBe(true)
   })
 
   it('shows one value per type with independent overflow counts', () => {
@@ -77,7 +93,7 @@ describe('active filter summary', () => {
     expect(markup).toContain('aria-label="Счета:')
     expect(markup).toContain('aria-label="Категории:')
     expect(markup).toContain('aria-label="Теги:')
-    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(3)
+    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(4)
     expect(markup).toContain('Личная')
     expect(markup).toContain('Продукты')
     expect(markup).toContain('#путешествия')
@@ -89,6 +105,29 @@ describe('active filter summary', () => {
     expect(markup).toContain('Категории: Продукты, ещё 1. Открыть фильтры')
     expect(markup).toContain('Теги: #путешествия, ещё 1. Открыть фильтры')
     expect(markup).not.toContain('Сбросить все')
+  })
+
+  it('intersects selected account kinds with shared visibility and explicit accounts', () => {
+    renderPage('/transactions?account_ids=a2,a3&account_kinds=investment&include_shared=true')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a3'] })
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')
+    expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a3' })
+  })
+
+  it('disables list and analytics requests when no account kinds are selected', () => {
+    const markup = renderPage('/transactions?account_kinds=none')
+    expect(markup).toContain('Типы средств не выбраны')
+    expect(pagination.options?.enabled).toBe(false)
+    expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
+  })
+
+  it('passes independent transfer preferences to summary analytics', () => {
+    renderPage('/transactions?include_transfer_expenses=true&include_transfer_income=false')
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')
+    expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({
+      include_transfer_expenses: true,
+      include_transfer_income: false,
+    })
   })
 
   it('omits empty types and overflow for a single selected value', () => {

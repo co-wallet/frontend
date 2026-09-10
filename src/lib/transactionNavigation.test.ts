@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { createMemoryHistory } from 'history'
+import type { TransactionFilter } from '@/api/transactions'
 import { computeDateRange } from '@/store/periodStore'
 import { filterFromParams, filterToParams, filteredTransactionsHref, periodFromParams, periodToParams, type TransactionPeriod } from './transactionNavigation'
 
@@ -21,9 +22,37 @@ describe('tag navigation', () => {
     expect(filterFromParams(query(filteredTransactionsHref(filter, period)))).toEqual(filter)
   })
 
+  it('round-trips account scope and independent transfer preferences', () => {
+    const filter: TransactionFilter = {
+      accountKinds: ['spending', 'investment'] as const,
+      includeShared: true,
+      includeTransferExpenses: true,
+      includeTransferIncome: false,
+    }
+    expect(filterFromParams(filterToParams(filter))).toEqual(filter)
+    expect(filterFromParams(filterToParams({ accountKinds: [] }))).toEqual({ accountKinds: [] })
+  })
+
   it('encodes tag ids and preserves AND mode when serializing an existing filter', () => {
     const filter = { tagIds: ['tag & one', 'two'], tagMode: 'and' as const }
     expect(filterFromParams(filterToParams(filter))).toEqual(filter)
+  })
+
+  it('round-trips account scope and independent transfer preferences', () => {
+    const filter: TransactionFilter = {
+      accountKinds: ['spending', 'investment'],
+      includeShared: true,
+      includeTransferExpenses: true,
+      includeTransferIncome: false,
+    }
+    expect(filterFromParams(filterToParams(filter))).toEqual(filter)
+    expect(filterFromParams(filterToParams({ accountKinds: [] }))).toEqual({ accountKinds: [] })
+  })
+
+  it('ignores unsupported account kinds', () => {
+    expect(filterFromParams(new URLSearchParams('account_kinds=crypto,spending'))).toEqual({
+      accountKinds: ['spending'],
+    })
   })
 
   it('clears filters without losing the period', () => {

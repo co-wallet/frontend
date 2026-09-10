@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import type { AccountKind } from './accounts'
 
 export type TransactionType = 'expense' | 'income' | 'transfer'
 
@@ -67,6 +68,10 @@ export interface UpdateTransactionDto {
 
 export interface TransactionFilter {
   accountIds?: string[]
+  accountKinds?: AccountKind[]
+  includeShared?: boolean
+  includeTransferExpenses?: boolean
+  includeTransferIncome?: boolean
   categoryIds?: string[]
   tagIds?: string[]
   tagMode?: 'or' | 'and'

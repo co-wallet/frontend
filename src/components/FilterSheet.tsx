@@ -14,16 +14,22 @@ import {
   IonSegmentButton,
   IonLabel,
   IonNote,
+  IonCheckbox,
   IonFooter,
   IonPage,
 } from '@ionic/react'
 import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/icons'
-import { accountsApi } from '@/api/accounts'
+import { accountsApi, type AccountKind } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type Category } from '@/api/categories'
 import { tagsApi, type Tag } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
+import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
+import {
+  DEFAULT_TRANSACTION_ACCOUNT_KINDS,
+  transactionFilterAccounts,
+} from '@/lib/accountFilters'
 
 import './FilterSheet.css'
 
@@ -47,6 +53,16 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   }
 
   const [accountIds, setAccountIds] = useState<string[]>(value.accountIds ?? [])
+  const [accountKinds, setAccountKinds] = useState<AccountKind[]>(
+    value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS],
+  )
+  const [includeShared, setIncludeShared] = useState(value.includeShared ?? false)
+  const [includeTransferExpenses, setIncludeTransferExpenses] = useState(
+    value.includeTransferExpenses ?? false,
+  )
+  const [includeTransferIncome, setIncludeTransferIncome] = useState(
+    value.includeTransferIncome ?? true,
+  )
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
   const [tagIds, setTagIds] = useState<string[]>(value.tagIds ?? [])
   const [tagMode, setTagMode] = useState<'or' | 'and'>(value.tagMode ?? 'or')
@@ -54,6 +70,10 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   useEffect(() => {
     if (open) {
       setAccountIds(value.accountIds ?? [])
+      setAccountKinds(value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
+      setIncludeShared(value.includeShared ?? false)
+      setIncludeTransferExpenses(value.includeTransferExpenses ?? false)
+      setIncludeTransferIncome(value.includeTransferIncome ?? true)
       setCategoryIds(value.categoryIds ?? [])
       setTagIds(value.tagIds ?? [])
       setTagMode(value.tagMode ?? 'or')
@@ -78,6 +98,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
   const hiddenCategories = allCategories.filter((category) => category.hidden)
   const hiddenTags = tags.filter((tag) => tag.hidden)
+  const visibleAccounts = transactionFilterAccounts(accounts, { accountKinds, includeShared })
 
   function categoryOption(c: Category) {
     const selected = categoryIds.includes(c.id)
@@ -107,7 +128,10 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   }
 
   function apply() {
-    const f: TransactionFilter = {}
+    const f: TransactionFilter = { accountKinds }
+    if (includeShared) f.includeShared = true
+    if (includeTransferExpenses) f.includeTransferExpenses = true
+    if (!includeTransferIncome) f.includeTransferIncome = false
     if (accountIds.length) f.accountIds = accountIds
     if (categoryIds.length) f.categoryIds = categoryIds
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
@@ -117,6 +141,10 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
   function reset() {
     setAccountIds([])
+    setAccountKinds([...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
+    setIncludeShared(false)
+    setIncludeTransferExpenses(false)
+    setIncludeTransferIncome(true)
     setCategoryIds([])
     setTagIds([])
     setTagMode('or')
@@ -126,6 +154,9 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
   const activeCount = [
     (value.accountIds?.length ?? 0) > 0,
+    value.accountKinds !== undefined,
+    value.includeShared === true,
+    value.includeTransferExpenses === true || value.includeTransferIncome === false,
     (value.categoryIds?.length ?? 0) > 0,
     (value.tagIds?.length ?? 0) > 0,
   ].filter(Boolean).length
@@ -168,12 +199,48 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
           </IonHeader>
 
           <IonContent className="ion-padding filter-sheet-content">
+          <section className="filter-sheet-section" aria-labelledby="filter-account-kinds-title">
+            <IonNote id="filter-account-kinds-title" className="filter-sheet-section__title">
+              Тип средств
+            </IonNote>
+            <div className="filter-sheet-options">
+              {ACCOUNT_KIND_OPTIONS.map((option) => {
+                const selected = accountKinds.includes(option.value)
+                return (
+                  <IonButton
+                    key={option.value}
+                    fill={selected ? 'solid' : 'outline'}
+                    className="filter-sheet-option"
+                    onClick={() => setAccountKinds((previous) => toggle(previous, option.value))}
+                    aria-pressed={selected}
+                  >
+                    <span className="filter-sheet-option__content">
+                      <span>{option.shortLabel}</span>
+                      {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
+                    </span>
+                  </IonButton>
+                )
+              })}
+            </div>
+            <IonCheckbox
+              className="filter-sheet-checkbox"
+              labelPlacement="end"
+              justify="start"
+              checked={includeShared}
+              onIonChange={(event) => setIncludeShared(event.detail.checked)}
+            >
+              Учитывать общие счета
+            </IonCheckbox>
+          </section>
+
           {/* Accounts */}
-          {accounts.length > 0 && (
+          {visibleAccounts.length > 0 && (
             <section className="filter-sheet-section" aria-labelledby="filter-accounts-title">
-              <IonNote id="filter-accounts-title" className="filter-sheet-section__title">Счета</IonNote>
+              <IonNote id="filter-accounts-title" className="filter-sheet-section__title">
+                Конкретные счета
+              </IonNote>
               <div className="filter-sheet-options">
-                {accounts.map((a) => {
+                {visibleAccounts.map((a) => {
                   const selected = accountIds.includes(a.id)
                   return (
                     <IonButton
@@ -194,6 +261,32 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
               </div>
             </section>
           )}
+
+          <section className="filter-sheet-section" aria-labelledby="filter-transfers-title">
+            <IonNote id="filter-transfers-title" className="filter-sheet-section__title">
+              Переводы в суммах
+            </IonNote>
+            <div className="filter-sheet-checkboxes">
+              <IonCheckbox
+                className="filter-sheet-checkbox"
+                labelPlacement="end"
+                justify="start"
+                checked={includeTransferExpenses}
+                onIonChange={(event) => setIncludeTransferExpenses(event.detail.checked)}
+              >
+                Учитывать в расходах
+              </IonCheckbox>
+              <IonCheckbox
+                className="filter-sheet-checkbox"
+                labelPlacement="end"
+                justify="start"
+                checked={includeTransferIncome}
+                onIonChange={(event) => setIncludeTransferIncome(event.detail.checked)}
+              >
+                Учитывать в доходах
+              </IonCheckbox>
+            </div>
+          </section>
 
           {/* Categories */}
           {allCategories.length > 0 && (
