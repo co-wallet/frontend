@@ -47,7 +47,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <dl className="import-summary">{Object.entries(p.replacement.counts).map(([key, value]) => <div key={key}><dt>{countNames[key] || key}</dt><dd>{value}</dd></div>)}</dl>
         <ul>{p.replacement.accounts.map(a => <li key={a.id}>{a.name} · {a.currency}{a.deleted_at ? ' · ранее удалён' : ''}</li>)}</ul>
         <p>Старые личные счета, операции, переводы, доли и связи с тегами будут удалены физически. Общий справочник категорий и тегов, профиль, вход и настройки сохраняются.</p>
-        <p>Общие счета и внешние связи блокируют замену.</p>
+        <p>Общие счета, участие в них и их история сохранятся. Переводы между удаляемыми личными и сохраняемыми счетами блокируют замену.</p>
       </IonCardContent>
     </IonCard>}
     <h2>Счета и распределение</h2>
