@@ -3,7 +3,8 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { transactionPaginationOptions } from '@/lib/transactionPagination'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
@@ -15,6 +16,8 @@ import {
   IonFab,
   IonFabButton,
   IonIcon,
+  IonInfiniteScroll,
+  IonInfiniteScrollContent,
   IonItem,
   IonItemDivider,
   IonItemGroup,
@@ -155,10 +158,7 @@ export function TransactionsPage() {
     queryKey: ['tags'],
     queryFn: () => tagsApi.list(),
   })
-  const transactionsQuery = useQuery({
-    queryKey: ['transactions', effectiveFilter],
-    queryFn: () => transactionsApi.list(effectiveFilter),
-  })
+  const transactionsQuery = useInfiniteQuery(transactionPaginationOptions(effectiveFilter))
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
@@ -185,7 +185,7 @@ export function TransactionsPage() {
     [allCategories],
   )
   const groupedTransactions = useMemo(() => groupTransactionsByDate(
-    transactionsQuery.data ?? [],
+    transactionsQuery.data?.pages.flat() ?? [],
     (tx) => transactionDefaultCurrencyAmount(
       tx,
       accountsById.get(tx.accountId),
@@ -418,7 +418,7 @@ export function TransactionsPage() {
                 </IonItem>
               ))}
             </IonList>
-          ) : transactionsQuery.isError ? (
+          ) : transactionsQuery.isError && !transactionsQuery.data ? (
             <div className="app-state transactions-state" role="alert">
               <IonIcon icon={alertCircleOutline} aria-hidden="true" />
               <h2>Не удалось загрузить транзакции</h2>
@@ -477,6 +477,30 @@ export function TransactionsPage() {
               ))}
             </IonList>
           )}
+          {transactionsQuery.isFetchNextPageError && (
+            <div className="transactions-inline-error" role="alert">
+              Не удалось загрузить следующие транзакции.
+              <IonButton fill="clear" disabled={transactionsQuery.isFetching} onClick={() => transactionsQuery.fetchNextPage({ cancelRefetch: false })}>
+                Повторить
+              </IonButton>
+            </div>
+          )}
+          <IonInfiniteScroll
+            threshold="200px"
+            disabled={!isCurrentPage || !transactionsQuery.hasNextPage || transactionsQuery.isFetchNextPageError}
+            onIonInfinite={async (event) => {
+              const scroll = event.target
+              try {
+                if (transactionsQuery.hasNextPage && !transactionsQuery.isFetching) {
+                  await transactionsQuery.fetchNextPage({ cancelRefetch: false })
+                }
+              } finally {
+                await scroll.complete()
+              }
+            }}
+          >
+            <IonInfiniteScrollContent loadingSpinner="dots" loadingText="Загрузка транзакций…" />
+          </IonInfiniteScroll>
         </div>
 
 
