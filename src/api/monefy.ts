@@ -21,7 +21,7 @@ export interface ImportPreview {
   period_from: string | null
   period_to: string | null
   currencies: string[]
-  accounts: { access_mode?: 'personal' | 'shared'; members?: ImportMember[]; source_id: string; icon: string; name: string; currency: string; kind: AccountKind | ''; initial_balance: string; initial_balance_date: string; final_balance: string; source_included_in_total: boolean; source_disabled_at: string | null }[]
+  accounts: { access_mode?: 'personal' | 'shared'; members?: ImportMember[]; source_id: string; icon: string; name: string; source_name?: string; currency: string; kind: AccountKind | ''; initial_balance: string; initial_balance_date: string; final_balance: string; source_included_in_total: boolean; source_disabled_at: string | null }[]
   categories: { source_id: string; existing_id?: string; name: string; type: 'expense' | 'income'; icon: string; source_disabled_at: string | null }[]
   diagnostics: { severity: string; code: string; entity: string; source_id: string; message: string }[]
   exclusions: { entity: string; source_id: string; reason: string }[]

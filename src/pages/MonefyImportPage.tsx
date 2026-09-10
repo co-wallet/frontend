@@ -55,6 +55,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
     {p.accounts.map(a => <IonCard key={a.source_id} id={importAccountAnchor(a.source_id)}>
       <IonCardHeader><IonCardTitle>{a.name} · {a.currency}</IonCardTitle></IonCardHeader>
       <IonCardContent>
+        {a.source_name && a.source_name !== a.name && <p>В файле: «{a.source_name}». Будет создан новый счёт «{a.name}», поскольку исходное название занято.</p>}
         <p>Начальный баланс: {a.initial_balance} {a.currency} на {date(a.initial_balance_date)}</p>
         <p>Итоговый баланс: {a.final_balance} {a.currency}</p>
         <ImportAccountAccess account={a} state={state} controller={controller} />
@@ -80,7 +81,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
     {p.mode === 'replace' ? <IonCard className="import-deletion-warning"><IonCardHeader><IonCardTitle>Безвозвратное удаление</IonCardTitle></IonCardHeader><IonCardContent>
       <p>Старые данные будут удалены безвозвратно. Резервная копия не создаётся. Отменить замену после завершения нельзя.</p>
       <IonCheckbox className="import-ack" disabled={locked} checked={state.deletionAccepted === true} onIonChange={e => controller.acceptDeletion(e.detail.checked)}>Подтверждаю безвозвратное удаление перечисленных старых данных без резервной копии</IonCheckbox>
-    </IonCardContent></IonCard> : <p>После подтверждения счета и история будут добавлены в co-wallet. Отменить применение на этом экране нельзя.</p>}
+    </IonCardContent></IonCard> : <p>После подтверждения будут созданы новые счета и добавлена история. Существующие счета и операции сохранятся. Совпадающие названия новых счетов получают суффикс (1), (2) и далее. Отменить применение на этом экране нельзя.</p>}
     <IonButton expand="block" disabled={!canConfirmImport(state)} onClick={() => void controller.confirm()} color={p.mode === 'replace' ? 'danger' : 'primary'}>{p.mode === 'replace' ? 'Удалить старые данные и импортировать' : 'Подтвердить импорт'}</IonButton>
   </>
 }
@@ -102,10 +103,10 @@ export function MonefyImportPage() {
     <p id="import-file-format">Перенесите историю из одной резервной копии Monefy: файл базы SQLite с расширением .db (до 64 МБ). CSV, архивы и зашифрованные копии не подходят. Сначала файл проверяется без изменения ваших данных.</p>
     {busy && <div role="status"><IonSpinner /> {state.phase === 'confirming' ? 'Применяем импорт…' : 'Проверяем данные…'}</div>}
     {state.error && <IonText color="danger"><p role="alert">{state.error}</p></IonText>}
-    {!applying && state.mode !== 'replace' && state.availability?.available === false && <IonCard><IonCardHeader><IonCardTitle>Импорт недоступен</IonCardTitle></IonCardHeader><IonCardContent><p>Нужна пустая учётная запись или режим полной замены данных.</p><ul>{state.availability.reasons.map(reason => <li key={reason}>{importReasons[reason] || `Ограничение сервера: ${reason}`}</li>)}</ul></IonCardContent></IonCard>}
+    {!applying && state.mode !== 'replace' && state.availability?.available === false && <IonCard><IonCardHeader><IonCardTitle>Импорт недоступен</IonCardTitle></IonCardHeader><IonCardContent><p>Сервер временно ограничил импорт.</p><ul>{state.availability.reasons.map(reason => <li key={reason}>{importReasons[reason] || `Ограничение сервера: ${reason}`}</li>)}</ul></IonCardContent></IonCard>}
     {!applying && <>
       <IonItem><IonSelect label="Режим импорта" labelPlacement="stacked" interface="alert" cancelText="Отмена" okText="Выбрать" value={state.mode || 'empty'} disabled={busy} onIonChange={e => controller.setMode(e.detail.value as ImportMode)}>
-        <IonSelectOption value="empty">Импорт в пустую учётную запись</IonSelectOption>
+        <IonSelectOption value="empty">Добавить к моим данным</IonSelectOption>
         <IonSelectOption value="replace">Полная замена моих данных</IonSelectOption>
       </IonSelect></IonItem>
       {!busy && !state.availability && state.error && <IonButton fill="outline" onClick={() => void controller.check()}>Повторить проверку</IonButton>}

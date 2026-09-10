@@ -120,3 +120,11 @@ it('shows immutable shared distribution and the per-member impact on balances', 
   const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><ImportPreviewDetails state={shared} controller={{} as MonefyImport} /></QueryClientProvider>)
   for (const text of ['anna', 'boris', '60%', '40%', '60.00006000', '20.00004000', 'ко всей переносимой истории', 'неизменяемы']) expect(html).toContain(text)
 })
+
+ it('shows the proposed new account name and promises to retain existing data', () => {
+   const html = render({ ...state, accepted: true, preview: { ...state.preview!, accounts: [{ ...state.preview!.accounts[0], name: 'Семья (2)', source_name: 'Семья' }] } })
+   expect(html).toContain('Будет создан новый счёт «Семья (2)»')
+   expect(html).toContain('В файле: «Семья»')
+   expect(html).toContain('Существующие счета и операции сохранятся')
+   expect(html).not.toMatch(/ion-button[^>]*disabled="true"/)
+ })
