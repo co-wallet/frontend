@@ -1,12 +1,29 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter, Route } from 'react-router-dom'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
+import type { Transaction } from '@/api/transactions'
+
+const pagination = vi.hoisted(() => ({
+  data: { pages: [] as Transaction[][] },
+  isLoading: false,
+  isError: false,
+  isFetchNextPageError: false,
+  hasNextPage: false,
+}))
+beforeEach(() => {
+  pagination.data = { pages: [[]] }
+  pagination.isError = false
+  pagination.isFetchNextPageError = false
+  pagination.hasNextPage = false
+})
 
 vi.mock('@/lib/useChartTheme', () => ({
   useChartTheme: () => ({ tooltipStyle: {}, legendColor: 'black' }),
 }))
 vi.mock('@tanstack/react-query', () => ({
+  infiniteQueryOptions: (options: unknown) => options,
+  useInfiniteQuery: () => pagination,
   useQuery: ({ queryKey }: { queryKey: string[] }) => ({
     data: queryKey[0] === 'accounts'
       ? [{ id: 'a1', name: 'Личная' }, { id: 'a2', name: 'Кредитный' }, { id: 'a3', name: 'Инвестиции' }]
@@ -90,5 +107,35 @@ describe('active filter summary', () => {
     expect(markup).toContain('aria-label="Категории: Категория. Открыть фильтры"')
     expect(markup).toContain('#Тег')
     expect(markup).toContain('Счета: Счёт, ещё 1. Открыть фильтры')
+  })
+})
+
+
+describe('paginated transaction list', () => {
+  function transaction(id: string): Transaction {
+    return {
+      id, accountId: 'a1', type: 'expense', amount: 10, currency: 'USD',
+      date: '2026-08-21', description: `Operation ${id}`, shares: [], tags: [],
+    } as unknown as Transaction
+  }
+
+  it('merges a day split across two pages under a single heading', () => {
+    pagination.data.pages = [[transaction('first')], [transaction('second')]]
+    const markup = renderPage('/transactions')
+    expect(markup).toContain('Operation first')
+    expect(markup).toContain('Operation second')
+    expect(markup.match(/class="transactions-date-divider__date"/g)).toHaveLength(1)
+  })
+
+  it('keeps loaded rows visible and offers retry when the next page fails', () => {
+    pagination.data.pages = [[transaction('first')]]
+    pagination.isError = true
+    pagination.isFetchNextPageError = true
+    pagination.hasNextPage = true
+    const markup = renderPage('/transactions')
+    expect(markup).toContain('Operation first')
+    expect(markup).toContain('Не удалось загрузить следующие транзакции.')
+    expect(markup).toContain('Повторить')
+    expect(markup).not.toContain('<h2>Не удалось загрузить транзакции</h2>')
   })
 })
