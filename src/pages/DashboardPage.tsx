@@ -39,6 +39,7 @@ import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
+import type { TransactionFilter } from '@/api/transactions'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
@@ -53,6 +54,7 @@ import {
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
+import { filteredTransactionsHref } from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
 
@@ -224,6 +226,18 @@ export function DashboardPage() {
     account_ids: filteredAccountIds,
     account_kinds: selectedKinds.join(','),
   }
+  const transactionFilter: TransactionFilter = {
+    accountKinds: selectedKinds,
+    ...(includeShared ? { includeShared: true } : {}),
+    ...(accountFilter === 'custom' ? { accountIds: effectiveSelectedAccountIds } : {}),
+    ...(transferVisibility.expenses ? { includeTransferExpenses: true } : {}),
+    ...(!transferVisibility.income ? { includeTransferIncome: false } : {}),
+  }
+  const transactionPeriod = { period, periodOffset, customFrom, customTo }
+  const recentTransactionFilter: TransactionFilter = chartMode === 'balance'
+    ? {}
+    : { dateFrom, dateTo }
+  const allTransactionsHref = filteredTransactionsHref(transactionFilter, transactionPeriod)
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', displayCurrency],
@@ -539,16 +553,16 @@ export function DashboardPage() {
             </div>
           </IonPopover>
 
-          {chartMode === 'balance' && (
-            <RecentTransactions
-              accounts={accounts}
-              accountIds={filteredAccounts.map((account) => account.id)}
-              accountsLoading={accountsLoading}
-              accountsError={accountsError}
-              currentUserId={user?.id}
-              defaultCurrency={displayCurrency}
-            />
-          )}
+          <RecentTransactions
+            accounts={accounts}
+            accountIds={filteredAccounts.map((account) => account.id)}
+            accountsLoading={accountsLoading}
+            accountsError={accountsError}
+            currentUserId={user?.id}
+            defaultCurrency={displayCurrency}
+            filter={recentTransactionFilter}
+            fullListHref={allTransactionsHref}
+          />
         </div>
 
         {/* FAB */}

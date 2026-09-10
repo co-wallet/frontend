@@ -41,12 +41,29 @@ afterEach(() => {
 })
 
 describe('RecentTransactions', () => {
-  it('requests a bounded batch of transactions for the selected accounts without a date filter', async () => {
+  it('requests a bounded batch of transactions for the selected accounts', async () => {
     render()
     const query = state.queries.find((query) => query.queryKey[0] === 'transactions')!
     expect(query.enabled).toBe(true)
     await query.queryFn()
     expect(transactionsApi.list).toHaveBeenCalledWith({ accountIds: ['selected'], page: 1, limit: 20 })
+  })
+
+  it('applies additional filters to the preview and uses the filtered list link', async () => {
+    const markup = render({
+      filter: { dateFrom: '2026-09-01', dateTo: '2026-09-10' },
+      fullListHref: '/transactions/filtered/1?period=month&account_kinds=spending',
+    })
+    const query = state.queries.find((query) => query.queryKey[0] === 'transactions')!
+    await query.queryFn()
+    expect(transactionsApi.list).toHaveBeenCalledWith({
+      accountIds: ['selected'],
+      dateFrom: '2026-09-01',
+      dateTo: '2026-09-10',
+      page: 1,
+      limit: 20,
+    })
+    expect(markup).toContain('href="/transactions/filtered/1?period=month&amp;account_kinds=spending"')
   })
 
   it.each([

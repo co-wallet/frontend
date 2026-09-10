@@ -15,6 +15,7 @@ const queryState = vi.hoisted(() => ({
   accountsError: false,
   onlyShared: false,
   analyticsQueries: [] as { params: Record<string, unknown>; enabled: boolean }[],
+  transactionQueries: [] as { filter: Record<string, unknown>; enabled: boolean }[],
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
@@ -33,6 +34,7 @@ vi.mock('@/store/periodStore', async (importOriginal) => ({
 vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey, enabled }: { queryKey: unknown[]; enabled?: boolean }) => {
     if (queryKey[0] === 'analytics') queryState.analyticsQueries.push({ params: queryKey[queryKey.length - 1] as Record<string, unknown>, enabled: Boolean(enabled) })
+    if (queryKey[0] === 'transactions') queryState.transactionQueries.push({ filter: queryKey[queryKey.length - 1] as Record<string, unknown>, enabled: Boolean(enabled) })
     if (queryKey[0] === 'accounts') return { isLoading: queryState.accountsLoading, isError: queryState.accountsError, data: [
       { id: 'spending', name: 'Личная', kind: 'spending', accessMode: 'personal', currency: 'USD', balance: { display: 10 } },
       { id: 'deposit', name: 'Вклад', kind: 'deposit', accessMode: 'personal', currency: 'USD', balance: { display: 10 } },
@@ -51,7 +53,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountFilter = 'all'; queryState.selectedIds = []; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
+afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountFilter = 'all'; queryState.selectedIds = []; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 
 describe('Dashboard period visibility', () => {
@@ -131,14 +133,41 @@ describe('Dashboard recent transactions', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).toMatch(/Баланс по счетам[^]*Последние транзакции/)
     expect(markup).toContain('Все транзакции')
+    expect(markup).toContain('account_kinds=spending')
+    expect(queryState.transactionQueries[0]?.filter).not.toHaveProperty('dateFrom')
+    expect(queryState.transactionQueries[0]?.filter).not.toHaveProperty('dateTo')
   })
 
-  it.each(['expenses', 'income'] as const)('omits recent transactions in %s mode', (mode) => {
+  it.each(['expenses', 'income'] as const)('shows recent transactions after the chart in %s mode', (mode) => {
     queryState.chartMode = mode
+    queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).not.toContain('Последние транзакции')
-    expect(markup).not.toContain('Все транзакции')
-    expect(markup).toContain(mode === 'expenses' ? 'Расходы по категориям' : 'Доходы по категориям')
+    const chartTitle = mode === 'expenses' ? 'Расходы по категориям' : 'Доходы по категориям'
+    expect(markup).toMatch(new RegExp(`${chartTitle}[^]*Последние транзакции`))
+    expect(markup).toContain('Все транзакции')
+    expect(markup).toContain('period=custom')
+    expect(markup).toContain('from=2026-08-01')
+    expect(markup).toContain('to=2026-08-20')
+    expect(queryState.transactionQueries[0]?.filter).toMatchObject({
+      accountIds: ['spending'],
+      dateFrom: '2026-08-01',
+      dateTo: '2026-08-20',
+    })
+  })
+
+  it('preserves account scope and transfer settings in the full-list link', () => {
+    queryState.chartMode = 'expenses'
+    queryState.selectedKinds = ['deposit', 'investment']
+    queryState.includeShared = true
+    queryState.accountFilter = 'custom'
+    queryState.selectedIds = ['deposit', 'shared-deposit']
+    queryState.transferVisibility = { expenses: true, income: false }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('account_ids=deposit%2Cshared-deposit')
+    expect(markup).toContain('account_kinds=deposit%2Cinvestment')
+    expect(markup).toContain('include_shared=true')
+    expect(markup).toContain('include_transfer_expenses=true')
+    expect(markup).toContain('include_transfer_income=false')
   })
 })
 
