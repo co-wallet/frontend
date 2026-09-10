@@ -31,6 +31,13 @@ describe.each([AddTransactionPage, EditTransactionPage])('%s', (Page) => {
     expect(markup).not.toContain('Учитывать в балансе')
     expect(markup).not.toContain('ion-toggle')
   })
+
+  it('uses the shared in-flow tag search', () => {
+    const markup = renderToStaticMarkup(<Page />)
+
+    expect(markup).toContain('class="tag-input"')
+    expect(markup).toContain('placeholder="Добавить тег..."')
+  })
 })
 
 it('renders incoming transfers as a detail view without editable fields', () => {

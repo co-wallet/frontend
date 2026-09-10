@@ -1,0 +1,17 @@
+.tag-input__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.tag-input__suggestions {
+  width: 100%;
+  max-height: 200px;
+  margin-top: 4px;
+  overflow-y: auto;
+  background: var(--ion-background-color);
+  border: 1px solid var(--ion-border-color, var(--ion-color-step-200));
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgb(0 0 0 / 15%);
+}
