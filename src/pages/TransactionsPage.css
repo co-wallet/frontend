@@ -166,9 +166,20 @@
 }
 
 .transactions-chart-legend__item--link {
+  display: block;
+  width: 100%;
   min-height: 44px;
   border-radius: 8px;
   cursor: pointer;
+}
+
+.transactions-chart-legend__link-content {
+  display: flex;
+  width: 100%;
+  min-height: 44px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .transactions-chart-legend__item--link:focus-visible {

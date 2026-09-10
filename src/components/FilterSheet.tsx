@@ -135,6 +135,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     if (accountIds.length) f.accountIds = accountIds
     if (categoryIds.length) f.categoryIds = categoryIds
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
+    else if (value.withoutTags) f.withoutTags = true
     onChange(f)
     setOpen(false)
   }

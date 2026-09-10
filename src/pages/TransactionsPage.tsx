@@ -93,6 +93,7 @@ const TAG_CHART_COLORS = [
   'var(--account-icon-color-green)',
   'var(--account-icon-color-graphite)',
 ]
+const UNTAGGED_TAG_ID = 'untagged'
 
 export function TransactionsPage() {
   const tooltip = usePieChartTooltip()
@@ -262,7 +263,7 @@ export function TransactionsPage() {
       ...stat,
       id: stat.tagId,
       name: stat.tagName,
-      iconType: 'tag' as const,
+      iconType: stat.tagId === UNTAGGED_TAG_ID ? 'untagged' as const : 'tag' as const,
       color: TAG_CHART_COLORS[index % TAG_CHART_COLORS.length],
     }))
   const chartData = chartGrouping === 'categories' ? categoryChartData : tagChartData
@@ -282,6 +283,8 @@ export function TransactionsPage() {
       items: (filter.categoryIds ?? []).map((id) => ({ id, name: categoriesById.get(id)?.name ?? 'Категория' })) },
     { kind: 'tagIds', label: 'Теги',
       items: (filter.tagIds ?? []).map((id) => ({ id, name: tags.find((tag) => tag.id === id)?.name ?? 'Тег' })) },
+    { kind: 'withoutTags', label: 'Теги',
+      items: filter.withoutTags ? [{ id: UNTAGGED_TAG_ID, name: 'Без тегов' }] : [] },
   ] as const
 
   function addTransaction() {
@@ -485,19 +488,25 @@ export function TransactionsPage() {
                           </span>
                         </>
 
-                        return stat.iconType === 'tag' ? (
+                        return stat.iconType !== 'category' ? (
                           <IonRouterLink
                             key={stat.id}
                             className="transactions-chart-legend__item transactions-chart-legend__item--link"
                             routerLink={filteredTransactionsHref(
-                              { ...filter, tagIds: [stat.id], tagMode: 'or' },
+                              stat.iconType === 'untagged'
+                                ? { ...filter, tagIds: undefined, tagMode: undefined, withoutTags: true }
+                                : { ...filter, tagIds: [stat.id], tagMode: 'or', withoutTags: undefined },
                               navigationPeriod,
                               location.pathname,
                             )}
                             routerDirection="forward"
-                            aria-label={`Транзакции с тегом ${stat.tagName}`}
+                            aria-label={stat.iconType === 'untagged'
+                              ? 'Транзакции без тегов'
+                              : `Транзакции с тегом ${stat.tagName}`}
                           >
-                            {content}
+                            <span className="transactions-chart-legend__link-content">
+                              {content}
+                            </span>
                           </IonRouterLink>
                         ) : (
                           <div key={stat.id} className="transactions-chart-legend__item">

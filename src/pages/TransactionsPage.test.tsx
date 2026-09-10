@@ -48,7 +48,10 @@ vi.mock('@tanstack/react-query', () => ({
     if (queryKey[0] === 'analytics') pagination.analyticsQueries.push({ queryKey, enabled })
     return ({
     data: queryKey[0] === 'analytics' && queryKey[1] === 'by-tag'
-      ? [{ tagId: 't1', tagName: 'путешествия', amount: 125 }]
+      ? [
+        { tagId: 't1', tagName: 'путешествия', amount: 125 },
+        { tagId: 'untagged', tagName: 'Без тегов', amount: 75 },
+      ]
       : queryKey[0] === 'accounts'
       ? [
         { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
@@ -106,7 +109,9 @@ describe('transaction analytics grouping', () => {
     pagination.chartGrouping = 'tags'
     const markup = renderPage('/transactions/filtered/1?account_ids=a1&category_ids=c1&tag_ids=t2&tag_mode=and&period=custom&from=2026-08-01&to=2026-08-31&include_transfer_expenses=true')
     expect(markup).toContain('#путешествия')
+    expect(markup).toContain('Без тегов')
     expect(markup).toContain('aria-label="Транзакции с тегом путешествия"')
+    expect(markup).toContain('aria-label="Транзакции без тегов"')
 
     const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
     expect(tagQuery?.queryKey[tagQuery.queryKey.length - 1]).toMatchObject({
@@ -132,6 +137,15 @@ describe('transaction analytics grouping', () => {
       period: 'month', periodOffset: 0, customFrom: '', customTo: '',
     })).toEqual({
       period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-31',
+    })
+
+    const untaggedHref = [...markup.matchAll(/href="([^"]*without_tags=true[^"]*)"/g)][0]?.[1].replace(/&amp;/g, '&')
+    expect(untaggedHref).toBeDefined()
+    expect(filterFromParams(new URL(untaggedHref!, 'http://localhost').searchParams)).toMatchObject({
+      accountIds: ['a1'],
+      categoryIds: ['c1'],
+      withoutTags: true,
+      includeTransferExpenses: true,
     })
   })
 })
@@ -197,6 +211,12 @@ describe('active filter summary', () => {
     expect(markup).not.toContain('Ещё')
     expect(markup).toContain('aria-label="Теги: #путешествия. Открыть фильтры"')
     expect(markup).toContain('title="Теги: #путешествия"')
+  })
+
+  it('shows the without-tags filter as an active condition', () => {
+    const markup = renderPage('/transactions?without_tags=true')
+    expect(markup).toContain('aria-label="Теги: Без тегов. Открыть фильтры"')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ withoutTags: true })
   })
 
   it('keeps unknown selections visible and counted while dictionaries are unavailable', () => {

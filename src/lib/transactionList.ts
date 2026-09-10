@@ -184,6 +184,7 @@ export function buildTransactionAnalyticsParams(
       tag_ids: filter.tagIds.join(','),
       tag_mode: filter.tagMode ?? 'or',
     } : {}),
+    ...(filter.withoutTags ? { without_tags: true } : {}),
   }
 }
 
@@ -195,7 +196,8 @@ export function hasTransactionFilters(filter: TransactionFilter): boolean {
     || filter.includeTransferExpenses === true
     || filter.includeTransferIncome === false
     || filter.categoryIds?.length
-    || filter.tagIds?.length,
+    || filter.tagIds?.length
+    || filter.withoutTags
   )
 }
 

@@ -38,6 +38,10 @@ describe('tag navigation', () => {
     expect(filterFromParams(filterToParams(filter))).toEqual(filter)
   })
 
+  it('round-trips the without-tags filter', () => {
+    expect(filterFromParams(filterToParams({ withoutTags: true }))).toEqual({ withoutTags: true })
+  })
+
   it('round-trips account scope and independent transfer preferences', () => {
     const filter: TransactionFilter = {
       accountKinds: ['spending', 'investment'],

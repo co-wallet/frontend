@@ -38,6 +38,19 @@ describe('PieChartTooltip', () => {
     expect(markup).not.toContain('role="img"')
   })
 
+  it('uses an empty-set marker for transactions without tags', () => {
+    const markup = renderToStaticMarkup(
+      <PieChartTooltip
+        active
+        payload={[{ name: 'Без тегов', value: 75, payload: { iconType: 'untagged' } }]}
+        formatAmount={formatAmount}
+      />,
+    )
+    expect(markup).toContain('<span aria-hidden="true">∅</span>')
+    expect(markup).toContain('Без тегов')
+    expect(markup).not.toContain('role="img"')
+  })
+
   it.each([-123.45, 0, 123.45])('preserves the original signed amount %s', (amount) => {
     const markup = renderToStaticMarkup(<PieChartTooltip active payload={[{ name: 'Счёт', value: Math.abs(amount), payload: { amount } }]} formatAmount={formatAmount} />)
     expect(markup).toContain(formatAmount(amount))
