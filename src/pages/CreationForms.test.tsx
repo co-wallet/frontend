@@ -5,7 +5,6 @@ import { AccountsPage } from './AccountsPage'
 import CategoriesPage from './CategoriesPage'
 import { TagsPage } from './TagsPage'
 import { AddTransactionPage } from './AddTransactionPage'
-import { AccountMembersPage } from './AccountMembersPage'
 import { AdminCurrenciesPage } from './admin/AdminCurrenciesPage'
 import { AdminInvitesPage } from './admin/AdminInvitesPage'
 
@@ -31,7 +30,6 @@ const forms: [string, ComponentType][] = [
   ['Новая категория', CategoriesPage],
   ['Новый тег', TagsPage],
   ['Новая транзакция', AddTransactionPage],
-  ['Добавить участника', AccountMembersPage],
   ['Новая валюта', AdminCurrenciesPage],
   ['Новое приглашение', AdminInvitesPage],
 ]
