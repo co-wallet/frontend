@@ -25,6 +25,7 @@ import {
   IonList,
   IonNote,
   IonPage,
+  IonRouterLink,
   IonSegment,
   IonSegmentButton,
   IonSkeletonText,
@@ -81,6 +82,18 @@ import {
 
 import './TransactionsPage.css'
 
+type ChartMode = 'expenses' | 'income'
+type ChartGrouping = 'categories' | 'tags'
+
+const TAG_CHART_COLORS = [
+  'var(--account-icon-color-blue)',
+  'var(--account-icon-color-purple)',
+  'var(--account-icon-color-pink)',
+  'var(--account-icon-color-orange)',
+  'var(--account-icon-color-green)',
+  'var(--account-icon-color-graphite)',
+]
+
 export function TransactionsPage() {
   const tooltip = usePieChartTooltip()
   const queryClient = useQueryClient()
@@ -115,7 +128,8 @@ export function TransactionsPage() {
   }
   const [showFilters, setShowFilters] = useState(false)
   const [showChart, setShowChart] = useState(false)
-  const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
+  const [chartMode, setChartMode] = useState<ChartMode>('expenses')
+  const [chartGrouping, setChartGrouping] = useState<ChartGrouping>('categories')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
   const chartTheme = useChartTheme()
 
@@ -151,12 +165,20 @@ export function TransactionsPage() {
   const expenseAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'by-category', 'expense', analyticsParams],
     queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'expense' }),
-    enabled: showChart && hasEffectiveAccounts,
+    enabled: showChart && chartGrouping === 'categories' && hasEffectiveAccounts,
   })
   const incomeAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'by-category', 'income', analyticsParams],
     queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'income' }),
-    enabled: showChart && hasEffectiveAccounts,
+    enabled: showChart && chartGrouping === 'categories' && hasEffectiveAccounts,
+  })
+  const tagAnalyticsQuery = useQuery({
+    queryKey: ['analytics', 'by-tag', chartMode, analyticsParams],
+    queryFn: () => analyticsApi.byTag({
+      ...analyticsParams,
+      type: chartMode === 'expenses' ? 'expense' : 'income',
+    }),
+    enabled: showChart && chartGrouping === 'tags' && hasEffectiveAccounts,
   })
   const summaryQuery = useQuery({
     queryKey: ['analytics', 'summary', 'transactions', analyticsParams],
@@ -212,9 +234,10 @@ export function TransactionsPage() {
     ),
   ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data])
 
-  const chartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
+  const categoryChartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
+  const chartQuery = chartGrouping === 'categories' ? categoryChartQuery : tagAnalyticsQuery
   const chartCategoryType = chartMode === 'expenses' ? 'expense' : 'income'
-  const chartData = (chartQuery.data ?? [])
+  const categoryChartData = (categoryChartQuery.data ?? [])
     .filter((stat) => stat.amount > 0)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10)
@@ -224,10 +247,25 @@ export function TransactionsPage() {
         : stat.icon
       return {
         ...stat,
+        id: stat.categoryId,
+        name: stat.categoryName,
         icon,
+        iconType: 'category' as const,
         color: categoryIconChartColor(icon, chartCategoryType),
       }
     })
+  const tagChartData = (tagAnalyticsQuery.data ?? [])
+    .filter((stat) => stat.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10)
+    .map((stat, index) => ({
+      ...stat,
+      id: stat.tagId,
+      name: stat.tagName,
+      iconType: 'tag' as const,
+      color: TAG_CHART_COLORS[index % TAG_CHART_COLORS.length],
+    }))
+  const chartData = chartGrouping === 'categories' ? categoryChartData : tagChartData
   const hasFilters = hasTransactionFilters(filter)
   const accountKinds = transactionAccountKinds(filter)
   const accountScopeLabel = `${accountKinds.length === 0
@@ -353,7 +391,7 @@ export function TransactionsPage() {
               <div slot="content" className="transactions-analytics__content">
                 <IonSegment
                   value={chartMode}
-                  onIonChange={(event) => setChartMode(event.detail.value as 'expenses' | 'income')}
+                  onIonChange={(event) => setChartMode(event.detail.value as ChartMode)}
                   aria-label="Тип аналитики"
                 >
                   <IonSegmentButton value="expenses">
@@ -363,6 +401,20 @@ export function TransactionsPage() {
                   <IonSegmentButton value="income">
                     <IonIcon icon={trendingUpOutline} />
                     <IonLabel>Доходы</IonLabel>
+                  </IonSegmentButton>
+                </IonSegment>
+
+                <IonSegment
+                  value={chartGrouping}
+                  onIonChange={(event) => setChartGrouping(event.detail.value as ChartGrouping)}
+                  aria-label="Группировка аналитики"
+                  className="transactions-analytics__grouping"
+                >
+                  <IonSegmentButton value="categories">
+                    <IonLabel>Категории</IonLabel>
+                  </IonSegmentButton>
+                  <IonSegmentButton value="tags">
+                    <IonLabel>Теги</IonLabel>
                   </IonSegmentButton>
                 </IonSegment>
 
@@ -387,7 +439,7 @@ export function TransactionsPage() {
                         <Pie
                           data={chartData}
                           dataKey="amount"
-                          nameKey="categoryName"
+                          nameKey="name"
                           cx="50%"
                           cy="50%"
                           outerRadius={70}
@@ -396,7 +448,7 @@ export function TransactionsPage() {
                         >
                           {chartData.map((stat) => (
                             <Cell
-                              key={stat.categoryId}
+                              key={stat.id}
                               fill={stat.color}
                             />
                           ))}
@@ -410,27 +462,49 @@ export function TransactionsPage() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="transactions-chart-legend">
-                      {chartData.map((stat) => (
-                        <div key={stat.categoryId} className="transactions-chart-legend__item">
+                      {chartData.map((stat) => {
+                        const content = <>
                           <div className="transactions-chart-legend__label">
                             <span
                               className="transactions-chart-legend__dot"
                               style={{ background: stat.color }}
                               aria-hidden="true"
                             />
-                            <CategoryIcon
-                              value={stat.icon}
-                              type={chartCategoryType}
-                              size={20}
-                              ariaLabel={stat.categoryId === 'uncategorized' ? 'Без категории' : undefined}
-                            />
-                            <span style={{ color: chartTheme.legendColor }}>{stat.categoryName}</span>
+                            {stat.iconType === 'category' && (
+                              <CategoryIcon
+                                value={stat.icon}
+                                type={chartCategoryType}
+                                size={20}
+                                ariaLabel={stat.categoryId === 'uncategorized' ? 'Без категории' : undefined}
+                              />
+                            )}
+                            <span style={{ color: chartTheme.legendColor }}>{stat.iconType === 'tag' ? '#' : ''}{stat.name}</span>
                           </div>
                           <span className="transactions-chart-legend__amount">
                             {formatCurrencyAmount(stat.amount, defaultCurrency, 2)}
                           </span>
-                        </div>
-                      ))}
+                        </>
+
+                        return stat.iconType === 'tag' ? (
+                          <IonRouterLink
+                            key={stat.id}
+                            className="transactions-chart-legend__item transactions-chart-legend__item--link"
+                            routerLink={filteredTransactionsHref(
+                              { ...filter, tagIds: [stat.id], tagMode: 'or' },
+                              navigationPeriod,
+                              location.pathname,
+                            )}
+                            routerDirection="forward"
+                            aria-label={`Транзакции с тегом ${stat.tagName}`}
+                          >
+                            {content}
+                          </IonRouterLink>
+                        ) : (
+                          <div key={stat.id} className="transactions-chart-legend__item">
+                            {content}
+                          </div>
+                        )
+                      })}
                     </div>
                   </>
                 )}

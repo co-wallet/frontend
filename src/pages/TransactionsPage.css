@@ -125,6 +125,10 @@
   padding: 4px 4px 16px;
 }
 
+.transactions-analytics__grouping {
+  margin-top: 8px;
+}
+
 .transactions-chart-skeleton {
   width: 180px;
   height: 180px;
@@ -156,7 +160,20 @@
 .transactions-chart-legend__item {
   justify-content: space-between;
   gap: 12px;
+  min-height: 36px;
   font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.transactions-chart-legend__item--link {
+  min-height: 44px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.transactions-chart-legend__item--link:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
 }
 
 .transactions-chart-legend__label {

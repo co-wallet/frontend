@@ -25,6 +25,19 @@ describe('PieChartTooltip', () => {
     expect(markup).toContain('123.45 RUB')
   })
 
+  it('uses a hash marker instead of a category icon for tags', () => {
+    const markup = renderToStaticMarkup(
+      <PieChartTooltip
+        active
+        payload={[{ name: 'путешествия', value: 125, payload: { iconType: 'tag' } }]}
+        formatAmount={formatAmount}
+      />,
+    )
+    expect(markup).toContain('<span aria-hidden="true">#</span>')
+    expect(markup).toContain('путешествия')
+    expect(markup).not.toContain('role="img"')
+  })
+
   it.each([-123.45, 0, 123.45])('preserves the original signed amount %s', (amount) => {
     const markup = renderToStaticMarkup(<PieChartTooltip active payload={[{ name: 'Счёт', value: Math.abs(amount), payload: { amount } }]} formatAmount={formatAmount} />)
     expect(markup).toContain(formatAmount(amount))

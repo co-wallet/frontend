@@ -3,6 +3,7 @@ import { MemoryRouter, Route } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
+import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
 
 const pagination = vi.hoisted(() => ({
   data: { pages: [] as Transaction[][] },
@@ -12,6 +13,7 @@ const pagination = vi.hoisted(() => ({
   hasNextPage: false,
   options: undefined as undefined | { queryKey: unknown[]; enabled: boolean },
   analyticsQueries: [] as { queryKey: unknown[]; enabled?: boolean }[],
+  chartGrouping: 'categories' as 'categories' | 'tags',
 }))
 beforeEach(() => {
   pagination.data = { pages: [[]] }
@@ -20,6 +22,17 @@ beforeEach(() => {
   pagination.hasNextPage = false
   pagination.options = undefined
   pagination.analyticsQueries = []
+  pagination.chartGrouping = 'categories'
+})
+
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useState: (initial: unknown) => actual.useState(
+      initial === 'categories' ? pagination.chartGrouping : initial,
+    ),
+  }
 })
 
 vi.mock('@/lib/useChartTheme', () => ({
@@ -34,7 +47,9 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey, enabled }: { queryKey: string[]; enabled?: boolean }) => {
     if (queryKey[0] === 'analytics') pagination.analyticsQueries.push({ queryKey, enabled })
     return ({
-    data: queryKey[0] === 'accounts'
+    data: queryKey[0] === 'analytics' && queryKey[1] === 'by-tag'
+      ? [{ tagId: 't1', tagName: 'путешествия', amount: 125 }]
+      : queryKey[0] === 'accounts'
       ? [
         { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
         { id: 'a2', name: 'Общая', kind: 'spending', accessMode: 'shared' },
@@ -74,6 +89,50 @@ describe('transaction navigation controls', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('<ion-menu-button')
     expect(markup).toContain('<ion-back-button default-href="/dashboard"')
+  })
+})
+
+describe('transaction analytics grouping', () => {
+  it('offers category and tag grouping without requesting tags by default', () => {
+    const markup = renderPage('/transactions')
+    expect(markup).toContain('aria-label="Группировка аналитики"')
+    expect(markup).toContain('value="categories"')
+    expect(markup).toContain('value="tags"')
+    const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
+    expect(tagQuery?.enabled).toBe(false)
+  })
+
+  it('uses all active filters for tag analytics and links a tag to the filtered list', () => {
+    pagination.chartGrouping = 'tags'
+    const markup = renderPage('/transactions/filtered/1?account_ids=a1&category_ids=c1&tag_ids=t2&tag_mode=and&period=custom&from=2026-08-01&to=2026-08-31&include_transfer_expenses=true')
+    expect(markup).toContain('#путешествия')
+    expect(markup).toContain('aria-label="Транзакции с тегом путешествия"')
+
+    const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
+    expect(tagQuery?.queryKey[tagQuery.queryKey.length - 1]).toMatchObject({
+      account_ids: 'a1',
+      category_ids: 'c1',
+      tag_ids: 't2',
+      tag_mode: 'and',
+      date_from: '2026-08-01',
+      date_to: '2026-08-31',
+      include_transfer_expenses: true,
+    })
+
+    const href = markup.match(/href="([^"]*\/transactions\/filtered\/2[^"]*)"/)?.[1].replace(/&amp;/g, '&')
+    expect(href).toBeDefined()
+    const params = new URL(href!, 'http://localhost').searchParams
+    expect(filterFromParams(params)).toMatchObject({
+      accountIds: ['a1'],
+      categoryIds: ['c1'],
+      tagIds: ['t1'],
+      includeTransferExpenses: true,
+    })
+    expect(periodFromParams(params, {
+      period: 'month', periodOffset: 0, customFrom: '', customTo: '',
+    })).toEqual({
+      period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-31',
+    })
   })
 })
 
