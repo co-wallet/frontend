@@ -10,7 +10,9 @@ export interface ImportReplacement {
   counts: Record<string, number>
   blockers: Record<string, number>
 }
+export interface ImportCurrencyRate { currency: string; base_currency: string; rate: string; source: string; transactions: number }
 export interface ImportPreview {
+  currency_rates?: ImportCurrencyRate[]
   mode?: ImportMode
   replacement?: ImportReplacement
   preview_id: string
@@ -33,6 +35,7 @@ export interface ImportResult {
 }
 const base = '/imports/monefy'
 export const monefyApi = {
+  configureRates: async (id: string, rates: Record<string, string>) => (await apiClient.post<ImportPreview>(`${base}/${encodeURIComponent(id)}/rates`, { rates })).data,
   availability: async () => (await apiClient.get<ImportAvailability>(`${base}/availability`)).data,
   preview: async (file: File, mode: ImportMode = 'empty') => (await apiClient.post<ImportPreview>(`${base}/preview${mode === 'replace' ? '?mode=replace' : ''}`, file, { headers: { 'Content-Type': 'application/octet-stream' }, timeout: 30000 })).data,
   configure: async (id: string, kinds: Record<string, AccountKind>, categoryIcons: Record<string, string> = {}, accountIcons: Record<string, string> = {}, accountAccess: Record<string, ImportAccess> = {}) => (await apiClient.post<ImportPreview>(`${base}/${encodeURIComponent(id)}/options`, { account_kinds: kinds, category_icons: categoryIcons, account_icons: accountIcons, account_access: accountAccess })).data,

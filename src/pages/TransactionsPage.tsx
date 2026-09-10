@@ -269,7 +269,9 @@ export function TransactionsPage() {
             )}
           </div>
 
-          <section className="transactions-summary" aria-label="Сводка за период">
+          {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
+        <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций не заполнена сумма в {defaultCurrency}. Укажите её в транзакциях.</p></IonText>}
+      <section className="transactions-summary" aria-label="Сводка за период">
             <div className="transactions-summary__item">
               <span>Расходы</span>
               {summaryQuery.isLoading ? (

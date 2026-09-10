@@ -128,3 +128,12 @@ it('shows immutable shared distribution and the per-member impact on balances', 
    expect(html).toContain('Существующие счета и операции сохранятся')
    expect(html).not.toMatch(/ion-button[^>]*disabled="true"/)
  })
+
+
+it('shows current and manual fallback rates with operation counts and editable inputs', () => {
+  const html = render({ ...state, preview: { ...state.preview!, currency_rates: [
+    { currency: 'TRY', base_currency: 'RUB', rate: '3', source: 'current', transactions: 12 },
+    { currency: 'EUR', base_currency: 'RUB', rate: '90', source: 'manual', transactions: 2 },
+  ] } })
+  for (const text of ['Операции без исторического курса', 'операций 12', 'Текущий курс', 'Указанный вами курс', '1 TRY в RUB', 'Применить курсы']) expect(html).toContain(text)
+})

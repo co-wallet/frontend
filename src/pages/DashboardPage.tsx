@@ -457,6 +457,8 @@ export function DashboardPage() {
 
           </section>
 
+          {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
+            <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций не заполнена сумма в {displayCurrency}. Укажите её в транзакциях.</p></IonText>}
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
             {summaryCards.map((card) => (

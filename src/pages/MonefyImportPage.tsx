@@ -1,7 +1,7 @@
 import { ImportAccountAccess } from '@/components/ImportAccountAccess'
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { IonButton, IonCheckbox, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
+import { IonButton, IonCheckbox, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonInput, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { useAuthStore } from '@/store/authStore'
 import { canConfirmImport, importReasons, MonefyImport, type ImportState } from '@/lib/monefyImport'
@@ -48,6 +48,19 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <ul>{p.replacement.accounts.map(a => <li key={a.id}>{a.name} · {a.currency}{a.deleted_at ? ' · ранее удалён' : ''}</li>)}</ul>
         <p>Старые личные счета, операции, переводы, доли и связи с тегами будут удалены физически. Общий справочник категорий и тегов, профиль, вход и настройки сохраняются.</p>
         <p>Общие счета и внешние связи блокируют замену.</p>
+      </IonCardContent>
+    </IonCard>}
+    {!!p.currency_rates?.length && <IonCard>
+      <IonCardHeader><IonCardTitle>Операции без исторического курса</IonCardTitle></IonCardHeader>
+      <IonCardContent>
+        <p>Для этих операций используется текущий курс, зафиксированный при подготовке. Можно указать свой курс. Операции с историческим курсом сохраняют его.</p>
+        {p.currency_rates.map(rate => <section key={rate.currency}>
+          <p>{rate.currency} → {rate.base_currency}: операций {rate.transactions}. {rate.source === 'manual' ? 'Указанный вами курс' : rate.rate ? 'Текущий курс' : 'Курс не найден'}.</p>
+          <IonInput label={`1 ${rate.currency} в ${rate.base_currency}`} labelPlacement="stacked" inputMode="decimal"
+            value={state.rateDrafts?.[rate.currency] ?? rate.rate} disabled={locked}
+            onIonInput={e => controller.editRate(rate.currency, e.detail.value || '')} />
+        </section>)}
+        <IonButton disabled={locked || !Object.keys(state.rateDrafts || {}).length} onClick={() => void controller.saveRates()}>Применить курсы</IonButton>
       </IonCardContent>
     </IonCard>}
     <h2>Счета и распределение</h2>

@@ -1,6 +1,8 @@
 import { apiClient as api } from './client'
 
 export interface AnalyticsSummary {
+  expensesMissingAmounts?: number
+  incomeMissingAmounts?: number
   balance: number
   expenses: number
   income: number
@@ -11,12 +13,14 @@ export interface CategoryStat {
   categoryName: string
   icon?: string
   amount: number
+  missingAmounts?: number
 }
 
 export interface TagStat {
   tagId: string
   tagName: string
   amount: number
+  missingAmounts?: number
 }
 
 export interface AnalyticsParams {

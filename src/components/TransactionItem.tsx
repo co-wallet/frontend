@@ -134,16 +134,21 @@ export function TransactionItem({
         </IonLabel>
 
         <IonNote slot="end" className="transaction-item__amounts">
-          <span className={amountClass}>{amount}</span>
+          <span className={amountClass}>
+            {showConvertedAmount ? formatTransactionAmount(convertedAmount, defaultCurrency, tx.type) : amount}
+          </span>
           {shared && (
             <span className="transaction-item__amount-meta">
               <IonIcon icon={peopleOutline} aria-hidden="true" />
               Ваша доля
             </span>
           )}
+          {!tx.readOnly && tx.type !== 'transfer' && tx.currency !== defaultCurrency && convertedAmount == null && (
+            <span className="transaction-item__amount-meta">Нет суммы в {defaultCurrency}</span>
+          )}
           {showConvertedAmount && (
             <span className="transaction-item__amount-meta">
-              ≈ {formatTransactionAmount(convertedAmount, defaultCurrency, tx.type)}
+              {amount}
             </span>
           )}
         </IonNote>
