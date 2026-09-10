@@ -194,12 +194,12 @@ describe('MonefyImport public workflow', () => {
   })
   it('handles availability loss at confirmation and invalidates the preview', async () => {
     const { model, api } = setup(); await model.upload(file); model.accept(true)
-    api.confirm.mockRejectedValue({ isAxiosError: true, response: { status: 409, data: { error: 'account_not_empty' } } })
+    api.confirm.mockRejectedValue({ isAxiosError: true, response: { status: 409, data: { error: 'account_names_changed' } } })
     api.availability.mockResolvedValue({ available: false, reasons: ['transactions'] })
     await model.confirm()
     expect(model.getSnapshot().preview).toBeUndefined()
     expect(model.getSnapshot().availability?.available).toBe(false)
-    expect(model.getSnapshot().error).toContain('больше не пуста')
+    expect(model.getSnapshot().error).toContain('Названия счетов изменились')
   })
   it('explains exhausted server storage without offering confirmation', async () => {
     const { model, api } = setup()
