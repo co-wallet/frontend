@@ -35,7 +35,13 @@ export interface Account {
   updatedAt: string
 }
 
+export interface CreateAccountMemberDto {
+  username: string
+  defaultShare: number
+}
+
 export interface CreateAccountDto {
+  members?: CreateAccountMemberDto[]
   acceptTransfers?: boolean
   name: string
   accessMode: AccountAccessMode
@@ -49,7 +55,6 @@ export interface CreateAccountDto {
 export interface UpdateAccountDto {
   acceptTransfers?: boolean
   name?: string
-  accessMode?: AccountAccessMode
   icon?: string | null
   initialBalance?: number
   initialBalanceDate?: string
@@ -93,23 +98,4 @@ export const accountsApi = {
     return data
   },
 
-  addMember: async (accountId: string, username: string, defaultShare: number): Promise<AccountMember[]> => {
-    const { data } = await apiClient.post<AccountMember[]>(`/accounts/${accountId}/members`, {
-      username,
-      defaultShare,
-    })
-    return data
-  },
-
-  updateMember: async (accountId: string, userId: string, defaultShare: number): Promise<AccountMember[]> => {
-    const { data } = await apiClient.patch<AccountMember[]>(
-      `/accounts/${accountId}/members/${userId}`,
-      { defaultShare },
-    )
-    return data
-  },
-
-  removeMember: async (accountId: string, userId: string): Promise<void> => {
-    await apiClient.delete(`/accounts/${accountId}/members/${userId}`)
-  },
 }

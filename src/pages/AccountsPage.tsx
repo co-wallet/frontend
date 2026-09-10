@@ -48,7 +48,8 @@ import {
   parseDecimal,
   toggleDecimalSign,
 } from '@/lib/decimal'
-import { shouldShowPersonalAccessModeWarning } from '@/lib/accountAccessMode'
+import { ACCOUNT_CONFIGURATION_NOTE, buildAccountMembers, type MemberDraft } from '@/lib/accountMembers'
+import { AccountMembersFields } from '@/components/AccountMembersFields'
 import { accountKindShortLabel } from '@/lib/accountKind'
 import {
   hasAccountFormChanges,
@@ -77,7 +78,7 @@ function fmtCurrency(amount: number, currency: string): string {
   }
 }
 
-function AccountFormModal({
+export function AccountFormModal({
   isOpen,
   onClose,
   initial,
@@ -85,7 +86,7 @@ function AccountFormModal({
   onSubmit,
   loading,
   isEditing = false,
-  canChangeAccessMode = false,
+  canChangeTransferAcceptance = false,
   onManageMembers,
   onDelete,
   error,
@@ -98,12 +99,15 @@ function AccountFormModal({
   onSubmit: (dto: CreateAccountDto) => void
   loading: boolean
   isEditing?: boolean
-  canChangeAccessMode?: boolean
+  canChangeTransferAcceptance?: boolean
   onManageMembers?: () => void
   onDelete?: () => void
   error?: string
   title: string
 }) {
+  const owner = useAuthStore((state) => state.user)
+  const [members, setMembers] = useState<MemberDraft[]>(owner ? [{ username: owner.username, share: '1' }] : [])
+  const memberResult = buildAccountMembers(members, owner?.username ?? '')
   const today = new Date().toISOString().slice(0, 10)
   const initialName = initial?.name ?? ''
   const initialAccessMode = initial?.accessMode ?? 'personal'
@@ -153,8 +157,10 @@ function AccountFormModal({
   })
 
   const handleSubmit = () => {
+    if (!isEditing && accessMode === 'shared' && memberResult.error) return
     onSubmit({
-      ...(!isEditing || canChangeAccessMode ? { acceptTransfers: accessMode === 'personal' && acceptTransfers } : {}),
+      ...(!isEditing || canChangeTransferAcceptance ? { acceptTransfers: accessMode === 'personal' && acceptTransfers } : {}),
+      ...(!isEditing && accessMode === 'shared' ? { members: memberResult.members } : {}),
       name,
       accessMode,
       kind,
@@ -166,6 +172,7 @@ function AccountFormModal({
   }
 
   const resetForm = () => {
+    setMembers(owner ? [{ username: owner.username, share: '1' }] : [])
     setAcceptTransfers(initial?.acceptTransfers ?? false)
     setName(initialName)
     setAccessMode(initialAccessMode)
@@ -179,7 +186,7 @@ function AccountFormModal({
   return (
     <IonModal isOpen={isOpen} onDidDismiss={onClose} onWillPresent={resetForm}>
       <EntityFormHeader title={title} onCancel={onClose} onSubmit={handleSubmit}
-        pending={loading} disabled={!name.trim() || !isValidDecimal(initialBalance) || (isEditing && !isDirty)} />
+        pending={loading} disabled={!name.trim() || !isValidDecimal(initialBalance) || (isEditing && !isDirty) || (!isEditing && accessMode === 'shared' && !!memberResult.error)} />
       <AppContent>
         <EntityFormSection title="Основное">
 
@@ -194,7 +201,7 @@ function AccountFormModal({
             />
           </IonItem>
 
-          {accessMode === 'personal' && (!isEditing || canChangeAccessMode) && <>
+          {accessMode === 'personal' && (!isEditing || canChangeTransferAcceptance) && <>
             <IonItem><IonToggle checked={acceptTransfers} onIonChange={(e) => setAcceptTransfers(e.detail.checked)}>
               Принимать переводы от других пользователей
             </IonToggle></IonItem>
@@ -212,7 +219,7 @@ function AccountFormModal({
             onChange={isEditing ? undefined : setKind}
           />
 
-          {(!isEditing || canChangeAccessMode) && (
+          {!isEditing && (
             <IonItem>
               <IonToggle
                 checked={accessMode === 'shared'}
@@ -224,7 +231,7 @@ function AccountFormModal({
               </IonToggle>
             </IonItem>
           )}
-          {isEditing && !canChangeAccessMode && (
+          {isEditing && (
             <IonItem>
               <IonLabel>Совместный счёт</IonLabel>
               <IonNote slot="end" className="account-form-readonly-value">
@@ -233,11 +240,11 @@ function AccountFormModal({
             </IonItem>
           )}
 
-          {isEditing && canChangeAccessMode && shouldShowPersonalAccessModeWarning(initial?.accessMode, accessMode) && (
-            <IonNote className="account-form-type-warning">
-              Совместный счёт можно сделать личным только без других участников и транзакций.
-            </IonNote>
-          )}
+          <IonNote className="entity-form-note">{ACCOUNT_CONFIGURATION_NOTE}</IonNote>
+          {!isEditing && accessMode === 'shared' && <AccountMembersFields
+            value={members} onChange={setMembers} ownerUsername={owner?.username ?? ''}
+            error={memberResult.error}
+          />}
 
           {!isEditing && (
             <IonItem>
@@ -368,7 +375,6 @@ export function AccountsPage() {
       accountsApi.update(id, {
         name: dto.name,
         ...(dto.acceptTransfers !== undefined ? { acceptTransfers: dto.acceptTransfers } : {}),
-        accessMode: dto.accessMode,
         icon: dto.icon,
         initialBalance: dto.initialBalance,
         initialBalanceDate: dto.initialBalanceDate,
@@ -513,7 +519,7 @@ export function AccountsPage() {
             onSubmit={(dto) => updateMutation.mutate({ id: editingAccount.id, dto })}
             loading={updateMutation.isPending}
             isEditing
-            canChangeAccessMode={editingAccount.ownerId === user?.id}
+            canChangeTransferAcceptance={editingAccount.ownerId === user?.id}
             onManageMembers={editingAccount.accessMode === 'shared' ? () => {
               setEditingAccount(null)
               history.push(`/accounts/${editingAccount.id}/members`)
