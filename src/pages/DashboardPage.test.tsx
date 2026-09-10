@@ -82,7 +82,11 @@ describe('Dashboard tag navigation', () => {
     const href = markup.match(/href="([^"]*\/transactions\/filtered\/1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
     expect(href).toBeDefined()
     const params = new URL(href!, 'http://localhost').searchParams
-    expect(filterFromParams(params)).toEqual({ accountIds: ['spending'], tagIds: ['travel'] })
+    expect(filterFromParams(params)).toEqual({
+      accountIds: ['spending'],
+      accountKinds: ['spending'],
+      tagIds: ['travel'],
+    })
     expect(periodFromParams(params, initialPeriod)).toEqual(source)
     const range = computeDateRange(source.period, source.periodOffset, source.customFrom, source.customTo)
     expect(queryState.params[queryState.params.length - 1]).toMatchObject({ date_from: range.dateFrom, date_to: range.dateTo })

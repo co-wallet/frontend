@@ -60,6 +60,11 @@ import {
 } from '@/lib/transactionList'
 import { useChartTheme } from '@/lib/useChartTheme'
 import { useAuthStore } from '@/store/authStore'
+import { accountKindShortLabel } from '@/lib/accountKind'
+import {
+  transactionAccountKinds,
+  transactionFilterAccounts,
+} from '@/lib/accountFilters'
 import {
   computeDateRange,
   usePeriodStore,
@@ -120,9 +125,24 @@ export function TransactionsPage() {
     customFrom,
     customTo,
   )
-  const effectiveFilter: TransactionFilter = { ...filter, dateFrom, dateTo }
+  const accountsQuery = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => accountsApi.list(),
+  })
+  const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data])
+  const filteredAccounts = transactionFilterAccounts(accounts, filter)
+  const filteredAccountIds = filteredAccounts.map((account) => account.id)
+  const hasEffectiveAccounts = !accountsQuery.isLoading
+    && !accountsQuery.isError
+    && filteredAccountIds.length > 0
+  const effectiveFilter: TransactionFilter = {
+    ...filter,
+    accountIds: filteredAccountIds,
+    dateFrom,
+    dateTo,
+  }
   const analyticsParams = buildTransactionAnalyticsParams(
-    filter,
+    effectiveFilter,
     dateFrom,
     dateTo,
     defaultCurrency,
@@ -131,20 +151,17 @@ export function TransactionsPage() {
   const expenseAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'by-category', 'expense', analyticsParams],
     queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'expense' }),
-    enabled: showChart,
+    enabled: showChart && hasEffectiveAccounts,
   })
   const incomeAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'by-category', 'income', analyticsParams],
     queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'income' }),
-    enabled: showChart,
+    enabled: showChart && hasEffectiveAccounts,
   })
   const summaryQuery = useQuery({
     queryKey: ['analytics', 'summary', 'transactions', analyticsParams],
     queryFn: () => analyticsApi.summary(analyticsParams),
-  })
-  const accountsQuery = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => accountsApi.list(),
+    enabled: hasEffectiveAccounts,
   })
   const expenseCategoriesQuery = useQuery({
     queryKey: ['categories', 'expense'],
@@ -158,7 +175,9 @@ export function TransactionsPage() {
     queryKey: ['tags'],
     queryFn: () => tagsApi.list(),
   })
-  const transactionsQuery = useInfiniteQuery(transactionPaginationOptions(effectiveFilter))
+  const transactionsQuery = useInfiniteQuery(
+    transactionPaginationOptions(effectiveFilter, hasEffectiveAccounts),
+  )
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
@@ -170,7 +189,6 @@ export function TransactionsPage() {
     },
   })
 
-  const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data])
   const allCategories = useMemo(() => [
     ...(expenseCategoriesQuery.data ?? []),
     ...(incomeCategoriesQuery.data ?? []),
@@ -211,6 +229,14 @@ export function TransactionsPage() {
       }
     })
   const hasFilters = hasTransactionFilters(filter)
+  const accountKinds = transactionAccountKinds(filter)
+  const accountScopeLabel = `${accountKinds.length === 0
+    ? 'Типы средств не выбраны'
+    : accountKinds.length === 1
+      ? accountKindShortLabel(accountKinds[0])
+      : `Типов средств: ${accountKinds.length}`} · ${filter.includeShared
+    ? 'личные и общие счета'
+    : 'личные счета'}`
   const filterGroups = [
     { kind: 'accountIds', label: 'Счета',
       items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },
@@ -243,30 +269,37 @@ export function TransactionsPage() {
             trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
-            {hasFilters ? (
-              <div className="transactions-active-filters" aria-label="Активные фильтры">
-                {filterGroups.filter((group) => group.items.length > 0).map((group) => {
-                  const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
-                  const remaining = group.items.length - 1
-                  return (
-                    <IonButton
-                      key={group.kind}
-                      className="transactions-filter-group"
-                      fill="clear"
-                      size="small"
-                      onClick={() => setShowFilters(true)}
-                      aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
-                      title={`${group.label}: ${name}`}
-                    >
-                      <span className="transactions-filter-group__name">{name}</span>
-                      {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
-                    </IonButton>
-                  )
-                })}
-              </div>
-            ) : (
-              <><span className="transactions-filter-status__label">Фильтры:</span><span>все счета, категории и теги</span></>
-            )}
+            <span className="transactions-filter-status__label">Фильтры:</span>
+            <div className="transactions-active-filters" aria-label="Активные фильтры">
+              <IonButton
+                className="transactions-filter-group"
+                fill="clear"
+                size="small"
+                onClick={() => setShowFilters(true)}
+                aria-label={`${accountScopeLabel}. Открыть фильтры`}
+                title={accountScopeLabel}
+              >
+                <span className="transactions-filter-group__name">{accountScopeLabel}</span>
+              </IonButton>
+              {filterGroups.filter((group) => group.items.length > 0).map((group) => {
+                const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
+                const remaining = group.items.length - 1
+                return (
+                  <IonButton
+                    key={group.kind}
+                    className="transactions-filter-group"
+                    fill="clear"
+                    size="small"
+                    onClick={() => setShowFilters(true)}
+                    aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
+                    title={`${group.label}: ${name}`}
+                  >
+                    <span className="transactions-filter-group__name">{name}</span>
+                    {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
+                  </IonButton>
+                )
+              })}
+            </div>
           </div>
 
           <section className="transactions-summary" aria-label="Сводка за период">

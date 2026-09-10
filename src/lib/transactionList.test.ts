@@ -148,12 +148,26 @@ describe('transaction list helpers', () => {
       date_to: '2026-09-02',
       currency: 'RUB',
       account_kinds: 'all',
+      include_transfer_expenses: false,
+      include_transfer_income: true,
       account_ids: 'account-1',
       category_ids: 'category-1',
       tag_ids: 'tag-1,tag-2',
       tag_mode: 'and',
     })
     expect(hasTransactionFilters({ tagIds: ['tag-1'] })).toBe(true)
+    expect(hasTransactionFilters({ accountKinds: [] })).toBe(true)
+    expect(hasTransactionFilters({ includeTransferExpenses: true })).toBe(true)
     expect(hasTransactionFilters({})).toBe(false)
+  })
+
+  it('uses independent transfer visibility preferences in analytics', () => {
+    expect(buildTransactionAnalyticsParams({
+      includeTransferExpenses: true,
+      includeTransferIncome: false,
+    }, '2026-09-01', '2026-09-02', 'RUB')).toMatchObject({
+      include_transfer_expenses: true,
+      include_transfer_income: false,
+    })
   })
 })

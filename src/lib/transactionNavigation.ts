@@ -1,4 +1,5 @@
 import type { TransactionFilter } from '@/api/transactions'
+import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
 
 export interface TransactionPeriod {
@@ -17,6 +18,15 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
     if (values?.length) filter[field] = values
   }
   if (params.get('tag_mode') === 'and') filter.tagMode = 'and'
+  const accountKinds = params.get('account_kinds')
+  if (accountKinds === 'none') filter.accountKinds = []
+  else if (accountKinds) {
+    const validKinds = accountKinds.split(',').filter(isAccountKind)
+    if (validKinds.length) filter.accountKinds = validKinds
+  }
+  if (params.get('include_shared') === 'true') filter.includeShared = true
+  if (params.get('include_transfer_expenses') === 'true') filter.includeTransferExpenses = true
+  if (params.get('include_transfer_income') === 'false') filter.includeTransferIncome = false
   return filter
 }
 
@@ -30,6 +40,19 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
   }
   result.delete('tag_mode')
   if (filter.tagMode === 'and') result.set('tag_mode', 'and')
+  result.delete('account_kinds')
+  if (filter.accountKinds) {
+    result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'none')
+  }
+  for (const [key, enabled] of [
+    ['include_shared', filter.includeShared],
+    ['include_transfer_expenses', filter.includeTransferExpenses],
+  ] as const) {
+    result.delete(key)
+    if (enabled === true) result.set(key, 'true')
+  }
+  result.delete('include_transfer_income')
+  if (filter.includeTransferIncome === false) result.set('include_transfer_income', 'false')
   return result
 }
 

@@ -21,6 +21,10 @@ function observe(filter: TransactionFilter = {}) {
 }
 
 describe('transaction pagination', () => {
+  it('can stay disabled while the effective account set is unavailable', () => {
+    expect(transactionPaginationOptions({}, false).enabled).toBe(false)
+  })
+
   it('loads pages on demand and stops after a partial page', async () => {
     const first = page(0)
     const second = page(50, 3)

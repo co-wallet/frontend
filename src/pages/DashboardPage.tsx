@@ -565,7 +565,14 @@ export function DashboardPage() {
                     <IonItem
                       key={s.tagId}
                       routerLink={filteredTransactionsHref(
-                        { accountIds: filteredAccounts.map((account) => account.id), tagIds: [s.tagId] },
+                        {
+                          accountIds: filteredAccounts.map((account) => account.id),
+                          accountKinds: selectedKinds,
+                          includeShared,
+                          includeTransferExpenses: transferVisibility.expenses,
+                          includeTransferIncome: transferVisibility.income,
+                          tagIds: [s.tagId],
+                        },
                         { period, periodOffset, customFrom, customTo },
                       )}
                       routerDirection="forward"
