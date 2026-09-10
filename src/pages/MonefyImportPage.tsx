@@ -1,3 +1,4 @@
+import { ImportAccountAccess } from '@/components/ImportAccountAccess'
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { IonButton, IonCheckbox, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
@@ -49,13 +50,14 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
         <p>Общие счета и внешние связи блокируют замену.</p>
       </IonCardContent>
     </IonCard>}
-    <h2>Личные счета</h2>
-    <p>Все счета будут личными и активными. Название счёта не определяет совместный доступ. Флаг Monefy «Включать в общий баланс» не переносится и не определяет тип счёта. Отключённые счета также станут активными.</p>
+    <h2>Счета и распределение</h2>
+    <p>По умолчанию счета личные. Совместный доступ, участников и доли задайте до подтверждения: после импорта они неизменяемы. Название счёта не определяет совместный доступ. Флаг Monefy «Включать в общий баланс» не переносится и не определяет тип счёта. Отключённые счета также станут активными.</p>
     {p.accounts.map(a => <IonCard key={a.source_id} id={importAccountAnchor(a.source_id)}>
       <IonCardHeader><IonCardTitle>{a.name} · {a.currency}</IonCardTitle></IonCardHeader>
       <IonCardContent>
         <p>Начальный баланс: {a.initial_balance} {a.currency} на {date(a.initial_balance_date)}</p>
         <p>Итоговый баланс: {a.final_balance} {a.currency}</p>
+        <ImportAccountAccess account={a} state={state} controller={controller} />
         <p>В общем балансе Monefy: {a.source_included_in_total ? 'да' : 'нет'}; {a.source_disabled_at ? `отключён с ${date(a.source_disabled_at)}` : 'активен'}.</p>
         {!a.kind && <p>Выберите тип этого счёта ниже.</p>}
         <IonItem lines="none"><IonSelect label={`Тип счёта «${a.name}»`} labelPlacement="stacked" interface="action-sheet" placeholder="Выберите тип" value={a.kind || undefined} disabled={locked} onIonChange={e => void controller.configure(a.source_id, e.detail.value as AccountKind)}>
@@ -73,6 +75,7 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
           <fieldset disabled={locked}><CategoryIconSettings value={c.icon} type={c.type} sessionKey={c.source_id} onChange={icon => void controller.configureCategory(c.source_id, icon)} /></fieldset>}
       </section>)}
     </IonCardContent></IonCard>
+    {state.preview && !state.preview.can_confirm && <IonButton disabled={locked} fill="outline" onClick={() => void controller.refreshOptions()}>Обновить предпросмотр</IonButton>}
     <MonefyImportDiagnostics state={state} controller={controller} />
     {p.mode === 'replace' ? <IonCard className="import-deletion-warning"><IonCardHeader><IonCardTitle>Безвозвратное удаление</IonCardTitle></IonCardHeader><IonCardContent>
       <p>Старые данные будут удалены безвозвратно. Резервная копия не создаётся. Отменить замену после завершения нельзя.</p>
@@ -84,10 +87,12 @@ export function ImportPreviewDetails({ state, controller }: { state: ImportState
 
 export function MonefyImportPage() {
   const userID = useAuthStore(s => s.user?.id) || ''
+  const username = useAuthStore(s => s.user?.username) || ''
   const qc = useQueryClient()
   const controller = useMemo(() => new MonefyImport(userID, undefined, localStorage, () => {
     for (const key of ['accounts', 'account', 'account-members', 'transfer-accounts', 'categories', 'tags', 'transactions', 'analytics']) void qc.invalidateQueries({ queryKey: [key] })
   }), [userID, qc])
+  controller.setOwnerUsername(username)
   const state = useSyncExternalStore(controller.subscribe, controller.getSnapshot)
   useEffect(() => { void controller.check() }, [controller])
   useIonViewWillEnter(() => { void controller.check() }, [controller])

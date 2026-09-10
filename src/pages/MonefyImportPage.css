@@ -27,3 +27,14 @@
 }
 .import-deletion-warning ion-card-title { color: var(--ion-color-danger); }
 .monefy-import > ion-button { white-space: normal; height: auto; min-height: 44px; }
+
+.import-access-fields {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+.import-access-fields ion-input { min-width: 0; }
+.import-access-fields ion-button { flex-shrink: 0; white-space: nowrap; }
+.import-access-fields ion-item ion-button { min-width: 5rem; }

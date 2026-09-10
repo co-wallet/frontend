@@ -44,7 +44,7 @@ describe('Monefy preview UI', () => {
   })
   it('shows exact balances, period, reused categories, flags, diagnostics and exclusions', () => {
     const html = render()
-    for (const text of ['100.0001', '50.0001', '2020-01-01', '2025-01-01', 'переиспользуется', 'личными и активными', 'Флаги не переносятся', 'Удалённый счёт', 'отключён с', 'Переводы']) expect(html).toContain(text)
+    for (const text of ['100.0001', '50.0001', '2020-01-01', '2025-01-01', 'переиспользуется', 'По умолчанию счета личные', 'Флаги не переносятся', 'Удалённый счёт', 'отключён с', 'Переводы']) expect(html).toContain(text)
     expect(html).toMatch(/ion-select[^>]*value="investment"/)
     expect(html).toContain('value="spending"')
     expect(html).toContain('value="deposit"')
@@ -109,4 +109,14 @@ it('invalidates cached balances, history, details, memberships and catalog after
   callbacks.success!()
   for (const key of keys) expect(qc.getQueryState(key)?.isInvalidated).toBe(true)
   expect(qc.getQueryState(['currencies'])?.isInvalidated).toBe(false)
+})
+
+
+it('shows immutable shared distribution and the per-member impact on balances', () => {
+  const shared: ImportState = { ...state, preview: { ...state.preview!, accounts: [{ ...state.preview!.accounts[0], access_mode: 'shared', members: [
+    { user_id: 'one', username: 'anna', default_share: 0.6, initial_balance: '60.00006000', final_balance: '30.00006000' },
+    { user_id: 'two', username: 'boris', default_share: 0.4, initial_balance: '40.00004000', final_balance: '20.00004000' },
+  ] }] } }
+  const html = renderToStaticMarkup(<QueryClientProvider client={new QueryClient()}><ImportPreviewDetails state={shared} controller={{} as MonefyImport} /></QueryClientProvider>)
+  for (const text of ['anna', 'boris', '60%', '40%', '60.00006000', '20.00004000', 'ко всей переносимой истории', 'неизменяемы']) expect(html).toContain(text)
 })
