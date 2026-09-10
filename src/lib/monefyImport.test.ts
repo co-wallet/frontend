@@ -52,7 +52,7 @@ describe('MonefyImport public workflow', () => {
     await model.upload(file)
     await model.configureCategory('c', 'preset:groceries|purple|none')
     await model.configure('b', 'deposit')
-    expect(api.configure).toHaveBeenLastCalledWith('preview-1-next', { a: 'spending', b: 'deposit' }, { c: 'preset:groceries|purple|none' }, { a: 'preset:cash|green|green', b: 'preset:cash|green|green' })
+    expect(api.configure).toHaveBeenLastCalledWith('preview-1-next', { a: 'spending', b: 'deposit' }, { c: 'preset:groceries|purple|none' }, { a: 'preset:cash|green|green', b: 'preset:cash|green|green' }, { a: { access_mode: 'personal', members: [] }, b: { access_mode: 'personal', members: [] } })
     expect(model.getSnapshot().preview?.accounts.map(a => a.kind)).toEqual(['spending', 'deposit'])
     expect(model.getSnapshot().preview?.categories[0].icon).toBe('preset:groceries|purple|none')
     model.accept(true)
@@ -114,7 +114,7 @@ describe('MonefyImport public workflow', () => {
     expect(canConfirmImport(model.getSnapshot())).toBe(false)
     expect(model.getSnapshot().accepted).toBe(false)
     request.resolve({ ...preview, preview_id: 'configured' }); await configuring
-    expect(api.configure).toHaveBeenCalledWith('preview-1', { a: 'investment' }, {}, { a: 'preset:cash|green|green' })
+    expect(api.configure).toHaveBeenCalledWith('preview-1', { a: 'investment' }, {}, { a: 'preset:cash|green|green' }, { a: { access_mode: 'personal', members: [] } })
     model.accept(true); await model.confirm()
     expect(api.confirm).toHaveBeenCalledWith('configured', true, false)
   })
@@ -130,7 +130,7 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().preview?.accounts[0].kind).toBe('deposit')
     expect(canConfirmImport(model.getSnapshot())).toBe(false)
     await model.configure('second', 'investment')
-    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { first: 'deposit', second: 'investment' }, {}, { first: 'preset:cash|green|green', second: 'preset:cash|green|green' })
+    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { first: 'deposit', second: 'investment' }, {}, { first: 'preset:cash|green|green', second: 'preset:cash|green|green' }, { first: { access_mode: 'personal', members: [] }, second: { access_mode: 'personal', members: [] } })
     expect(model.getSnapshot().preview?.preview_id).toBe('preview-2')
   })
   it('preserves category icon choices while collecting account kinds and saves them in options', async () => {
@@ -145,7 +145,7 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().preview?.categories[0].icon).toBe('preset:groceries|purple|none')
     expect(canConfirmImport(model.getSnapshot())).toBe(false)
     await model.configure('a', 'deposit')
-    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { a: 'deposit' }, { c: 'preset:groceries|purple|none' }, { a: 'preset:cash|green|green' })
+    expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { a: 'deposit' }, { c: 'preset:groceries|purple|none' }, { a: 'preset:cash|green|green' }, { a: { access_mode: 'personal', members: [] } })
   })
   it('does not edit icons of reused categories', async () => {
     const { model, api } = setup(); await model.upload(file)
@@ -169,11 +169,12 @@ describe('MonefyImport public workflow', () => {
     expect(model.getSnapshot().preview).toBeUndefined()
     expect(api.confirm).not.toHaveBeenCalled()
   })
-  it('clears stale preview after failed configuration or upload', async () => {
+  it('preserves draft after failed configuration but blocks confirmation', async () => {
     const { model, api } = setup(); await model.upload(file)
     api.configure.mockRejectedValue(new Error('offline'))
     await model.configure('a', 'deposit')
-    expect(model.getSnapshot().preview).toBeUndefined()
+    expect(model.getSnapshot().preview?.accounts[0].kind).toBe('deposit')
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
     api.preview.mockRejectedValue(new Error('offline')); await model.upload(file)
     expect(model.getSnapshot().error).toBeTruthy()
     expect(canConfirmImport(model.getSnapshot())).toBe(false)
@@ -305,7 +306,7 @@ it.each(['savings', 'savings_account'] as const)('configures and confirms %s wit
   api.configure.mockResolvedValue({ ...preview, preview_id: 'new-kind', accounts: [{ ...preview.accounts[0], kind }] })
   await model.upload(file)
   await model.configure('a', kind)
-  expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { a: kind }, {}, { a: preview.accounts[0].icon })
+  expect(api.configure).toHaveBeenCalledExactlyOnceWith('preview-1', { a: kind }, {}, { a: preview.accounts[0].icon }, { a: { access_mode: 'personal', members: [] } })
   expect(model.getSnapshot().preview?.accounts[0]).toEqual({ ...preview.accounts[0], kind })
   model.accept(true)
   await model.confirm()
@@ -319,4 +320,48 @@ it('rejects an unknown kind with an actionable error', async () => {
   expect(api.configure).not.toHaveBeenCalled()
   expect(model.getSnapshot().error).toBe('Выберите тип средств из списка.')
   expect(model.getSnapshot().preview?.accounts[0].kind).toBe('spending')
+})
+
+
+describe('shared import configuration', () => {
+  it('requires a fresh preview, preserves icons and kinds and confirms only the updated identity', async () => {
+    const { model, api } = setup()
+    model.setOwnerUsername('anna')
+    await model.upload(file)
+    model.accept(true)
+    model.editAccess('a', 'shared', [{ username: 'anna', share: '0.6' }, { username: 'boris', share: '0.4' }])
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    await model.confirm()
+    expect(api.confirm).not.toHaveBeenCalled()
+    await model.refreshOptions()
+    expect(api.configure).toHaveBeenCalledWith('preview-1', { a: 'spending' }, {}, { a: preview.accounts[0].icon }, { a: { access_mode: 'shared', members: [{ username: 'anna', default_share: 0.6 }, { username: 'boris', default_share: 0.4 }] } })
+    model.accept(true)
+    await model.confirm()
+    expect(api.confirm).toHaveBeenCalledWith('preview-2', true, false)
+  })
+  it.each([
+    [{ username: 'anna', share: '0.5' }, { username: '', share: '0.5' }],
+    [{ username: 'anna', share: '0.5' }, { username: 'anna', share: '0.5' }],
+    [{ username: 'anna', share: '0.3' }, { username: 'boris', share: '0.4' }],
+    [{ username: 'anna', share: '0.00001' }, { username: 'boris', share: '0.99999' }],
+  ])('blocks incomplete or invalid members %j', async (...members) => {
+    const { model, api } = setup(); model.setOwnerUsername('anna'); await model.upload(file)
+    model.editAccess('a', 'shared', members)
+    await model.refreshOptions(); model.accept(true); await model.confirm()
+    expect(api.configure).not.toHaveBeenCalled(); expect(api.confirm).not.toHaveBeenCalled()
+    expect(model.getSnapshot().error).toBeTruthy()
+  })
+  it('retains edited shares on network failure and can retry or return to personal', async () => {
+    const { model, api } = setup(); model.setOwnerUsername('anna'); await model.upload(file)
+    const members = [{ username: 'anna', share: '0.5' }, { username: 'boris', share: '0.5' }]
+    model.editAccess('a', 'shared', members)
+    api.configure.mockRejectedValueOnce(new Error('offline'))
+    await model.refreshOptions()
+    expect(model.getSnapshot().accessDrafts?.a.members).toEqual(members)
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    model.editAccess('a', 'personal', [])
+    await model.refreshOptions()
+    expect(api.configure.mock.lastCall?.[4]).toEqual({ a: { access_mode: 'personal', members: [] } })
+    expect(model.getSnapshot().accessDrafts).toBeUndefined()
+  })
 })

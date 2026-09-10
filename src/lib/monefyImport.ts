@@ -1,3 +1,5 @@
+import type { ImportAccess } from '@/api/monefy'
+import { buildAccountMembers, type MemberDraft } from './accountMembers'
 import axios from 'axios'
 import { monefyApi, type ImportMode, type ImportAvailability, type ImportPreview, type ImportResult } from '@/api/monefy'
 import type { AccountKind } from '@/api/accounts'
@@ -10,6 +12,7 @@ export const importReasons: Record<string, string> = {
   transactions: 'У вас уже есть операции или доли в операциях.',
 }
 const errors: Record<string, string> = {
+ members_changed: 'Участник больше недоступен. Создайте новый предпросмотр.',
   invalid_account_kinds: 'Выберите допустимый тип средств для каждого счёта.',
   deletion_not_confirmed: 'Отдельно подтвердите безвозвратное удаление старых данных.',
   replacement_changed: 'Состав старых данных изменился. Создайте новый предпросмотр и подтвердите удаление заново.',
@@ -39,6 +42,7 @@ function errorText(error: unknown) {
 }
 type Pending = { id: string; accepted: boolean; deletion?: boolean }
 export interface ImportState {
+  accessDrafts?: Record<string, { mode: 'personal' | 'shared'; members: MemberDraft[] }>
   mode?: ImportMode
   deletionAccepted?: boolean
   phase: 'idle' | 'checking' | 'previewing' | 'configuring' | 'confirming' | 'unknown' | 'done'
@@ -65,6 +69,8 @@ export class MonefyImport {
   private generation = 0
   private pending?: Pending
   private key: string
+  private ownerUsername = ''
+  setOwnerUsername(username: string) { this.ownerUsername = username }
   constructor(userID: string, private api = monefyApi, private storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = localStorage, private onSuccess: () => void = () => {}) {
     this.key = `monefy-pending:${userID}`
     try {
@@ -88,7 +94,7 @@ export class MonefyImport {
   cancel() {
     if (this.pending || this.state.phase === 'done') return
     ++this.generation
-    this.update({ phase: 'idle', preview: undefined, accepted: false, deletionAccepted: false, error: undefined, fileName: undefined })
+    this.update({ phase: 'idle', preview: undefined, accessDrafts: undefined, accepted: false, deletionAccepted: false, error: undefined, fileName: undefined })
   }
   setMode(mode: ImportMode) {
     if (this.pending || this.state.phase === 'done' || !['empty', 'replace'].includes(mode)) return
@@ -114,6 +120,15 @@ export class MonefyImport {
       const preview = await this.api.preview(file, this.state.mode || 'empty')
       if (version === this.generation) this.update({ phase: 'idle', preview })
     } catch (e) { if (version === this.generation) this.update({ phase: 'idle', error: errorText(e) }) }
+  }
+  editAccess(sourceID: string, mode: 'personal' | 'shared', members: MemberDraft[]) {
+    const p = this.state.preview
+    if (!p || this.state.phase !== 'idle' || this.pending || !p.accounts.some(a => a.source_id === sourceID)) return
+    this.update({ preview: { ...p, can_confirm: false }, accepted: false, deletionAccepted: false, error: undefined,
+      accessDrafts: { ...this.state.accessDrafts, [sourceID]: { mode, members } } })
+  }
+  async refreshOptions() {
+    if (this.state.preview && this.state.phase === 'idle' && !this.pending) await this.saveOptions(this.state.preview)
   }
   async configure(sourceID: string, kind: AccountKind) {
     const p = this.state.preview
@@ -142,14 +157,24 @@ export class MonefyImport {
     this.update({ preview: draft, accepted: false, deletionAccepted: false, error: undefined })
     // Older previews may still contain untyped accounts; submit only complete options.
     if (draft.accounts.some(a => !a.kind)) return
+    const access: Record<string, ImportAccess> = {}
+    for (const a of draft.accounts) {
+      const editing = this.state.accessDrafts?.[a.source_id]
+      const mode = editing?.mode || a.access_mode || 'personal'
+      if (mode === 'personal') { access[a.source_id] = { access_mode: mode, members: [] }; continue }
+      const members = editing?.members || (a.members || []).map(m => ({ username: m.username, share: String(m.default_share) }))
+      const checked = buildAccountMembers(members, this.ownerUsername)
+      if (checked.error) { this.update({ error: checked.error }); return }
+      access[a.source_id] = { access_mode: mode, members: checked.members.map(m => ({ username: m.username, default_share: m.defaultShare })) }
+    }
     const kinds = Object.fromEntries(draft.accounts.map(a => [a.source_id, a.kind as AccountKind]))
     const categoryIcons = Object.fromEntries(draft.categories.filter(c => !c.existing_id).map(c => [c.source_id, c.icon]))
     const version = ++this.generation
     this.update({ phase: 'configuring' })
     try {
-      const preview = await this.api.configure(draft.preview_id, kinds, categoryIcons, Object.fromEntries(draft.accounts.map(a => [a.source_id, a.icon])))
-      if (version === this.generation) this.update({ preview, phase: 'idle' })
-    } catch (e) { if (version === this.generation) this.update({ preview: undefined, phase: 'idle', error: errorText(e) }) }
+      const preview = await this.api.configure(draft.preview_id, kinds, categoryIcons, Object.fromEntries(draft.accounts.map(a => [a.source_id, a.icon])), access)
+      if (version === this.generation) this.update({ preview, accessDrafts: preview.diagnostics.some(d => d.code === 'target_account_members') ? this.state.accessDrafts : undefined, phase: 'idle' })
+    } catch (e) { if (version === this.generation) this.update({ preview: { ...draft, can_confirm: false }, phase: 'idle', error: errorText(e) }) }
   }
   async confirm() {
     if (!canConfirmImport(this.state) || this.pending) return
