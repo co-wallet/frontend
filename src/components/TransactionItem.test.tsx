@@ -118,7 +118,9 @@ describe('TransactionItem', () => {
 
     expect(markup).toContain('Ваша доля')
     expect(markup).toContain('−25 $')
-    expect(markup).toContain('≈ −2 000 ₽')
+    expect(markup).toContain('−2 000 ₽')
+    expect(markup).not.toContain('≈')
+    expect(markup.indexOf('−2 000 ₽')).toBeLessThan(markup.indexOf('−25 $'))
   })
 
   it('uses the shared uncategorized icon preset when a category is missing', () => {
