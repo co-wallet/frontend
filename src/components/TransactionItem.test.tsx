@@ -162,3 +162,85 @@ it('shows incoming currency and amount with read-only actions and both account n
   expect(markup).not.toContain('Удалить')
   expect(markup).not.toContain('100 $')
 })
+
+
+describe('cross-currency transfer amounts', () => {
+  it.each([
+    { currency: 'RUB', amount: 3030, toCurrency: 'EUR', toAmount: 26.691, source: '3 030 ₽', destination: '26,691 €' },
+    { currency: 'EUR', amount: 26.691, toCurrency: 'RUB', toAmount: 3030, source: '26,691 €', destination: '3 030 ₽' },
+    { currency: 'USD', amount: 100, toCurrency: 'EUR', toAmount: 87.1234, source: '100 $', destination: '87,1234 €' },
+  ])('shows saved amounts for $currency → $toCurrency without account data', ({ source, destination, ...values }) => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ type: 'transfer', ...values })}
+        defaultCurrency="RUB" selectedAccountIds={[account.id]} onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${source}</span>`)
+    expect(markup).toContain(`<span class="transaction-item__amount-meta">${destination}</span>`)
+    expect(markup).not.toContain('На счёт:')
+    expect(markup).toContain(`. На счёт ${destination}`)
+  })
+
+  it('uses the destination account currency when the transaction omits it', () => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ type: 'transfer', toAmount: 26.691 })}
+        toAccount={{ ...account, id: 'destination', currency: 'EUR' }}
+        defaultCurrency="RUB" onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain('<span class="transaction-item__amount-meta">26,691 €</span>')
+  })
+
+  it.each([
+    { type: 'transfer' as const, toCurrency: 'RUB', toAmount: 1000 },
+    { type: 'transfer' as const, toCurrency: 'EUR', toAmount: null },
+    { type: 'transfer' as const, toCurrency: undefined, toAmount: 100 },
+    { type: 'transfer' as const, toCurrency: 'EUR', toAmount: 100, readOnly: true },
+    { type: 'expense' as const, toCurrency: 'EUR', toAmount: 100 },
+    { type: 'income' as const, toCurrency: 'EUR', toAmount: 100 },
+  ])('does not invent or duplicate a destination amount: %j', (values) => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction(values)} defaultCurrency="RUB" onEdit={vi.fn()} />,
+    )
+    expect(markup).not.toContain('. На счёт ')
+  })
+})
+
+
+describe('transfer currency follows the selected accounts', () => {
+  it.each([
+    { selected: ['source'], defaultCurrency: 'RUB', primary: '100 ₺', secondary: ['200 ₽'] },
+    { selected: ['destination'], defaultCurrency: 'TRY', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'RUB', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'TRY', primary: '100 ₺', secondary: ['200 ₽'] },
+    { selected: undefined, defaultCurrency: 'RUB', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['destination', 'unrelated'], defaultCurrency: 'TRY', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'USD', primary: '3 $', secondary: ['100 ₺', '200 ₽'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'EUR', primary: '100 ₺', secondary: ['200 ₽'] },
+  ])('renders $primary first for $selected / $defaultCurrency', ({ selected, defaultCurrency, primary, secondary }) => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ type: 'transfer', accountId: 'source', toAccountId: 'destination',
+        currency: 'TRY', amount: 100, toCurrency: 'RUB', toAmount: 200,
+        defaultCurrency: 'USD', defaultCurrencyAmount: 3 })}
+        selectedAccountIds={selected} defaultCurrency={defaultCurrency} onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${primary}</span>`)
+    for (const value of secondary) {
+      expect(markup).toContain(`<span class="transaction-item__amount-meta">${value}</span>`)
+    }
+    expect(markup.match(/class="transaction-item__amount transaction-item__amount--transfer"/g)).toHaveLength(1)
+    expect(markup).not.toContain('≈')
+    expect(markup).not.toContain('На счёт:')
+  })
+})
+
+
+it('keeps the source share label beside the source amount when the destination is primary', () => {
+  const markup = renderToStaticMarkup(
+    <TransactionItem tx={transaction({ type: 'transfer', toAccountId: 'destination', currency: 'RUB',
+      amount: 1000, toCurrency: 'EUR', toAmount: 10,
+      shares: [{ userId: 'user-1', amount: 500, isCustom: false }] })}
+      account={{ ...account, accessMode: 'shared' }} currentUserId="user-1"
+      selectedAccountIds={['destination']} defaultCurrency="RUB" onEdit={vi.fn()} />,
+  )
+  expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">10 €</span>')
+  expect(markup).toContain('<span class="transaction-item__amount-meta">500 ₽ · Ваша доля</span>')
+})

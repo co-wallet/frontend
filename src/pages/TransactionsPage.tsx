@@ -585,6 +585,7 @@ export function TransactionsPage() {
                       category={tx.categoryId ? categoriesById.get(tx.categoryId) : undefined}
                       currentUserId={currentUserId}
                       defaultCurrency={defaultCurrency}
+                      selectedAccountIds={filteredAccountIds}
                       onEdit={(id) => history.push(`/transactions/${id}/edit`)}
                       onDelete={(id) => setDeleteAlertTxId(id)}
                     />
