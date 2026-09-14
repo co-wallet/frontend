@@ -15,6 +15,11 @@ function getSystemDark(): boolean {
 function applyTheme(mode: ThemeMode) {
   const isDark = mode === 'dark' || (mode === 'system' && getSystemDark())
   document.body.classList.toggle('dark', isDark)
+  const iconPrefix = isDark ? '/icons/wallet-dark' : '/icons/wallet'
+  document.querySelector('link[rel="icon"]')?.setAttribute('href', `${iconPrefix}-32.png`)
+  document.querySelector('link[rel="apple-touch-icon"]')?.setAttribute('href', `${iconPrefix}-180.png`)
+  document.querySelector('link[rel="manifest"]')?.setAttribute('href', isDark ? '/manifest-dark.webmanifest' : '/manifest.webmanifest')
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', isDark ? '#000000' : '#3b82f6')
 }
 
 export const useThemeStore = create<ThemeState>()(
