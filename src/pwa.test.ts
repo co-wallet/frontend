@@ -5,6 +5,24 @@ import { describe, expect, it } from 'vitest'
 const root = resolve(import.meta.dirname, '..')
 const html = readFileSync(resolve(root, 'index.html'), 'utf8')
 
+describe('standalone navigation', () => {
+  it.each(['manifest.webmanifest', 'manifest-dark.webmanifest'])(
+    'keeps the entire app in the same standalone scope in %s',
+    (file) => {
+      const manifest = JSON.parse(readFileSync(resolve(root, 'public', file), 'utf8'))
+
+      // A dashboard-only scope makes sibling pages open with browser chrome on iOS.
+      expect(manifest).toMatchObject({
+        id: '/',
+        start_url: '/',
+        scope: '/',
+        display: 'standalone',
+      })
+      expect(manifest.display_override).toBeUndefined()
+    },
+  )
+})
+
 function expectPNG(src: string, sizes: string) {
   const data = readFileSync(resolve(root, 'public', src.replace(/^\//, '')))
   expect(data.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a')
