@@ -162,3 +162,43 @@ it('shows incoming currency and amount with read-only actions and both account n
   expect(markup).not.toContain('Удалить')
   expect(markup).not.toContain('100 $')
 })
+
+
+describe('cross-currency transfer amounts', () => {
+  it.each([
+    { currency: 'RUB', amount: 3030, toCurrency: 'EUR', toAmount: 26.691, source: '3 030 ₽', destination: '26,691 €' },
+    { currency: 'EUR', amount: 26.691, toCurrency: 'RUB', toAmount: 3030, source: '26,691 €', destination: '3 030 ₽' },
+    { currency: 'USD', amount: 100, toCurrency: 'EUR', toAmount: 87.1234, source: '100 $', destination: '87,1234 €' },
+  ])('shows saved amounts for $currency → $toCurrency without account data', ({ source, destination, ...values }) => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ type: 'transfer', ...values })}
+        defaultCurrency="RUB" onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain(source)
+    expect(markup).toContain(`На счёт: ${destination}`)
+    expect(markup).toContain(`. На счёт ${destination}`)
+  })
+
+  it('uses the destination account currency when the transaction omits it', () => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ type: 'transfer', toAmount: 26.691 })}
+        toAccount={{ ...account, id: 'destination', currency: 'EUR' }}
+        defaultCurrency="RUB" onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain('На счёт: 26,691 €')
+  })
+
+  it.each([
+    { type: 'transfer' as const, toCurrency: 'RUB', toAmount: 1000 },
+    { type: 'transfer' as const, toCurrency: 'EUR', toAmount: null },
+    { type: 'transfer' as const, toCurrency: undefined, toAmount: 100 },
+    { type: 'transfer' as const, toCurrency: 'EUR', toAmount: 100, readOnly: true },
+    { type: 'expense' as const, toCurrency: 'EUR', toAmount: 100 },
+    { type: 'income' as const, toCurrency: 'EUR', toAmount: 100 },
+  ])('does not invent or duplicate a destination amount: %j', (values) => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction(values)} defaultCurrency="RUB" onEdit={vi.fn()} />,
+    )
+    expect(markup).not.toContain('На счёт:')
+  })
+})

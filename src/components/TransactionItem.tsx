@@ -79,6 +79,11 @@ export function TransactionItem({
     defaultCurrency,
   )
   const showConvertedAmount = !tx.readOnly && convertedAmount != null && tx.currency !== defaultCurrency
+  const destinationCurrency = tx.toCurrency || toAccount?.currency
+  const destinationAmount = tx.type === 'transfer' && !tx.readOnly
+    && destinationCurrency && destinationCurrency !== tx.currency && tx.toAmount != null
+    ? formatTransactionAmount(tx.toAmount, destinationCurrency, 'transfer')
+    : null
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
   return (
@@ -92,7 +97,7 @@ export function TransactionItem({
         <button
           type="button"
           className="transaction-item__open"
-          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}`}
+          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}${destinationAmount ? `. На счёт ${destinationAmount}` : ''}`}
         />
         {tx.type === 'transfer' ? (
           <div slot="start" className="transaction-item__icon transaction-item__icon--transfer">
@@ -139,6 +144,11 @@ export function TransactionItem({
             <span className="transaction-item__amount-meta">
               <IonIcon icon={peopleOutline} aria-hidden="true" />
               Ваша доля
+            </span>
+          )}
+          {destinationAmount && (
+            <span className="transaction-item__amount-meta">
+              На счёт: {destinationAmount}
             </span>
           )}
           {showConvertedAmount && (
