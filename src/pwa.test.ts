@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '..')
 const html = readFileSync(resolve(root, 'index.html'), 'utf8')
-const manifest = JSON.parse(readFileSync(resolve(root, 'public/manifest.webmanifest'), 'utf8'))
 
 function expectPNG(src: string, sizes: string) {
   const data = readFileSync(resolve(root, 'public', src.replace(/^\//, '')))
@@ -13,13 +12,20 @@ function expectPNG(src: string, sizes: string) {
 }
 
 describe('app icons', () => {
-  it('provides correctly sized PNG assets for each manifest icon', () => {
+  it.each(['manifest.webmanifest', 'manifest-dark.webmanifest'])('provides correctly sized PNG assets in %s', (file) => {
+    const manifest = JSON.parse(readFileSync(resolve(root, 'public', file), 'utf8'))
+    expect(manifest.id).toBe('/')
     expect(manifest.icons.map((icon: { sizes: string }) => icon.sizes)).toEqual(['192x192', '512x512'])
     for (const icon of manifest.icons) {
       expect(icon.type).toBe('image/png')
       expect(icon.purpose.split(' ')).toContain('maskable')
       expectPNG(icon.src, icon.sizes)
     }
+  })
+
+  it('provides dark favicon and Apple touch assets', () => {
+    expectPNG('/icons/wallet-dark-32.png', '32x32')
+    expectPNG('/icons/wallet-dark-180.png', '180x180')
   })
 
   it('connects the manifest, favicon and Apple home screen icon', () => {
