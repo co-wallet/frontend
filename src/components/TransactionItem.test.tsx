@@ -172,10 +172,10 @@ describe('cross-currency transfer amounts', () => {
   ])('shows saved amounts for $currency → $toCurrency without account data', ({ source, destination, ...values }) => {
     const markup = renderToStaticMarkup(
       <TransactionItem tx={transaction({ type: 'transfer', ...values })}
-        defaultCurrency="RUB" onEdit={vi.fn()} />,
+        defaultCurrency="RUB" selectedAccountIds={[account.id]} onEdit={vi.fn()} />,
     )
     expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${source}</span>`)
-    expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${destination}</span>`)
+    expect(markup).toContain(`<span class="transaction-item__amount-meta">${destination}</span>`)
     expect(markup).not.toContain('На счёт:')
     expect(markup).toContain(`. На счёт ${destination}`)
   })
@@ -186,7 +186,7 @@ describe('cross-currency transfer amounts', () => {
         toAccount={{ ...account, id: 'destination', currency: 'EUR' }}
         defaultCurrency="RUB" onEdit={vi.fn()} />,
     )
-    expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">26,691 €</span>')
+    expect(markup).toContain('<span class="transaction-item__amount-meta">26,691 €</span>')
   })
 
   it.each([
@@ -202,4 +202,45 @@ describe('cross-currency transfer amounts', () => {
     )
     expect(markup).not.toContain('. На счёт ')
   })
+})
+
+
+describe('transfer currency follows the selected accounts', () => {
+  it.each([
+    { selected: ['source'], defaultCurrency: 'RUB', primary: '100 ₺', secondary: ['200 ₽'] },
+    { selected: ['destination'], defaultCurrency: 'TRY', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'RUB', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'TRY', primary: '100 ₺', secondary: ['200 ₽'] },
+    { selected: undefined, defaultCurrency: 'RUB', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['destination', 'unrelated'], defaultCurrency: 'TRY', primary: '200 ₽', secondary: ['100 ₺'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'USD', primary: '3 $', secondary: ['100 ₺', '200 ₽'] },
+    { selected: ['source', 'destination'], defaultCurrency: 'EUR', primary: '100 ₺', secondary: ['200 ₽'] },
+  ])('renders $primary first for $selected / $defaultCurrency', ({ selected, defaultCurrency, primary, secondary }) => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ type: 'transfer', accountId: 'source', toAccountId: 'destination',
+        currency: 'TRY', amount: 100, toCurrency: 'RUB', toAmount: 200,
+        defaultCurrency: 'USD', defaultCurrencyAmount: 3 })}
+        selectedAccountIds={selected} defaultCurrency={defaultCurrency} onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${primary}</span>`)
+    for (const value of secondary) {
+      expect(markup).toContain(`<span class="transaction-item__amount-meta">${value}</span>`)
+    }
+    expect(markup.match(/class="transaction-item__amount transaction-item__amount--transfer"/g)).toHaveLength(1)
+    expect(markup).not.toContain('≈')
+    expect(markup).not.toContain('На счёт:')
+  })
+})
+
+
+it('keeps the source share label beside the source amount when the destination is primary', () => {
+  const markup = renderToStaticMarkup(
+    <TransactionItem tx={transaction({ type: 'transfer', toAccountId: 'destination', currency: 'RUB',
+      amount: 1000, toCurrency: 'EUR', toAmount: 10,
+      shares: [{ userId: 'user-1', amount: 500, isCustom: false }] })}
+      account={{ ...account, accessMode: 'shared' }} currentUserId="user-1"
+      selectedAccountIds={['destination']} defaultCurrency="RUB" onEdit={vi.fn()} />,
+  )
+  expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">10 €</span>')
+  expect(markup).toContain('<span class="transaction-item__amount-meta">500 ₽ · Ваша доля</span>')
 })

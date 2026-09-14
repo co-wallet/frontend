@@ -257,3 +257,18 @@ describe('paginated transaction list', () => {
     expect(markup).not.toContain('<h2>Не удалось загрузить транзакции</h2>')
   })
 })
+
+
+it('passes the effective account selection to transfer amount presentation', () => {
+  pagination.data.pages = [[{
+    id: 'transfer', accountId: 'a1', toAccountId: 'a3', type: 'transfer',
+    amount: 100, currency: 'USD', toAmount: 90, toCurrency: 'EUR',
+    date: '2026-08-21', shares: [], tags: [],
+  } as unknown as Transaction]]
+  const destination = renderPage('/transactions?account_ids=a3&account_kinds=investment')
+  expect(destination).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">90 €</span>')
+  expect(destination).toContain('<span class="transaction-item__amount-meta">100 $</span>')
+  const source = renderPage('/transactions?account_ids=a1')
+  expect(source).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">100 $</span>')
+  expect(source).toContain('<span class="transaction-item__amount-meta">90 €</span>')
+})

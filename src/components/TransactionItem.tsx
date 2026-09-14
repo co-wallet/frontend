@@ -39,6 +39,7 @@ interface TransactionItemProps {
   category?: Category
   currentUserId?: string
   defaultCurrency: string
+  selectedAccountIds?: string[]
   tagHref?: (id: string) => string
   onEdit: (id: string) => void
   onDelete?: (id: string) => void
@@ -52,6 +53,7 @@ export function TransactionItem({
   category,
   currentUserId,
   defaultCurrency,
+  selectedAccountIds,
   onEdit,
   onDelete,
   tagHref,
@@ -84,6 +86,21 @@ export function TransactionItem({
     && destinationCurrency && destinationCurrency !== tx.currency && tx.toAmount != null
     ? formatTransactionAmount(tx.toAmount, destinationCurrency, 'transfer')
     : null
+  const sourceSelected = selectedAccountIds?.includes(tx.accountId) ?? true
+  const destinationSelected = tx.toAccountId != null
+    && (selectedAccountIds?.includes(tx.toAccountId) ?? true)
+  const preferDestination = destinationSelected && !sourceSelected
+    || sourceSelected === destinationSelected && destinationCurrency === defaultCurrency
+  const preferConverted = sourceSelected === destinationSelected
+    && tx.currency !== defaultCurrency && destinationCurrency !== defaultCurrency
+    && convertedAmount != null
+  const transferAmounts = destinationAmount ? (
+    preferConverted
+      ? [formatTransactionAmount(convertedAmount!, defaultCurrency, 'transfer'), amount, destinationAmount]
+      : preferDestination ? [destinationAmount, amount] : [amount, destinationAmount]
+  ) : null
+  const primaryAmount = transferAmounts?.[0] ?? amount
+  const secondaryAmounts = transferAmounts?.slice(1) ?? []
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
   return (
@@ -139,17 +156,17 @@ export function TransactionItem({
         </IonLabel>
 
         <IonNote slot="end" className="transaction-item__amounts">
-          <span className={amountClass}>{amount}</span>
-          {shared && (
+          <span className={amountClass}>{primaryAmount}</span>
+          {shared && !(transferAmounts && preferDestination) && (
             <span className="transaction-item__amount-meta">
               <IonIcon icon={peopleOutline} aria-hidden="true" />
               Ваша доля
             </span>
           )}
-          {destinationAmount && (
-            <span className={amountClass}>{destinationAmount}</span>
-          )}
-          {showConvertedAmount && (
+          {secondaryAmounts.map((secondaryAmount) => (
+            <span key={secondaryAmount} className="transaction-item__amount-meta">{secondaryAmount}{shared && preferDestination && secondaryAmount === amount ? ' · Ваша доля' : ''}</span>
+          ))}
+          {!transferAmounts && showConvertedAmount && (
             <span className="transaction-item__amount-meta">
               ≈ {formatTransactionAmount(convertedAmount, defaultCurrency, tx.type)}
             </span>
