@@ -147,9 +147,7 @@ export function TransactionItem({
             </span>
           )}
           {destinationAmount && (
-            <span className="transaction-item__amount-meta">
-              На счёт: {destinationAmount}
-            </span>
+            <span className={amountClass}>{destinationAmount}</span>
           )}
           {showConvertedAmount && (
             <span className="transaction-item__amount-meta">

@@ -174,8 +174,9 @@ describe('cross-currency transfer amounts', () => {
       <TransactionItem tx={transaction({ type: 'transfer', ...values })}
         defaultCurrency="RUB" onEdit={vi.fn()} />,
     )
-    expect(markup).toContain(source)
-    expect(markup).toContain(`На счёт: ${destination}`)
+    expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${source}</span>`)
+    expect(markup).toContain(`<span class="transaction-item__amount transaction-item__amount--transfer">${destination}</span>`)
+    expect(markup).not.toContain('На счёт:')
     expect(markup).toContain(`. На счёт ${destination}`)
   })
 
@@ -185,7 +186,7 @@ describe('cross-currency transfer amounts', () => {
         toAccount={{ ...account, id: 'destination', currency: 'EUR' }}
         defaultCurrency="RUB" onEdit={vi.fn()} />,
     )
-    expect(markup).toContain('На счёт: 26,691 €')
+    expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">26,691 €</span>')
   })
 
   it.each([
@@ -199,6 +200,6 @@ describe('cross-currency transfer amounts', () => {
     const markup = renderToStaticMarkup(
       <TransactionItem tx={transaction(values)} defaultCurrency="RUB" onEdit={vi.fn()} />,
     )
-    expect(markup).not.toContain('На счёт:')
+    expect(markup).not.toContain('. На счёт ')
   })
 })
