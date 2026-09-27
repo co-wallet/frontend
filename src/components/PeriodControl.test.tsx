@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
-import { IonButton, IonDatetime, IonModal, IonSelect } from '@ionic/react'
+import { IonButton, IonDatetime, IonModal } from '@ionic/react'
 import { PeriodControl } from './PeriodControl'
 import type { Period } from '@/store/periodStore'
 
@@ -9,7 +9,6 @@ const controls = vi.hoisted(() => ({
   buttons: [] as ComponentProps<typeof IonButton>[],
   datetimes: [] as ComponentProps<typeof IonDatetime>[],
   modals: [] as ComponentProps<typeof IonModal>[],
-  selects: [] as ComponentProps<typeof IonSelect>[],
 }))
 vi.mock('@ionic/react', async (importOriginal) => {
   const ionic = await importOriginal<typeof import('@ionic/react')>()
@@ -27,17 +26,12 @@ vi.mock('@ionic/react', async (importOriginal) => {
       controls.modals.push(props)
       return <ionic.IonModal {...props} />
     },
-    IonSelect: (props: ComponentProps<typeof IonSelect>) => {
-      controls.selects.push(props)
-      return <ionic.IonSelect {...props} />
-    },
   }
 })
 afterEach(() => {
   controls.buttons = []
   controls.datetimes = []
   controls.modals = []
-  controls.selects = []
   vi.useRealTimers()
 })
 
@@ -69,38 +63,60 @@ describe('PeriodControl', () => {
 
   it('resets the offset when selecting another period type', () => {
     const { onChange } = renderPeriod('month', -5)
-    const select = controls.selects[0]
-    select.onIonChange?.({ detail: { value: 'quarter' } } as Parameters<NonNullable<typeof select.onIonChange>>[0])
+    const quarterPreset = controls.buttons.find((button) => button['aria-label'] === 'Текущий квартал')!
+    quarterPreset.onClick?.({} as Parameters<NonNullable<typeof quarterPreset.onClick>>[0])
     expect(onChange).toHaveBeenCalledWith({ period: 'quarter', periodOffset: 0 })
-    expect(controls.modals[0].className).toBe('period-control-calendar-modal')
+    expect(controls.modals[0].className).toBe('period-control-picker-modal')
   })
 
   it.each([
     ['day', '2026-09-20', -8],
     ['week', '2026-09-20', -2],
-    ['month', '2026-08-20', -1],
-    ['quarter', '2026-04-20', -1],
-    ['year', '2025-04-20', -1],
-  ] as const)('selects a %s period from the calendar', (period, selectedDate, expectedOffset) => {
+    ['month', '2026-08', -1],
+    ['year', '2025', -1],
+  ] as const)('selects a %s period from its picker', (period, selectedDate, expectedOffset) => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 8, 28, 12))
     const { onChange, markup } = renderPeriod(period, 0)
     const datePicker = controls.datetimes[0]
 
-    expect(markup).toContain('aria-label="Выбрать дату в календаре"')
+    expect(markup).toContain('aria-label="Выбрать период. Сейчас:')
     expect(datePicker.max).toBe('2026-09-28')
     datePicker.onIonChange?.({ detail: { value: selectedDate } } as Parameters<NonNullable<typeof datePicker.onIonChange>>[0])
 
     expect(onChange).toHaveBeenCalledWith({ periodOffset: expectedOffset })
   })
 
+  it.each([
+    ['day', 'date'],
+    ['week', 'date'],
+    ['month', 'month-year'],
+    ['year', 'year'],
+  ] as const)('uses the appropriate %s picker presentation', (period, presentation) => {
+    renderPeriod(period)
+    expect(controls.datetimes[0].presentation).toBe(presentation)
+  })
+
+  it('offers quarters for a selected year and disables future quarters', () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 8, 28, 12))
+    const previous = renderPeriod('quarter', -3)
+    const secondQuarter = controls.buttons.find((button) => button['aria-label'] === '2 квартал 2025')!
+    secondQuarter.onClick?.({} as Parameters<NonNullable<typeof secondQuarter.onClick>>[0])
+    expect(previous.onChange).toHaveBeenCalledWith({ periodOffset: -5 })
+
+    controls.buttons = []
+    renderPeriod('quarter', 0)
+    expect(controls.buttons.find((button) => button['aria-label'] === '4 квартал 2026')?.disabled).toBe(true)
+  })
+
   it('uses explicit dates and disables both arrows for a custom period', () => {
     const { markup } = renderPeriod('custom')
-    expect(controls.buttons.every((button) => button.disabled)).toBe(true)
+    expect(controls.buttons.find((button) => button['aria-label'] === 'Предыдущий период')?.disabled).toBe(true)
+    expect(controls.buttons.find((button) => button['aria-label'] === 'Следующий период')?.disabled).toBe(true)
     expect(markup).toContain('01.08.26 - 20.08.26')
     expect(markup).toContain('aria-label="Другой период"')
     expect(markup.match(/<ion-datetime-button /g)).toHaveLength(2)
-    expect(markup).not.toContain('aria-label="Выбрать дату в календаре"')
     expect(controls.datetimes).toHaveLength(2)
   })
 })

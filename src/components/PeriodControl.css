@@ -15,92 +15,123 @@
 }
 
 .period-control-selector {
-  position: relative;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
   min-width: 0;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(var(--ion-color-primary-rgb), 0.07);
-  color: var(--ion-text-color);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.period-control-calendar-button {
-  position: static;
-  width: 44px;
-  min-width: 44px;
   height: 44px;
   min-height: 44px;
   margin: 0;
-  --padding-start: 0;
-  --padding-end: 0;
-}
-
-.period-control-selector--calendar {
-  grid-template-columns: 44px minmax(0, 1fr);
-}
-
-.period-control-calendar-button ion-icon {
-  font-size: 20px;
-}
-
-@media (min-width: 768px) {
-  ion-modal.period-control-calendar-modal {
-    --width: 360px;
-    --height: 380px;
-    --border-radius: 16px;
-  }
-
-  .period-control-calendar-modal ion-datetime {
-    margin: auto;
-  }
-}
-
-.period-control-selector ion-select {
-  position: relative;
-  width: 100%;
-  min-width: 0;
-  min-height: 44px;
   font-size: 0.875rem;
   font-weight: 600;
+  text-transform: none;
+  --background: rgba(var(--ion-color-primary-rgb), 0.07);
+  --border-radius: 12px;
+  --color: var(--ion-text-color);
   --padding-start: 12px;
   --padding-end: 12px;
 }
 
-.period-control-selector ion-select::part(container) {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  width: auto;
-  align-items: center;
-  justify-content: center;
-  padding-inline: 36px;
-  box-sizing: border-box;
+.period-control-selector::part(native) {
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: none;
 }
 
-.period-control-selector ion-select::part(text) {
-  max-width: 100%;
+.period-control-selector__label {
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   overflow: hidden;
   text-align: center;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.period-control-selector ion-select::part(icon) {
-  position: absolute;
-  inset-inline-end: 12px;
+.period-control-selector ion-icon {
+  font-size: 20px;
+}
+
+@media (min-width: 768px) and (min-height: 600px) {
+  ion-modal.period-control-picker-modal {
+    --width: 440px;
+    --height: 540px;
+    --border-radius: 16px;
+  }
+}
+
+.period-control-picker {
+  --padding-bottom: 16px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --padding-top: 16px;
+}
+
+.period-control-picker__presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.period-control-picker__presets ion-button {
+  min-height: 44px;
   margin: 0;
+  font-size: 0.75rem;
+  text-transform: none;
+}
+
+.period-control-picker__hint,
+.period-control-picker__value-hint {
+  margin: 0 0 12px;
+  color: var(--transaction-secondary-text);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.period-control-picker__value {
+  display: grid;
+  justify-items: center;
+}
+
+.period-control-picker__value ion-datetime {
+  width: 100%;
+  max-width: 350px;
+}
+
+.period-control-quarter {
+  padding-top: 16px;
+}
+
+.period-control-quarter__year {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  align-items: center;
+  margin-bottom: 16px;
+  text-align: center;
+}
+
+.period-control-quarter__year ion-button {
+  width: 44px;
+  height: 44px;
+  margin: 0;
+}
+
+.period-control-quarter__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.period-control-quarter__grid ion-button {
+  min-height: 48px;
+  margin: 0;
+  text-transform: none;
 }
 
 .period-control-custom {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-top: 16px;
   padding: 12px;
   border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
   border-radius: 12px;
@@ -144,5 +175,5 @@
 .period-control__row--trailing { grid-template-columns: 44px minmax(0, 1fr) 44px 44px; }
 @media (max-width: 420px) {
   .period-control__row { gap: 4px; }
-  .period-control-selector ion-select { font-size: 0.8125rem; }
+  .period-control-selector { font-size: 0.8125rem; }
 }
