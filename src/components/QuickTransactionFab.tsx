@@ -55,7 +55,7 @@ export function QuickTransactionFab({
     if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
     const selectedType = transactionTypeAtPoint(event.clientX, event.clientY) ?? activeType
     event.currentTarget.releasePointerCapture(event.pointerId)
-    window.setTimeout(() => { suppressClick.current = false }, 0)
+    globalThis.setTimeout(() => { suppressClick.current = false }, 0)
     setActiveType(null)
     if (selectedType) select(selectedType)
   }
