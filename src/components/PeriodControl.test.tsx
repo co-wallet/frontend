@@ -1,13 +1,14 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
-import { IonButton, IonDatetime, IonSelect } from '@ionic/react'
+import { IonButton, IonDatetime, IonModal, IonSelect } from '@ionic/react'
 import { PeriodControl } from './PeriodControl'
 import type { Period } from '@/store/periodStore'
 
 const controls = vi.hoisted(() => ({
   buttons: [] as ComponentProps<typeof IonButton>[],
   datetimes: [] as ComponentProps<typeof IonDatetime>[],
+  modals: [] as ComponentProps<typeof IonModal>[],
   selects: [] as ComponentProps<typeof IonSelect>[],
 }))
 vi.mock('@ionic/react', async (importOriginal) => {
@@ -22,6 +23,10 @@ vi.mock('@ionic/react', async (importOriginal) => {
       controls.datetimes.push(props)
       return <ionic.IonDatetime {...props} />
     },
+    IonModal: (props: ComponentProps<typeof IonModal>) => {
+      controls.modals.push(props)
+      return <ionic.IonModal {...props} />
+    },
     IonSelect: (props: ComponentProps<typeof IonSelect>) => {
       controls.selects.push(props)
       return <ionic.IonSelect {...props} />
@@ -31,6 +36,7 @@ vi.mock('@ionic/react', async (importOriginal) => {
 afterEach(() => {
   controls.buttons = []
   controls.datetimes = []
+  controls.modals = []
   controls.selects = []
   vi.useRealTimers()
 })
@@ -66,6 +72,7 @@ describe('PeriodControl', () => {
     const select = controls.selects[0]
     select.onIonChange?.({ detail: { value: 'quarter' } } as Parameters<NonNullable<typeof select.onIonChange>>[0])
     expect(onChange).toHaveBeenCalledWith({ period: 'quarter', periodOffset: 0 })
+    expect(controls.modals[0].className).toBe('period-control-calendar-modal')
   })
 
   it.each([
