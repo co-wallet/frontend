@@ -1,7 +1,13 @@
 import { useId, useRef, type ReactNode } from 'react'
 import { IonButton, IonIcon, IonSelect, IonSelectOption, IonModal, IonDatetime, IonDatetimeButton } from '@ionic/react'
-import { chevronBackOutline, chevronForwardOutline } from 'ionicons/icons'
-import { computeDateRange, PERIOD_LABELS, type Period } from '@/store/periodStore'
+import { calendarOutline, chevronBackOutline, chevronForwardOutline } from 'ionicons/icons'
+import {
+  computeDateRange,
+  periodOffsetForDate,
+  PERIOD_LABELS,
+  type NavigablePeriod,
+  type Period,
+} from '@/store/periodStore'
 import { formatPeriodControlLabel } from '@/lib/transactionList'
 import type { TransactionPeriod } from '@/lib/transactionNavigation'
 import './PeriodControl.css'
@@ -19,6 +25,7 @@ export function PeriodControl({ value, onChange, trailingControl }: {
 }) {
   const { period, periodOffset, customFrom, customTo } = value
   const dateControlId = useId()
+  const datePickerModalRef = useRef<HTMLIonModalElement>(null)
   const customFromModalRef = useRef<HTMLIonModalElement>(null)
   const customToModalRef = useRef<HTMLIonModalElement>(null)
   const isCustomPeriod = period === 'custom'
@@ -36,7 +43,17 @@ export function PeriodControl({ value, onChange, trailingControl }: {
           <IonIcon slot="icon-only" icon={chevronBackOutline} />
         </IonButton>
 
-        <div className="period-control-selector">
+        <div className={`period-control-selector${isCustomPeriod ? '' : ' period-control-selector--calendar'}`}>
+          {!isCustomPeriod && (
+            <IonButton
+              id={`${dateControlId}-picker-trigger`}
+              fill="clear"
+              className="period-control-calendar-button"
+              aria-label="Выбрать дату в календаре"
+            >
+              <IonIcon slot="icon-only" icon={calendarOutline} />
+            </IonButton>
+          )}
           <IonSelect
             aria-label={`Выбранный период: ${formatPeriodControlLabel(period, dateFrom, dateTo)}`}
             interface="popover"
@@ -64,6 +81,27 @@ export function PeriodControl({ value, onChange, trailingControl }: {
 
         {trailingControl}
       </div>
+
+      {!isCustomPeriod && (
+        <IonModal
+          ref={datePickerModalRef}
+          trigger={`${dateControlId}-picker-trigger`}
+          keepContentsMounted
+        >
+          <IonDatetime
+            id={`${dateControlId}-picker`}
+            presentation="date"
+            value={dateFrom}
+            max={computeDateRange('day', 0, '', '').dateTo}
+            onIonChange={(event) => {
+              const selectedDate = valueFromDatetime(event.detail.value)
+              if (!selectedDate) return
+              onChange({ periodOffset: periodOffsetForDate(period as NavigablePeriod, selectedDate) })
+              void datePickerModalRef.current?.dismiss()
+            }}
+          />
+        </IonModal>
+      )}
 
       {isCustomPeriod && (
         <div className="period-control-custom" aria-label="Другой период">

@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
 export type Period = 'day' | 'week' | 'month' | 'quarter' | 'year' | 'custom'
+export type NavigablePeriod = Exclude<Period, 'custom'>
 
 export const PERIOD_LABELS: Record<Period, string> = {
   day: 'День',
@@ -90,6 +91,33 @@ export function computeDateRange(
   return { dateFrom: fmtDate(from), dateTo: fmtDate(to) }
 }
 
+/** Return the relative offset of the period containing the selected calendar date. */
+export function periodOffsetForDate(
+  period: NavigablePeriod,
+  isoDate: string,
+  now = new Date(),
+): number {
+  const selected = parseDate(isoDate)
+  if (!selected) return 0
+
+  let offset: number
+  if (period === 'day') {
+    offset = dayNumber(selected) - dayNumber(now)
+  } else if (period === 'week') {
+    offset = (dayNumber(startOfWeek(selected)) - dayNumber(startOfWeek(now))) / 7
+  } else if (period === 'month') {
+    offset = (selected.getFullYear() - now.getFullYear()) * 12 + selected.getMonth() - now.getMonth()
+  } else if (period === 'quarter') {
+    const selectedQuarter = selected.getFullYear() * 4 + Math.floor(selected.getMonth() / 3)
+    const currentQuarter = now.getFullYear() * 4 + Math.floor(now.getMonth() / 3)
+    offset = selectedQuarter - currentQuarter
+  } else {
+    offset = selected.getFullYear() - now.getFullYear()
+  }
+
+  return Math.min(0, offset)
+}
+
 /** Format a human-readable label for the period at a given offset. */
 export function periodLabel(period: Period, offset: number, customFrom: string, customTo: string): string {
   if (period === 'custom') {
@@ -120,4 +148,23 @@ export function periodLabel(period: Period, offset: number, customFrom: string, 
 function formatShort(isoDate: string): string {
   const d = new Date(isoDate + 'T00:00:00')
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+function parseDate(isoDate: string): Date | null {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(isoDate)) return null
+  const [year, month, day] = isoDate.split('-').map(Number)
+  const date = new Date(year, month - 1, day)
+  return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day
+    ? date
+    : null
+}
+
+function dayNumber(date: Date): number {
+  return Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()) / 86_400_000
+}
+
+function startOfWeek(date: Date): Date {
+  const day = date.getDay()
+  const daysSinceMonday = day === 0 ? 6 : day - 1
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysSinceMonday)
 }

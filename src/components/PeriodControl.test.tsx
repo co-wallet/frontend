@@ -1,12 +1,13 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'react'
-import { IonButton, IonSelect } from '@ionic/react'
+import { IonButton, IonDatetime, IonSelect } from '@ionic/react'
 import { PeriodControl } from './PeriodControl'
 import type { Period } from '@/store/periodStore'
 
 const controls = vi.hoisted(() => ({
   buttons: [] as ComponentProps<typeof IonButton>[],
+  datetimes: [] as ComponentProps<typeof IonDatetime>[],
   selects: [] as ComponentProps<typeof IonSelect>[],
 }))
 vi.mock('@ionic/react', async (importOriginal) => {
@@ -17,13 +18,22 @@ vi.mock('@ionic/react', async (importOriginal) => {
       controls.buttons.push(props)
       return <ionic.IonButton {...props} />
     },
+    IonDatetime: (props: ComponentProps<typeof IonDatetime>) => {
+      controls.datetimes.push(props)
+      return <ionic.IonDatetime {...props} />
+    },
     IonSelect: (props: ComponentProps<typeof IonSelect>) => {
       controls.selects.push(props)
       return <ionic.IonSelect {...props} />
     },
   }
 })
-afterEach(() => { controls.buttons = []; controls.selects = [] })
+afterEach(() => {
+  controls.buttons = []
+  controls.datetimes = []
+  controls.selects = []
+  vi.useRealTimers()
+})
 
 function renderPeriod(period: Period = 'month', periodOffset = -1) {
   const onChange = vi.fn()
@@ -58,11 +68,32 @@ describe('PeriodControl', () => {
     expect(onChange).toHaveBeenCalledWith({ period: 'quarter', periodOffset: 0 })
   })
 
+  it.each([
+    ['day', '2026-09-20', -8],
+    ['week', '2026-09-20', -2],
+    ['month', '2026-08-20', -1],
+    ['quarter', '2026-04-20', -1],
+    ['year', '2025-04-20', -1],
+  ] as const)('selects a %s period from the calendar', (period, selectedDate, expectedOffset) => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(2026, 8, 28, 12))
+    const { onChange, markup } = renderPeriod(period, 0)
+    const datePicker = controls.datetimes[0]
+
+    expect(markup).toContain('aria-label="Выбрать дату в календаре"')
+    expect(datePicker.max).toBe('2026-09-28')
+    datePicker.onIonChange?.({ detail: { value: selectedDate } } as Parameters<NonNullable<typeof datePicker.onIonChange>>[0])
+
+    expect(onChange).toHaveBeenCalledWith({ periodOffset: expectedOffset })
+  })
+
   it('uses explicit dates and disables both arrows for a custom period', () => {
     const { markup } = renderPeriod('custom')
     expect(controls.buttons.every((button) => button.disabled)).toBe(true)
     expect(markup).toContain('01.08.26 - 20.08.26')
     expect(markup).toContain('aria-label="Другой период"')
     expect(markup.match(/<ion-datetime-button /g)).toHaveLength(2)
+    expect(markup).not.toContain('aria-label="Выбрать дату в календаре"')
+    expect(controls.datetimes).toHaveLength(2)
   })
 })
