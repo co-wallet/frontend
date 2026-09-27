@@ -3,24 +3,6 @@
   margin-inline-end: 12px;
 }
 
-.account-select-modal {
-  --width: 100%;
-  --height: 100%;
-  --border-radius: 0;
-}
-
-@media (min-width: 768px) {
-  .account-select-modal {
-    --width: min(600px, calc(100vw - 48px));
-    --height: min(720px, calc(100vh - 48px));
-    --border-radius: 18px;
-  }
-}
-
-.account-select-modal__content {
-  --padding-bottom: max(16px, var(--ion-safe-area-bottom, env(safe-area-inset-bottom)));
-}
-
 .account-select-modal__list {
   margin-top: 12px;
 }
