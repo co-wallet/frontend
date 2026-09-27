@@ -113,4 +113,16 @@ describe('PeriodControl', () => {
     expect(markup).toContain('aria-label="Начало периода:')
     expect(markup).toContain('aria-label="Конец периода:')
   })
+
+  it('highlights every date in the selected range and emphasizes its boundaries', () => {
+    renderPeriod('custom')
+    const highlight = controls.datetimes[0].highlightedDates
+    expect(typeof highlight).toBe('function')
+    if (typeof highlight !== 'function') return
+
+    expect(highlight('2026-07-31')).toBeUndefined()
+    expect(highlight('2026-08-01')).toMatchObject({ backgroundColor: 'var(--ion-color-primary)' })
+    expect(highlight('2026-08-10')).toMatchObject({ backgroundColor: 'rgba(var(--ion-color-primary-rgb), 0.18)' })
+    expect(highlight('2026-08-20')).toMatchObject({ backgroundColor: 'var(--ion-color-primary)' })
+  })
 })

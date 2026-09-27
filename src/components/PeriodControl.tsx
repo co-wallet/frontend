@@ -220,6 +220,20 @@ export function PeriodControl({ value, onChange, trailingControl }: {
               presentation="date"
               value={calendarValue}
               max={today}
+              highlightedDates={(isoDate) => {
+                const date = isoDate.slice(0, 10)
+                if (date < draftFrom || date > draftTo) return undefined
+                if (date === draftFrom || date === draftTo) {
+                  return {
+                    backgroundColor: 'var(--ion-color-primary)',
+                    textColor: 'var(--ion-color-primary-contrast)',
+                  }
+                }
+                return {
+                  backgroundColor: 'rgba(var(--ion-color-primary-rgb), 0.18)',
+                  textColor: 'var(--ion-text-color)',
+                }
+              }}
               onIonChange={(event) => {
                 const selectedDate = valueFromDatetime(event.detail.value)
                 if (!selectedDate) return
