@@ -14,6 +14,7 @@ describe('QuickTransactionFab', () => {
     expect(markup).toContain('data-transaction-type="income"')
     expect(markup).toContain('aria-label="Добавить перевод"')
     expect(markup).toContain('data-transaction-type="transfer"')
+    expect(markup).not.toContain('quick-transaction-fab__label')
     expect(markup.match(/disabled="true"/g)).toHaveLength(3)
   })
 })

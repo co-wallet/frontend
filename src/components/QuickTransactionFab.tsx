@@ -99,7 +99,6 @@ export function QuickTransactionFab({
       <div className="quick-transaction-fab__actions" role="menu" aria-label="Тип новой транзакции" aria-hidden={!open}>
         {ACTIONS.map((action) => (
           <div key={action.type} className={`quick-transaction-fab__action quick-transaction-fab__action--${action.type}`}>
-            <span className="quick-transaction-fab__label">{action.label.replace('Добавить ', '')}</span>
             <IonFabButton
               size="small"
               color={action.type === 'expense' ? 'danger' : action.type === 'income' ? 'success' : 'primary'}

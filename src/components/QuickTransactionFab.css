@@ -36,26 +36,12 @@
 .quick-transaction-fab__action--transfer {
   right: 4px;
   bottom: 108px;
-  flex-direction: column-reverse;
 }
 
 .quick-transaction-fab--open .quick-transaction-fab__action {
   opacity: 1;
   pointer-events: auto;
   transform: translate(0, 0) scale(1);
-}
-
-.quick-transaction-fab__label {
-  padding: 4px 7px;
-  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
-  border-radius: 999px;
-  background: var(--ion-card-background, var(--ion-background-color));
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.14);
-  color: var(--ion-text-color);
-  font-size: 0.75rem;
-  font-weight: 650;
-  line-height: 1;
-  white-space: nowrap;
 }
 
 .quick-transaction-fab__button--active {
