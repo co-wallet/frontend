@@ -77,6 +77,7 @@ import {
   filteredTransactionsHref,
   periodFromParams,
   periodToParams,
+  transactionCreationLocation,
   type TransactionPeriod,
 } from '@/lib/transactionNavigation'
 
@@ -289,7 +290,7 @@ export function TransactionsPage() {
 
   function addTransaction() {
     const selectedDate = periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''
-    history.push(`/transactions/add${selectedDate}`)
+    history.push(transactionCreationLocation(location, selectedDate))
   }
 
   return (
