@@ -74,6 +74,15 @@ describe('Dashboard period visibility', () => {
   })
 })
 
+describe('Dashboard quick transaction actions', () => {
+  it('offers expense, income and transfer actions', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('aria-label="Добавить расход"')
+    expect(markup).toContain('aria-label="Добавить доход"')
+    expect(markup).toContain('aria-label="Добавить перевод"')
+  })
+})
+
 
 describe('Dashboard transfer visibility', () => {
   it.each(['expenses', 'income'] as const)('shows the independent default for %s', (mode) => {

@@ -1,0 +1,60 @@
+.quick-transaction-fab {
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+.quick-transaction-fab__actions {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 184px;
+  height: 184px;
+  pointer-events: none;
+}
+
+.quick-transaction-fab__action {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(44px, 44px) scale(0.7);
+  transform-origin: center;
+  transition: opacity 150ms ease, transform 180ms ease;
+}
+
+.quick-transaction-fab__action--expense {
+  right: 108px;
+  bottom: 8px;
+}
+
+.quick-transaction-fab__action--income {
+  right: 76px;
+  bottom: 76px;
+}
+
+.quick-transaction-fab__action--transfer {
+  right: 4px;
+  bottom: 108px;
+}
+
+.quick-transaction-fab--open .quick-transaction-fab__action {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(0, 0) scale(1);
+}
+
+.quick-transaction-fab__button--active {
+  transform: scale(1.16);
+}
+
+.quick-transaction-fab ion-fab-button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--ion-color-primary) 45%, transparent);
+  outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-transaction-fab__action {
+    transition: none;
+  }
+}

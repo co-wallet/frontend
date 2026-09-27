@@ -20,17 +20,18 @@ import { CategorySelect } from '@/components/CategorySelect'
 import { TransactionDescriptionInput } from '@/components/TransactionDescriptionInput'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
-import { finishTransactionCreation, transactionCreationReturnTo } from '@/lib/transactionNavigation'
+import { localDateISO } from '@/lib/date'
+import {
+  finishTransactionCreation,
+  transactionCreationDefaults,
+  transactionCreationReturnTo,
+} from '@/lib/transactionNavigation'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Расход' },
   { value: 'income', label: 'Доход' },
   { value: 'transfer', label: 'Перевод' },
 ]
-
-function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
-}
 
 function roundCents(v: number): number {
   return Math.round(v * 100) / 100
@@ -40,12 +41,13 @@ export function AddTransactionPage() {
   const history = useHistory()
   const location = useLocation<unknown>()
   const searchParams = new URLSearchParams(location.search)
+  const creationDefaults = transactionCreationDefaults(searchParams)
   const returnTo = transactionCreationReturnTo(location.state)
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
-  const [type, setType] = useState<TransactionType>('expense')
-  const [accountId, setAccountId] = useState('')
+  const [type, setType] = useState<TransactionType>(creationDefaults.type ?? 'expense')
+  const [accountId, setAccountId] = useState(creationDefaults.accountId ?? '')
   const [toAccountId, setToAccountId] = useState('')
   const [transferMode, setTransferMode] = useState('own')
   const [recipient, setRecipient] = useState('')
@@ -64,7 +66,7 @@ export function AddTransactionPage() {
   const [toAmountStr, setToAmountStr] = useState('')
   const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
-  const [date, setDate] = useState(searchParams.get('date') || todayISO())
+  const [date, setDate] = useState(creationDefaults.date ?? localDateISO())
   const [tags, setTags] = useState<string[]>([])
   const pendingTagRef = useRef('')
 
@@ -416,7 +418,7 @@ export function AddTransactionPage() {
                 labelPlacement="stacked"
                 type="date"
                 value={date}
-                onIonInput={(e) => setDate(e.detail.value ?? todayISO())}
+                onIonInput={(e) => setDate(e.detail.value ?? localDateISO())}
               />
             </IonItem>
 

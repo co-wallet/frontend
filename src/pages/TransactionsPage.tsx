@@ -13,8 +13,6 @@ import {
   IonAccordionGroup,
   IonAlert,
   IonButton,
-  IonFab,
-  IonFabButton,
   IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
@@ -33,7 +31,6 @@ import {
   IonToast,
   } from '@ionic/react'
 import {
-  addOutline,
   alertCircleOutline,
   receiptOutline,
   trendingDownOutline,
@@ -44,7 +41,7 @@ import { accountsApi } from '@/api/accounts'
 import { analyticsApi } from '@/api/analytics'
 import { categoriesApi } from '@/api/categories'
 import { tagsApi } from '@/api/tags'
-import { transactionsApi, type TransactionFilter } from '@/api/transactions'
+import { transactionsApi, type TransactionFilter, type TransactionType } from '@/api/transactions'
 import {
   categoryIconChartColor,
   CategoryIcon,
@@ -52,6 +49,7 @@ import {
 } from '@/components/CategoryIcon'
 import { FilterSheet } from '@/components/FilterSheet'
 import { TransactionItem } from '@/components/TransactionItem'
+import { QuickTransactionFab } from '@/components/QuickTransactionFab'
 import {
   buildTransactionAnalyticsParams,
   formatCurrencyAmount,
@@ -288,9 +286,12 @@ export function TransactionsPage() {
       items: filter.withoutTags ? [{ id: UNTAGGED_TAG_ID, name: 'Без тегов' }] : [] },
   ] as const
 
-  function addTransaction() {
-    const selectedDate = periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''
-    history.push(transactionCreationLocation(location, selectedDate))
+  function addTransaction(type: TransactionType) {
+    history.push(transactionCreationLocation(location, {
+      type,
+      date: dateTo,
+      ...(filter.accountIds?.length === 1 ? { accountId: filter.accountIds[0] } : {}),
+    }))
   }
 
   return (
@@ -299,11 +300,7 @@ export function TransactionsPage() {
 
       <AppContent fullscreen withFab
         fixed={
-          <IonFab slot="fixed" vertical="bottom" horizontal="end" className="transactions-fab">
-            <IonFabButton onClick={addTransaction} aria-label="Добавить транзакцию">
-              <IonIcon icon={addOutline} />
-            </IonFabButton>
-          </IonFab>
+          <QuickTransactionFab onSelect={addTransaction} className="transactions-fab" />
         }
       >
         <div>
@@ -555,7 +552,7 @@ export function TransactionsPage() {
                   ? 'Измените условия или сбросьте активные фильтры.'
                   : 'Добавьте первую операцию за выбранный период.'}
               </p>
-              <IonButton fill="outline" onClick={hasFilters ? () => setFilter({}) : addTransaction}>
+              <IonButton fill="outline" onClick={hasFilters ? () => setFilter({}) : () => addTransaction('expense')}>
                 {hasFilters ? 'Сбросить фильтры' : 'Добавить транзакцию'}
               </IonButton>
             </div>

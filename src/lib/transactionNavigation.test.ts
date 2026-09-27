@@ -9,6 +9,7 @@ import {
   finishTransactionCreation,
   periodFromParams,
   periodToParams,
+  transactionCreationDefaults,
   transactionCreationLocation,
   transactionCreationReturnTo,
   type TransactionPeriod,
@@ -103,7 +104,7 @@ describe('transaction creation navigation', () => {
   it('returns to the exact filtered source and removes the form from the back chain', () => {
     const source = '/transactions/filtered/2?period=custom&from=2026-09-01&to=2026-09-20&tag_ids=travel'
     const history = createMemoryHistory({ initialEntries: ['/dashboard', source], initialIndex: 1 })
-    history.push(transactionCreationLocation(history.location, '?date=2026-09-20'))
+    history.push(transactionCreationLocation(history.location, { date: '2026-09-20' }))
 
     expect(transactionCreationReturnTo(history.location.state)).toBe(source)
     finishTransactionCreation(history, history.location.state)
@@ -119,6 +120,27 @@ describe('transaction creation navigation', () => {
     finishTransactionCreation(history, history.location.state)
     expect(history.location.pathname).toBe('/transactions')
     expect(history.action).toBe('REPLACE')
+  })
+
+  it('round-trips safe type, account and date defaults without constraining the form', () => {
+    const location = transactionCreationLocation(
+      { pathname: '/transactions', search: '?account_ids=account-1' },
+      { type: 'income', accountId: 'account & 1', date: '2026-09-20' },
+    )
+
+    expect(location.pathname).toBe('/transactions/add')
+    expect(transactionCreationDefaults(new URLSearchParams(location.search))).toEqual({
+      type: 'income',
+      accountId: 'account & 1',
+      date: '2026-09-20',
+    })
+    expect(location.state).toEqual({ transactionReturnTo: '/transactions?account_ids=account-1' })
+  })
+
+  it('ignores malformed creation defaults', () => {
+    expect(transactionCreationDefaults(new URLSearchParams(
+      'type=refund&account_id=%20%20&date=2026-02-30',
+    ))).toEqual({})
   })
 
   it('rejects external and malformed return locations', () => {
