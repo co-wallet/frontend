@@ -53,6 +53,7 @@ import {
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
+import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
 import { filteredTransactionsHref, transactionCreationLocation } from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
@@ -100,6 +101,7 @@ function ChartBlock({
         <ResponsiveContainer width="100%" height={200}>
           <PieChart>
             <Pie
+              {...NON_ANIMATED_PIE_PROPS}
               data={chartEntries}
               dataKey="chartAmount"
               nameKey="name"
