@@ -2,7 +2,17 @@ import { describe, expect, it } from 'vitest'
 import { createMemoryHistory } from 'history'
 import type { TransactionFilter } from '@/api/transactions'
 import { computeDateRange } from '@/store/periodStore'
-import { filterFromParams, filterToParams, filteredTransactionsHref, periodFromParams, periodToParams, type TransactionPeriod } from './transactionNavigation'
+import {
+  filterFromParams,
+  filterToParams,
+  filteredTransactionsHref,
+  finishTransactionCreation,
+  periodFromParams,
+  periodToParams,
+  transactionCreationLocation,
+  transactionCreationReturnTo,
+  type TransactionPeriod,
+} from './transactionNavigation'
 
 const period: TransactionPeriod = { period: 'month', periodOffset: -2, customFrom: '2026-03-01', customTo: '2026-03-15' }
 const query = (href: string) => new URL(href, 'http://localhost').searchParams
@@ -86,6 +96,45 @@ describe('tag navigation', () => {
     for (const offset of ['NaN', '1', '-1.5', '-1000000000']) {
       expect(periodFromParams(new URLSearchParams(`period=month&offset=${offset}`), period).periodOffset).toBe(0)
     }
+  })
+})
+
+describe('transaction creation navigation', () => {
+  it('returns to the exact filtered source and removes the form from the back chain', () => {
+    const source = '/transactions/filtered/2?period=custom&from=2026-09-01&to=2026-09-20&tag_ids=travel'
+    const history = createMemoryHistory({ initialEntries: ['/dashboard', source], initialIndex: 1 })
+    history.push(transactionCreationLocation(history.location, '?date=2026-09-20'))
+
+    expect(transactionCreationReturnTo(history.location.state)).toBe(source)
+    finishTransactionCreation(history, history.location.state)
+    expect(history.location.pathname + history.location.search).toBe(source)
+
+    history.goBack()
+    expect(history.location.pathname).toBe('/dashboard')
+  })
+
+  it('replaces a directly opened form with the transaction list', () => {
+    const history = createMemoryHistory({ initialEntries: ['/transactions/add'] })
+
+    finishTransactionCreation(history, history.location.state)
+    expect(history.location.pathname).toBe('/transactions')
+    expect(history.action).toBe('REPLACE')
+  })
+
+  it('rejects external and malformed return locations', () => {
+    expect(transactionCreationReturnTo({ transactionReturnTo: '//example.com' })).toBeNull()
+    expect(transactionCreationReturnTo({ transactionReturnTo: 'https://example.com' })).toBeNull()
+    expect(transactionCreationReturnTo(null)).toBeNull()
+  })
+
+  it('replaces repeated filter changes in one history entry', () => {
+    const history = createMemoryHistory({ initialEntries: ['/dashboard', '/transactions'], initialIndex: 1 })
+    history.replace({ ...history.location, search: filterToParams({ tagIds: ['travel'] }).toString() })
+    history.replace({ ...history.location, search: filterToParams({ tagIds: ['japan'] }).toString() })
+
+    expect(filterFromParams(new URLSearchParams(history.location.search))).toEqual({ tagIds: ['japan'] })
+    history.goBack()
+    expect(history.location.pathname).toBe('/dashboard')
   })
 })
 

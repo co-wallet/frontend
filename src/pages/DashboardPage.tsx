@@ -5,6 +5,7 @@ import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
+import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
@@ -54,7 +55,7 @@ import {
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
-import { filteredTransactionsHref } from '@/lib/transactionNavigation'
+import { filteredTransactionsHref, transactionCreationLocation } from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
 
@@ -185,6 +186,8 @@ function ChartBlock({
 }
 
 export function DashboardPage() {
+  const history = useHistory()
+  const location = useLocation()
   const user = useAuthStore((s) => s.user)
   const updateUser = useAuthStore((s) => s.updateUser)
 
@@ -344,7 +347,10 @@ export function DashboardPage() {
         className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
         fixed={
           <IonFab slot="fixed" vertical="bottom" horizontal="end">
-            <IonFabButton routerLink="/transactions/add">
+            <IonFabButton
+              onClick={() => history.push(transactionCreationLocation(location))}
+              aria-label="Добавить транзакцию"
+            >
               <IonIcon icon={addOutline} />
             </IonFabButton>
           </IonFab>

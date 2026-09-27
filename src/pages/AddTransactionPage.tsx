@@ -19,6 +19,7 @@ import { AccountSelect } from '@/components/AccountSelect'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
+import { finishTransactionCreation, transactionCreationReturnTo } from '@/lib/transactionNavigation'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
   { value: 'expense', label: 'Расход' },
@@ -36,8 +37,9 @@ function roundCents(v: number): number {
 
 export function AddTransactionPage() {
   const history = useHistory()
-  const location = useLocation()
+  const location = useLocation<unknown>()
   const searchParams = new URLSearchParams(location.search)
+  const returnTo = transactionCreationReturnTo(location.state)
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
@@ -181,7 +183,7 @@ export function AddTransactionPage() {
       qc.invalidateQueries({ queryKey: ['accounts'] })
       qc.invalidateQueries({ queryKey: ['analytics'] })
       qc.invalidateQueries({ queryKey: ['tags'] })
-      history.push('/transactions')
+      finishTransactionCreation(history, location.state)
     },
   })
 
@@ -253,7 +255,7 @@ export function AddTransactionPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Новая транзакция" backHref="/transactions">
+      <PageHeader title="Новая транзакция" backHref={returnTo ?? '/transactions'}>
         <IonToolbar>
           <IonButtons slot="end">
             <IonButton strong onClick={handleSubmit}

@@ -1,4 +1,5 @@
 import type { TransactionFilter } from '@/api/transactions'
+import type { History, LocationDescriptorObject } from 'history'
 import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
 
@@ -7,6 +8,40 @@ export interface TransactionPeriod {
   periodOffset: number
   customFrom: string
   customTo: string
+}
+
+interface TransactionCreationState {
+  transactionReturnTo: string
+}
+
+export function transactionCreationLocation(
+  source: Pick<LocationDescriptorObject, 'pathname' | 'search'>,
+  search = '',
+): LocationDescriptorObject<TransactionCreationState> {
+  return {
+    pathname: '/transactions/add',
+    search,
+    state: { transactionReturnTo: `${source.pathname ?? ''}${source.search ?? ''}` },
+  }
+}
+
+export function transactionCreationReturnTo(state: unknown): string | null {
+  if (!state || typeof state !== 'object' || !('transactionReturnTo' in state)) return null
+  const returnTo = (state as TransactionCreationState).transactionReturnTo
+  return typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')
+    ? returnTo
+    : null
+}
+
+export function finishTransactionCreation(
+  history: Pick<History, 'goBack' | 'replace'>,
+  state: unknown,
+): void {
+  if (transactionCreationReturnTo(state)) {
+    history.goBack()
+    return
+  }
+  history.replace('/transactions')
 }
 
 export function filterFromParams(params: URLSearchParams): TransactionFilter {
