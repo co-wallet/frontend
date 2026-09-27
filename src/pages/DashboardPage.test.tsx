@@ -68,7 +68,7 @@ describe('Dashboard period visibility', () => {
     queryState.chartMode = mode
     queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toMatch(/Доходы[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*Текущий день[^]*Текущий год[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
+    expect(markup).toMatch(/Доходы[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
     expect(markup).toContain('Выбрать период. Сейчас: 01.08.26 - 20.08.26')
     expect(queryState.analyticsQueries[queryState.analyticsQueries.length - 1]?.params).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
   })

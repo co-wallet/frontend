@@ -24,9 +24,9 @@ type SimplePeriod = Extract<Period, 'day' | 'month' | 'year'>
 
 const SIMPLE_PERIODS: SimplePeriod[] = ['day', 'month', 'year']
 const PERIOD_PRESET_LABELS: Record<SimplePeriod, string> = {
-  day: 'Текущий день',
-  month: 'Текущий месяц',
-  year: 'Текущий год',
+  day: 'День',
+  month: 'Месяц',
+  year: 'Год',
 }
 
 function isSimplePeriod(period: Period): period is SimplePeriod {
@@ -135,9 +135,6 @@ export function PeriodControl({ value, onChange, trailingControl }: {
               </IonButton>
             ))}
           </div>
-          <p className="period-control-picker__hint">
-            Пресет выбирает текущий период. Календарь позволяет перейти к другой дате.
-          </p>
 
           <div className="period-control-picker__value">
             <IonDatetime

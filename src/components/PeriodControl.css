@@ -78,14 +78,6 @@
   text-transform: none;
 }
 
-.period-control-picker__hint {
-  margin: 0 0 12px;
-  color: var(--transaction-secondary-text);
-  font-size: 0.8125rem;
-  line-height: 1.4;
-  text-align: center;
-}
-
 .period-control-picker__value {
   display: grid;
   justify-items: center;

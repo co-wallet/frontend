@@ -63,7 +63,7 @@ describe('PeriodControl', () => {
 
   it('resets the offset when selecting another period type', () => {
     const { onChange } = renderPeriod('month', -5)
-    const yearPreset = controls.buttons.find((button) => button['aria-label'] === 'Текущий год')!
+    const yearPreset = controls.buttons.find((button) => button['aria-label'] === 'Год')!
     yearPreset.onClick?.({} as Parameters<NonNullable<typeof yearPreset.onClick>>[0])
     expect(onChange).toHaveBeenCalledWith({ period: 'year', periodOffset: 0 })
     expect(controls.modals[0].className).toBe('period-control-picker-modal')
@@ -90,11 +90,12 @@ describe('PeriodControl', () => {
     const { markup } = renderPeriod('month')
     expect(controls.datetimes).toHaveLength(1)
     expect(controls.datetimes[0].presentation).toBe('date')
-    expect(markup).toContain('Текущий день')
-    expect(markup).toContain('Текущий месяц')
-    expect(markup).toContain('Текущий год')
-    expect(markup).not.toContain('Текущая неделя')
-    expect(markup).not.toContain('Текущий квартал')
+    expect(markup).toContain('aria-label="День"')
+    expect(markup).toContain('aria-label="Месяц"')
+    expect(markup).toContain('aria-label="Год"')
+    expect(markup).not.toContain('Неделя')
+    expect(markup).not.toContain('Квартал')
     expect(markup).not.toContain('Другой период')
+    expect(markup).not.toContain('Пресет выбирает')
   })
 })
