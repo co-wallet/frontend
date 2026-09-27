@@ -52,7 +52,7 @@
 @media (min-width: 768px) and (min-height: 600px) {
   ion-modal.period-control-picker-modal {
     --width: 440px;
-    --height: 540px;
+    --height: 560px;
     --border-radius: 16px;
   }
 }
@@ -78,8 +78,7 @@
   text-transform: none;
 }
 
-.period-control-picker__hint,
-.period-control-picker__value-hint {
+.period-control-picker__hint {
   margin: 0 0 12px;
   color: var(--transaction-secondary-text);
   font-size: 0.8125rem;
@@ -96,80 +95,6 @@
   width: 100%;
   max-width: 350px;
 }
-
-.period-control-quarter {
-  padding-top: 16px;
-}
-
-.period-control-quarter__year {
-  display: grid;
-  grid-template-columns: 44px 1fr 44px;
-  align-items: center;
-  margin-bottom: 16px;
-  text-align: center;
-}
-
-.period-control-quarter__year ion-button {
-  width: 44px;
-  height: 44px;
-  margin: 0;
-}
-
-.period-control-quarter__grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.period-control-quarter__grid ion-button {
-  min-height: 48px;
-  margin: 0;
-  text-transform: none;
-}
-
-.period-control-custom {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 12px;
-  border: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
-  border-radius: 12px;
-}
-
-.period-control-custom__field {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 8px;
-  color: var(--transaction-secondary-text);
-  font-size: 0.875rem;
-  font-weight: 600;
-}
-
-.period-control-custom ion-datetime-button {
-  min-width: 0;
-  flex: 1 1 auto;
-}
-
-.period-control-custom ion-datetime-button::part(native) {
-  width: 100%;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.24);
-  border-radius: 10px;
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-text-color);
-  font-size: 0.875rem;
-  font-weight: 500;
-  opacity: 1;
-}
-
-.period-control-custom ion-datetime-button::part(native):focus-visible {
-  outline: 3px solid rgba(var(--ion-color-primary-rgb), 0.3);
-  outline-offset: 2px;
-}
-
 
 .period-control { min-width: 0; }
 .period-control__row--trailing { grid-template-columns: 44px minmax(0, 1fr) 44px 44px; }

@@ -1,10 +1,9 @@
-import { useId, useRef, useState, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import {
   IonButton,
   IonButtons,
   IonContent,
   IonDatetime,
-  IonDatetimeButton,
   IonHeader,
   IonIcon,
   IonModal,
@@ -15,22 +14,23 @@ import { calendarOutline, chevronBackOutline, chevronDownOutline, chevronForward
 import {
   computeDateRange,
   periodOffsetForDate,
-  PERIOD_LABELS,
-  type NavigablePeriod,
   type Period,
 } from '@/store/periodStore'
 import { formatPeriodControlLabel } from '@/lib/transactionList'
 import type { TransactionPeriod } from '@/lib/transactionNavigation'
 import './PeriodControl.css'
 
-const PERIOD_SELECT_LABELS = { ...PERIOD_LABELS, custom: 'Другой' }
-const PERIOD_PRESET_LABELS: Record<Period, string> = {
+type SimplePeriod = Extract<Period, 'day' | 'month' | 'year'>
+
+const SIMPLE_PERIODS: SimplePeriod[] = ['day', 'month', 'year']
+const PERIOD_PRESET_LABELS: Record<SimplePeriod, string> = {
   day: 'Текущий день',
-  week: 'Текущая неделя',
   month: 'Текущий месяц',
-  quarter: 'Текущий квартал',
   year: 'Текущий год',
-  custom: 'Другой период',
+}
+
+function isSimplePeriod(period: Period): period is SimplePeriod {
+  return SIMPLE_PERIODS.includes(period as SimplePeriod)
 }
 
 function valueFromDatetime(value: string | string[] | null | undefined): string {
@@ -47,35 +47,24 @@ export function PeriodControl({ value, onChange, trailingControl }: {
   trailingControl?: ReactNode
 }) {
   const { period, periodOffset, customFrom, customTo } = value
-  const dateControlId = useId()
-  const customFromModalRef = useRef<HTMLIonModalElement>(null)
-  const customToModalRef = useRef<HTMLIonModalElement>(null)
   const [isPickerOpen, setPickerOpen] = useState(false)
-  const [quarterYear, setQuarterYear] = useState(() => Number(computeDateRange(
-    period,
-    periodOffset,
-    customFrom,
-    customTo,
-  ).dateFrom.slice(0, 4)))
+  const [pickerPeriod, setPickerPeriod] = useState<SimplePeriod>(isSimplePeriod(period) ? period : 'month')
   const isCustomPeriod = period === 'custom'
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const today = computeDateRange('day', 0, '', '').dateTo
-  const currentYear = Number(today.slice(0, 4))
-  const currentQuarter = Math.floor((Number(today.slice(5, 7)) - 1) / 3) + 1
-  const selectedQuarter = Math.floor((Number(dateFrom.slice(5, 7)) - 1) / 3) + 1
 
   function openPicker() {
-    setQuarterYear(Number(dateFrom.slice(0, 4)))
+    setPickerPeriod(isSimplePeriod(period) ? period : 'month')
     setPickerOpen(true)
   }
 
-  function selectPeriodType(nextPeriod: Period) {
+  function selectPeriodType(nextPeriod: SimplePeriod) {
+    setPickerPeriod(nextPeriod)
     onChange({ period: nextPeriod, periodOffset: 0 })
-    if (nextPeriod === 'quarter') setQuarterYear(currentYear)
   }
 
-  function selectNavigableDate(nextPeriod: NavigablePeriod, date: string) {
-    onChange({ periodOffset: periodOffsetForDate(nextPeriod, date) })
+  function selectNavigableDate(nextPeriod: SimplePeriod, date: string) {
+    onChange({ period: nextPeriod, periodOffset: periodOffsetForDate(nextPeriod, date) })
     setPickerOpen(false)
   }
 
@@ -134,130 +123,38 @@ export function PeriodControl({ value, onChange, trailingControl }: {
         </IonHeader>
         <IonContent className="period-control-picker">
           <div className="period-control-picker__presets" role="group" aria-label="Тип периода">
-            {(Object.keys(PERIOD_SELECT_LABELS) as Period[]).map((option) => (
+            {SIMPLE_PERIODS.map((option) => (
               <IonButton
                 key={option}
-                fill={period === option ? 'solid' : 'outline'}
-                aria-pressed={period === option}
+                fill={pickerPeriod === option ? 'solid' : 'outline'}
+                aria-pressed={pickerPeriod === option}
                 aria-label={PERIOD_PRESET_LABELS[option]}
                 onClick={() => selectPeriodType(option)}
               >
-                {PERIOD_SELECT_LABELS[option]}
+                {PERIOD_PRESET_LABELS[option]}
               </IonButton>
             ))}
           </div>
           <p className="period-control-picker__hint">
-            Смена типа выбирает текущий период. Затем можно выбрать другое значение.
+            Пресет выбирает текущий период. Календарь позволяет перейти к другой дате.
           </p>
 
-          {!isCustomPeriod && period !== 'quarter' && (
-            <div className="period-control-picker__value">
-              {period === 'week' && (
-                <p className="period-control-picker__value-hint">Выберите любой день нужной недели</p>
-              )}
-              <IonDatetime
-                id={`${dateControlId}-picker`}
-                presentation={period === 'month' ? 'month-year' : period === 'year' ? 'year' : 'date'}
-                preferWheel={period === 'month' || period === 'year'}
-                value={dateFrom}
-                max={today}
-                showDefaultButtons
-                doneText="Выбрать"
-                cancelText="Отмена"
-                onIonCancel={() => setPickerOpen(false)}
-                onIonChange={(event) => {
-                  const selectedDate = valueFromDatetime(event.detail.value)
-                  if (!selectedDate) return
-                  selectNavigableDate(period as NavigablePeriod, selectedDate)
-                }}
-              />
-            </div>
-          )}
-
-          {period === 'quarter' && (
-            <div className="period-control-quarter" aria-label="Выбор квартала">
-              <div className="period-control-quarter__year">
-                <IonButton
-                  fill="clear"
-                  aria-label="Предыдущий год"
-                  onClick={() => setQuarterYear((year) => year - 1)}
-                >
-                  <IonIcon slot="icon-only" icon={chevronBackOutline} />
-                </IonButton>
-                <strong>{quarterYear}</strong>
-                <IonButton
-                  fill="clear"
-                  aria-label="Следующий год"
-                  disabled={quarterYear >= currentYear}
-                  onClick={() => setQuarterYear((year) => Math.min(currentYear, year + 1))}
-                >
-                  <IonIcon slot="icon-only" icon={chevronForwardOutline} />
-                </IonButton>
-              </div>
-              <div className="period-control-quarter__grid">
-                {[1, 2, 3, 4].map((quarter) => {
-                  const disabled = quarterYear > currentYear
-                    || (quarterYear === currentYear && quarter > currentQuarter)
-                  const selected = quarterYear === Number(dateFrom.slice(0, 4)) && quarter === selectedQuarter
-                  return (
-                    <IonButton
-                      key={quarter}
-                      fill={selected ? 'solid' : 'outline'}
-                      disabled={disabled}
-                      aria-label={`${quarter} квартал ${quarterYear}`}
-                      onClick={() => selectNavigableDate(
-                        'quarter',
-                        `${quarterYear}-${String((quarter - 1) * 3 + 1).padStart(2, '0')}-01`,
-                      )}
-                    >
-                      {quarter} квартал
-                    </IonButton>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {isCustomPeriod && (
-            <div className="period-control-custom" aria-label="Другой период">
-              <div className="period-control-custom__field">
-                <span>С</span>
-                <IonDatetimeButton datetime={`${dateControlId}-from`} />
-              </div>
-              <div className="period-control-custom__field">
-                <span>По</span>
-                <IonDatetimeButton datetime={`${dateControlId}-to`} />
-              </div>
-              <IonModal ref={customFromModalRef} keepContentsMounted>
-                <IonDatetime
-                  id={`${dateControlId}-from`}
-                  presentation="date"
-                  value={customFrom}
-                  max={customTo}
-                  onIonChange={(event) => {
-                    const nextValue = valueFromDatetime(event.detail.value)
-                    if (!nextValue) return
-                    onChange({ customFrom: nextValue })
-                    void customFromModalRef.current?.dismiss()
-                  }}
-                />
-              </IonModal>
-              <IonModal ref={customToModalRef} keepContentsMounted>
-                <IonDatetime
-                  id={`${dateControlId}-to`}
-                  presentation="date"
-                  value={customTo}
-                  min={customFrom}
-                  onIonChange={(event) => {
-                    const nextValue = valueFromDatetime(event.detail.value)
-                    if (!nextValue) return
-                    onChange({ customTo: nextValue })
-                    void customToModalRef.current?.dismiss()
-                  }}
-                />
-              </IonModal>
-            </div>
-          )}
+          <div className="period-control-picker__value">
+            <IonDatetime
+              presentation="date"
+              value={isSimplePeriod(period) && period === pickerPeriod ? dateFrom : today}
+              max={today}
+              showDefaultButtons
+              doneText="Выбрать"
+              cancelText="Отмена"
+              onIonCancel={() => setPickerOpen(false)}
+              onIonChange={(event) => {
+                const selectedDate = valueFromDatetime(event.detail.value)
+                if (!selectedDate) return
+                selectNavigableDate(pickerPeriod, selectedDate)
+              }}
+            />
+          </div>
         </IonContent>
       </IonModal>
 

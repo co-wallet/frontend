@@ -44,7 +44,7 @@ function renderPeriod(period: Period = 'month', periodOffset = -1) {
 }
 
 describe('PeriodControl', () => {
-  it.each(['day', 'week', 'month', 'quarter', 'year'] as const)('moves the selected %s backward and forward', (period) => {
+  it.each(['day', 'month', 'year'] as const)('moves the selected %s backward and forward', (period) => {
     const { onChange } = renderPeriod(period)
     const previous = controls.buttons.find((p) => p['aria-label'] === 'Предыдущий период')!
     const next = controls.buttons.find((p) => p['aria-label'] === 'Следующий период')!
@@ -63,17 +63,16 @@ describe('PeriodControl', () => {
 
   it('resets the offset when selecting another period type', () => {
     const { onChange } = renderPeriod('month', -5)
-    const quarterPreset = controls.buttons.find((button) => button['aria-label'] === 'Текущий квартал')!
-    quarterPreset.onClick?.({} as Parameters<NonNullable<typeof quarterPreset.onClick>>[0])
-    expect(onChange).toHaveBeenCalledWith({ period: 'quarter', periodOffset: 0 })
+    const yearPreset = controls.buttons.find((button) => button['aria-label'] === 'Текущий год')!
+    yearPreset.onClick?.({} as Parameters<NonNullable<typeof yearPreset.onClick>>[0])
+    expect(onChange).toHaveBeenCalledWith({ period: 'year', periodOffset: 0 })
     expect(controls.modals[0].className).toBe('period-control-picker-modal')
   })
 
   it.each([
     ['day', '2026-09-20', -8],
-    ['week', '2026-09-20', -2],
-    ['month', '2026-08', -1],
-    ['year', '2025', -1],
+    ['month', '2026-08-20', -1],
+    ['year', '2025-04-20', -1],
   ] as const)('selects a %s period from its picker', (period, selectedDate, expectedOffset) => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 8, 28, 12))
@@ -84,39 +83,18 @@ describe('PeriodControl', () => {
     expect(datePicker.max).toBe('2026-09-28')
     datePicker.onIonChange?.({ detail: { value: selectedDate } } as Parameters<NonNullable<typeof datePicker.onIonChange>>[0])
 
-    expect(onChange).toHaveBeenCalledWith({ periodOffset: expectedOffset })
+    expect(onChange).toHaveBeenCalledWith({ period, periodOffset: expectedOffset })
   })
 
-  it.each([
-    ['day', 'date'],
-    ['week', 'date'],
-    ['month', 'month-year'],
-    ['year', 'year'],
-  ] as const)('uses the appropriate %s picker presentation', (period, presentation) => {
-    renderPeriod(period)
-    expect(controls.datetimes[0].presentation).toBe(presentation)
-  })
-
-  it('offers quarters for a selected year and disables future quarters', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date(2026, 8, 28, 12))
-    const previous = renderPeriod('quarter', -3)
-    const secondQuarter = controls.buttons.find((button) => button['aria-label'] === '2 квартал 2025')!
-    secondQuarter.onClick?.({} as Parameters<NonNullable<typeof secondQuarter.onClick>>[0])
-    expect(previous.onChange).toHaveBeenCalledWith({ periodOffset: -5 })
-
-    controls.buttons = []
-    renderPeriod('quarter', 0)
-    expect(controls.buttons.find((button) => button['aria-label'] === '4 квартал 2026')?.disabled).toBe(true)
-  })
-
-  it('uses explicit dates and disables both arrows for a custom period', () => {
-    const { markup } = renderPeriod('custom')
-    expect(controls.buttons.find((button) => button['aria-label'] === 'Предыдущий период')?.disabled).toBe(true)
-    expect(controls.buttons.find((button) => button['aria-label'] === 'Следующий период')?.disabled).toBe(true)
-    expect(markup).toContain('01.08.26 - 20.08.26')
-    expect(markup).toContain('aria-label="Другой период"')
-    expect(markup.match(/<ion-datetime-button /g)).toHaveLength(2)
-    expect(controls.datetimes).toHaveLength(2)
+  it('uses one calendar and exposes only day, month, and year presets', () => {
+    const { markup } = renderPeriod('month')
+    expect(controls.datetimes).toHaveLength(1)
+    expect(controls.datetimes[0].presentation).toBe('date')
+    expect(markup).toContain('Текущий день')
+    expect(markup).toContain('Текущий месяц')
+    expect(markup).toContain('Текущий год')
+    expect(markup).not.toContain('Текущая неделя')
+    expect(markup).not.toContain('Текущий квартал')
+    expect(markup).not.toContain('Другой период')
   })
 })
