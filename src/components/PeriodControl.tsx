@@ -21,6 +21,7 @@ import type { TransactionPeriod } from '@/lib/transactionNavigation'
 import './PeriodControl.css'
 
 type SimplePeriod = Extract<Period, 'day' | 'month' | 'year'>
+type RangeBoundary = 'from' | 'to'
 
 const SIMPLE_PERIODS: SimplePeriod[] = ['day', 'month', 'year']
 const PERIOD_PRESET_LABELS: Record<SimplePeriod, string> = {
@@ -31,6 +32,11 @@ const PERIOD_PRESET_LABELS: Record<SimplePeriod, string> = {
 
 function isSimplePeriod(period: Period): period is SimplePeriod {
   return SIMPLE_PERIODS.includes(period as SimplePeriod)
+}
+
+function formatRangeDate(date: string): string {
+  const [year, month, day] = date.split('-')
+  return `${day}.${month}.${year.slice(-2)}`
 }
 
 function valueFromDatetime(value: string | string[] | null | undefined): string {
@@ -48,23 +54,69 @@ export function PeriodControl({ value, onChange, trailingControl }: {
 }) {
   const { period, periodOffset, customFrom, customTo } = value
   const [isPickerOpen, setPickerOpen] = useState(false)
-  const [pickerPeriod, setPickerPeriod] = useState<SimplePeriod>(isSimplePeriod(period) ? period : 'month')
   const isCustomPeriod = period === 'custom'
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const today = computeDateRange('day', 0, '', '').dateTo
+  const [draftFrom, setDraftFrom] = useState(dateFrom)
+  const [draftTo, setDraftTo] = useState(dateTo)
+  const [calendarValue, setCalendarValue] = useState(dateFrom)
+  const [activeBoundary, setActiveBoundary] = useState<RangeBoundary>('from')
+  const [activePreset, setActivePreset] = useState<SimplePeriod | null>(isSimplePeriod(period) ? period : null)
 
   function openPicker() {
-    setPickerPeriod(isSimplePeriod(period) ? period : 'month')
+    setDraftFrom(dateFrom)
+    setDraftTo(dateTo)
+    setCalendarValue(dateFrom)
+    setActiveBoundary('from')
+    setActivePreset(isSimplePeriod(period) ? period : null)
     setPickerOpen(true)
   }
 
   function selectPeriodType(nextPeriod: SimplePeriod) {
-    setPickerPeriod(nextPeriod)
-    onChange({ period: nextPeriod, periodOffset: 0 })
+    const range = computeDateRange(nextPeriod, 0, '', '')
+    setDraftFrom(range.dateFrom)
+    setDraftTo(range.dateTo)
+    setCalendarValue(range.dateFrom)
+    setActiveBoundary('from')
+    setActivePreset(nextPeriod)
   }
 
-  function selectNavigableDate(nextPeriod: SimplePeriod, date: string) {
-    onChange({ period: nextPeriod, periodOffset: periodOffsetForDate(nextPeriod, date) })
+  function selectRangeDate(date: string) {
+    setActivePreset(null)
+    setCalendarValue(date)
+    if (activeBoundary === 'from') {
+      setDraftFrom(date)
+      if (date > draftTo) setDraftTo(date)
+      setActiveBoundary('to')
+      return
+    }
+
+    if (date < draftFrom) {
+      setDraftTo(draftFrom)
+      setDraftFrom(date)
+    } else {
+      setDraftTo(date)
+    }
+    setActiveBoundary('from')
+  }
+
+  function applyRange() {
+    const matchingPeriod = SIMPLE_PERIODS.find((candidate) => {
+      const offset = periodOffsetForDate(candidate, draftFrom)
+      const range = computeDateRange(candidate, offset, '', '')
+      return range.dateFrom === draftFrom && range.dateTo === draftTo
+    })
+
+    if (matchingPeriod) {
+      onChange({
+        period: matchingPeriod,
+        periodOffset: periodOffsetForDate(matchingPeriod, draftFrom),
+        customFrom: draftFrom,
+        customTo: draftTo,
+      })
+    } else {
+      onChange({ period: 'custom', periodOffset: 0, customFrom: draftFrom, customTo: draftTo })
+    }
     setPickerOpen(false)
   }
 
@@ -126,8 +178,8 @@ export function PeriodControl({ value, onChange, trailingControl }: {
             {SIMPLE_PERIODS.map((option) => (
               <IonButton
                 key={option}
-                fill={pickerPeriod === option ? 'solid' : 'outline'}
-                aria-pressed={pickerPeriod === option}
+                fill={activePreset === option ? 'solid' : 'outline'}
+                aria-pressed={activePreset === option}
                 aria-label={PERIOD_PRESET_LABELS[option]}
                 onClick={() => selectPeriodType(option)}
               >
@@ -136,22 +188,54 @@ export function PeriodControl({ value, onChange, trailingControl }: {
             ))}
           </div>
 
+          <div className="period-control-picker__range" aria-label="Границы периода">
+            <IonButton
+              fill={activeBoundary === 'from' ? 'solid' : 'outline'}
+              aria-pressed={activeBoundary === 'from'}
+              aria-label={`Начало периода: ${formatRangeDate(draftFrom)}`}
+              onClick={() => {
+                setActiveBoundary('from')
+                setCalendarValue(draftFrom)
+              }}
+            >
+              <span>С</span>
+              <strong>{formatRangeDate(draftFrom)}</strong>
+            </IonButton>
+            <IonButton
+              fill={activeBoundary === 'to' ? 'solid' : 'outline'}
+              aria-pressed={activeBoundary === 'to'}
+              aria-label={`Конец периода: ${formatRangeDate(draftTo)}`}
+              onClick={() => {
+                setActiveBoundary('to')
+                setCalendarValue(draftTo)
+              }}
+            >
+              <span>По</span>
+              <strong>{formatRangeDate(draftTo)}</strong>
+            </IonButton>
+          </div>
+
           <div className="period-control-picker__value">
             <IonDatetime
               presentation="date"
-              value={isSimplePeriod(period) && period === pickerPeriod ? dateFrom : today}
+              value={calendarValue}
               max={today}
-              showDefaultButtons
-              doneText="Выбрать"
-              cancelText="Отмена"
-              onIonCancel={() => setPickerOpen(false)}
               onIonChange={(event) => {
                 const selectedDate = valueFromDatetime(event.detail.value)
                 if (!selectedDate) return
-                selectNavigableDate(pickerPeriod, selectedDate)
+                selectRangeDate(selectedDate)
               }}
             />
           </div>
+
+          <IonButton
+            className="period-control-picker__apply"
+            expand="block"
+            aria-label="Применить период"
+            onClick={applyRange}
+          >
+            Применить
+          </IonButton>
         </IonContent>
       </IonModal>
 

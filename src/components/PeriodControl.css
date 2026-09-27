@@ -52,7 +52,7 @@
 @media (min-width: 768px) and (min-height: 600px) {
   ion-modal.period-control-picker-modal {
     --width: 440px;
-    --height: 560px;
+    --height: 620px;
     --border-radius: 16px;
   }
 }
@@ -78,6 +78,29 @@
   text-transform: none;
 }
 
+.period-control-picker__range {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.period-control-picker__range ion-button {
+  min-height: 48px;
+  margin: 0;
+  text-transform: none;
+}
+
+.period-control-picker__range ion-button span,
+.period-control-picker__range ion-button strong {
+  display: block;
+}
+
+.period-control-picker__range ion-button span {
+  margin-right: 6px;
+  font-weight: 400;
+}
+
 .period-control-picker__value {
   display: grid;
   justify-items: center;
@@ -86,6 +109,11 @@
 .period-control-picker__value ion-datetime {
   width: 100%;
   max-width: 350px;
+}
+
+.period-control-picker__apply {
+  margin-top: 12px;
+  text-transform: none;
 }
 
 .period-control { min-width: 0; }

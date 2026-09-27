@@ -61,29 +61,42 @@ describe('PeriodControl', () => {
     expect(controls.buttons.find((p) => p['aria-label'] === 'Предыдущий период')?.disabled).toBe(false)
   })
 
-  it('resets the offset when selecting another period type', () => {
+  it('uses presets only to stage range boundaries', () => {
     const { onChange } = renderPeriod('month', -5)
     const yearPreset = controls.buttons.find((button) => button['aria-label'] === 'Год')!
     yearPreset.onClick?.({} as Parameters<NonNullable<typeof yearPreset.onClick>>[0])
-    expect(onChange).toHaveBeenCalledWith({ period: 'year', periodOffset: 0 })
+    expect(onChange).not.toHaveBeenCalled()
     expect(controls.modals[0].className).toBe('period-control-picker-modal')
   })
 
   it.each([
-    ['day', '2026-09-20', -8],
-    ['month', '2026-08-20', -1],
-    ['year', '2025-04-20', -1],
-  ] as const)('selects a %s period from its picker', (period, selectedDate, expectedOffset) => {
+    ['day', 0, { period: 'day', periodOffset: 0, customFrom: '2026-09-28', customTo: '2026-09-28' }],
+    ['month', -1, { period: 'month', periodOffset: -1, customFrom: '2026-08-01', customTo: '2026-08-31' }],
+    ['year', -1, { period: 'year', periodOffset: -1, customFrom: '2025-01-01', customTo: '2025-12-31' }],
+  ] as const)('applies a complete %s range using its native period mode', (period, offset, expected) => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 8, 28, 12))
-    const { onChange, markup } = renderPeriod(period, 0)
+    const { onChange, markup } = renderPeriod(period, offset)
     const datePicker = controls.datetimes[0]
+    const apply = controls.buttons.find((button) => button['aria-label'] === 'Применить период')!
 
     expect(markup).toContain('aria-label="Выбрать период. Сейчас:')
     expect(datePicker.max).toBe('2026-09-28')
-    datePicker.onIonChange?.({ detail: { value: selectedDate } } as Parameters<NonNullable<typeof datePicker.onIonChange>>[0])
+    apply.onClick?.({} as Parameters<NonNullable<typeof apply.onClick>>[0])
 
-    expect(onChange).toHaveBeenCalledWith({ period, periodOffset: expectedOffset })
+    expect(onChange).toHaveBeenCalledWith(expected)
+  })
+
+  it('keeps an arbitrary range in custom mode', () => {
+    const { onChange } = renderPeriod('custom')
+    const apply = controls.buttons.find((button) => button['aria-label'] === 'Применить период')!
+    apply.onClick?.({} as Parameters<NonNullable<typeof apply.onClick>>[0])
+    expect(onChange).toHaveBeenCalledWith({
+      period: 'custom',
+      periodOffset: 0,
+      customFrom: '2026-08-01',
+      customTo: '2026-08-20',
+    })
   })
 
   it('uses one calendar and exposes only day, month, and year presets', () => {
@@ -97,5 +110,7 @@ describe('PeriodControl', () => {
     expect(markup).not.toContain('Квартал')
     expect(markup).not.toContain('Другой период')
     expect(markup).not.toContain('Пресет выбирает')
+    expect(markup).toContain('aria-label="Начало периода:')
+    expect(markup).toContain('aria-label="Конец периода:')
   })
 })
