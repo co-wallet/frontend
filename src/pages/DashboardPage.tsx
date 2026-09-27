@@ -21,15 +21,12 @@ import {
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
-  IonFab,
-  IonFabButton,
   IonSelect,
   IonSelectOption,
   IonChip,
   IonText,
 } from '@ionic/react'
 import {
-  addOutline,
   trendingDownOutline,
   trendingUpOutline,
   analyticsOutline,
@@ -40,11 +37,12 @@ import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
-import type { TransactionFilter } from '@/api/transactions'
+import type { TransactionFilter, TransactionType } from '@/api/transactions'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
 import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/CategoryIcon'
+import { QuickTransactionFab } from '@/components/QuickTransactionFab'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import {
   filterAccountsByKinds,
@@ -241,6 +239,17 @@ export function DashboardPage() {
     ? {}
     : { dateFrom, dateTo }
   const allTransactionsHref = filteredTransactionsHref(transactionFilter, transactionPeriod)
+  const quickAccountId = accountFilter === 'custom' && effectiveSelectedAccountIds.length === 1
+    ? effectiveSelectedAccountIds[0]
+    : undefined
+
+  function addTransaction(type: TransactionType) {
+    history.push(transactionCreationLocation(location, {
+      type,
+      ...(quickAccountId ? { accountId: quickAccountId } : {}),
+      ...(chartMode === 'balance' ? {} : { date: dateTo }),
+    }))
+  }
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', displayCurrency],
@@ -346,14 +355,7 @@ export function DashboardPage() {
       <AppContent fullscreen withFab
         className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
         fixed={
-          <IonFab slot="fixed" vertical="bottom" horizontal="end">
-            <IonFabButton
-              onClick={() => history.push(transactionCreationLocation(location))}
-              aria-label="Добавить транзакцию"
-            >
-              <IonIcon icon={addOutline} />
-            </IonFabButton>
-          </IonFab>
+          <QuickTransactionFab onSelect={addTransaction} />
         }
       >
         <div>

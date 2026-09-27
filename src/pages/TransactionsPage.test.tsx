@@ -93,6 +93,13 @@ describe('transaction navigation controls', () => {
     expect(markup).toContain('<ion-menu-button')
     expect(markup).toContain('<ion-back-button default-href="/dashboard"')
   })
+
+  it('offers separate quick actions for expense, income and transfer', () => {
+    const markup = renderPage('/transactions?account_ids=a1')
+    expect(markup).toContain('aria-label="Добавить расход"')
+    expect(markup).toContain('aria-label="Добавить доход"')
+    expect(markup).toContain('aria-label="Добавить перевод"')
+  })
 })
 
 describe('transaction analytics grouping', () => {

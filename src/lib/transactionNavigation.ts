@@ -1,4 +1,4 @@
-import type { TransactionFilter } from '@/api/transactions'
+import type { TransactionFilter, TransactionType } from '@/api/transactions'
 import type { History, LocationDescriptorObject } from 'history'
 import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
@@ -14,14 +14,35 @@ interface TransactionCreationState {
   transactionReturnTo: string
 }
 
+export interface TransactionCreationDefaults {
+  type?: TransactionType
+  accountId?: string
+  date?: string
+}
+
 export function transactionCreationLocation(
   source: Pick<LocationDescriptorObject, 'pathname' | 'search'>,
-  search = '',
+  defaults: TransactionCreationDefaults = {},
 ): LocationDescriptorObject<TransactionCreationState> {
+  const search = new URLSearchParams()
+  if (defaults.type) search.set('type', defaults.type)
+  if (defaults.accountId) search.set('account_id', defaults.accountId)
+  if (defaults.date) search.set('date', defaults.date)
   return {
     pathname: '/transactions/add',
-    search,
+    search: search.toString(),
     state: { transactionReturnTo: `${source.pathname ?? ''}${source.search ?? ''}` },
+  }
+}
+
+export function transactionCreationDefaults(params: URLSearchParams): TransactionCreationDefaults {
+  const type = params.get('type')
+  const accountId = params.get('account_id')?.trim()
+  const date = params.get('date')
+  return {
+    ...(type === 'expense' || type === 'income' || type === 'transfer' ? { type } : {}),
+    ...(accountId ? { accountId } : {}),
+    ...(date && validDate(date) ? { date } : {}),
   }
 }
 
