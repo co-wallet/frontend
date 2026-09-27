@@ -1,11 +1,10 @@
-import { PageHeader } from '@/components/layout/PageHeader'
-import { EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
+import { EntityFormHeader, EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState, useEffect, useRef } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
-  IonPage, IonToolbar, IonButtons, IonSpinner, IonButton, IonLabel, IonSelectOption, IonItem, IonInput,
+  IonPage, IonSpinner, IonButton, IonLabel, IonSelectOption, IonItem, IonInput,
   IonText, IonNote, IonIcon,
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
@@ -24,7 +23,6 @@ import { localDateISO } from '@/lib/date'
 import {
   finishTransactionCreation,
   transactionCreationDefaults,
-  transactionCreationReturnTo,
 } from '@/lib/transactionNavigation'
 
 const TYPE_OPTIONS: { value: TransactionType; label: string }[] = [
@@ -42,7 +40,6 @@ export function AddTransactionPage() {
   const location = useLocation<unknown>()
   const searchParams = new URLSearchParams(location.search)
   const creationDefaults = transactionCreationDefaults(searchParams)
-  const returnTo = transactionCreationReturnTo(location.state)
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
@@ -258,16 +255,13 @@ export function AddTransactionPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Новая транзакция" backHref={returnTo ?? '/transactions'}>
-        <IonToolbar>
-          <IonButtons slot="end">
-            <IonButton strong onClick={handleSubmit}
-              disabled={createMutation.isPending || !amountValid || !sharesValid || !selectedAccount || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))} aria-label="Сохранить">
-              {createMutation.isPending ? <IonSpinner name="dots" /> : 'Сохранить'}
-            </IonButton>
-          </IonButtons>
-        </IonToolbar>
-      </PageHeader>
+      <EntityFormHeader
+        title="Новая транзакция"
+        onCancel={() => finishTransactionCreation(history, location.state)}
+        onSubmit={handleSubmit}
+        pending={createMutation.isPending}
+        disabled={!amountValid || !sharesValid || !selectedAccount || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))}
+      />
 
       <AppContent>
         <div>
