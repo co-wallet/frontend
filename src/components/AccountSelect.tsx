@@ -1,5 +1,6 @@
 import { EntityFormPicker } from './EntityForm'
 import { useState } from 'react'
+import { useAccountSelectSheet } from '@/lib/useAccountSelectSheet'
 import {
   IonButton,
   IonButtons,
@@ -32,6 +33,7 @@ export function AccountSelect({
   onChange: (accountId: string) => void
 }) {
   const [isOpen, setIsOpen] = useState(false)
+  const isSheet = useAccountSelectSheet()
   const selectedAccount = accounts.find((account) => account.id === value)
 
   const selectAccount = (accountId: string) => {
@@ -48,11 +50,10 @@ export function AccountSelect({
         isOpen={isOpen} onOpen={() => setIsOpen(true)} />
 
       <IonModal
-        className="account-select-modal"
+        key={isSheet ? 'sheet' : 'dialog'}
+        className={`account-select-modal ${isSheet ? 'account-select-modal--sheet' : 'account-select-modal--dialog'}`}
         isOpen={isOpen}
-        initialBreakpoint={0.5}
-        breakpoints={[0, 0.5, 0.85]}
-        handleBehavior="cycle"
+        {...(isSheet ? { initialBreakpoint: 0.5, breakpoints: [0, 0.5, 0.85], handleBehavior: 'cycle' as const } : {})}
         onDidDismiss={() => setIsOpen(false)}
       >
         <IonHeader>

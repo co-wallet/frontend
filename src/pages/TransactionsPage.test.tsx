@@ -3,6 +3,7 @@ import { MemoryRouter, Route } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
+import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
 
 const pagination = vi.hoisted(() => ({
   data: { pages: [] as Transaction[][] },
@@ -10,12 +11,28 @@ const pagination = vi.hoisted(() => ({
   isError: false,
   isFetchNextPageError: false,
   hasNextPage: false,
+  options: undefined as undefined | { queryKey: unknown[]; enabled: boolean },
+  analyticsQueries: [] as { queryKey: unknown[]; enabled?: boolean }[],
+  chartGrouping: 'categories' as 'categories' | 'tags',
 }))
 beforeEach(() => {
   pagination.data = { pages: [[]] }
   pagination.isError = false
   pagination.isFetchNextPageError = false
   pagination.hasNextPage = false
+  pagination.options = undefined
+  pagination.analyticsQueries = []
+  pagination.chartGrouping = 'categories'
+})
+
+vi.mock('react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react')>()
+  return {
+    ...actual,
+    useState: (initial: unknown) => actual.useState(
+      initial === 'categories' ? pagination.chartGrouping : initial,
+    ),
+  }
 })
 
 vi.mock('@/lib/useChartTheme', () => ({
@@ -23,17 +40,32 @@ vi.mock('@/lib/useChartTheme', () => ({
 }))
 vi.mock('@tanstack/react-query', () => ({
   infiniteQueryOptions: (options: unknown) => options,
-  useInfiniteQuery: () => pagination,
-  useQuery: ({ queryKey }: { queryKey: string[] }) => ({
-    data: queryKey[0] === 'accounts'
-      ? [{ id: 'a1', name: 'Личная' }, { id: 'a2', name: 'Кредитный' }, { id: 'a3', name: 'Инвестиции' }]
+  useInfiniteQuery: (options: typeof pagination.options) => {
+    pagination.options = options
+    return pagination
+  },
+  useQuery: ({ queryKey, enabled }: { queryKey: string[]; enabled?: boolean }) => {
+    if (queryKey[0] === 'analytics') pagination.analyticsQueries.push({ queryKey, enabled })
+    return ({
+    data: queryKey[0] === 'analytics' && queryKey[1] === 'by-tag'
+      ? [
+        { tagId: 't1', tagName: 'путешествия', amount: 125 },
+        { tagId: 'untagged', tagName: 'Без тегов', amount: 75 },
+      ]
+      : queryKey[0] === 'accounts'
+      ? [
+        { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
+        { id: 'a2', name: 'Общая', kind: 'spending', accessMode: 'shared' },
+        { id: 'a3', name: 'Инвестиции', kind: 'investment', accessMode: 'personal' },
+      ]
       : queryKey[0] === 'categories' && queryKey[1] === 'expense'
         ? [{ id: 'c1', name: 'Продукты' }, { id: 'c2', name: 'Кафе' }]
         : queryKey[0] === 'tags'
           ? [{ id: 't1', name: 'путешествия' }, { id: 't2', name: 'япония' }]
           : [],
     isLoading: false,
-  }),
+    })
+  },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }))
@@ -63,13 +95,70 @@ describe('transaction navigation controls', () => {
   })
 })
 
+describe('transaction analytics grouping', () => {
+  it('offers category and tag grouping without requesting tags by default', () => {
+    const markup = renderPage('/transactions')
+    expect(markup).toContain('aria-label="Группировка аналитики"')
+    expect(markup).toContain('value="categories"')
+    expect(markup).toContain('value="tags"')
+    const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
+    expect(tagQuery?.enabled).toBe(false)
+  })
+
+  it('uses all active filters for tag analytics and links a tag to the filtered list', () => {
+    pagination.chartGrouping = 'tags'
+    const markup = renderPage('/transactions/filtered/1?account_ids=a1&category_ids=c1&tag_ids=t2&tag_mode=and&period=custom&from=2026-08-01&to=2026-08-31&include_transfer_expenses=true')
+    expect(markup).toContain('#путешествия')
+    expect(markup).toContain('Без тегов')
+    expect(markup).toContain('aria-label="Транзакции с тегом путешествия"')
+    expect(markup).toContain('aria-label="Транзакции без тегов"')
+
+    const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
+    expect(tagQuery?.queryKey[tagQuery.queryKey.length - 1]).toMatchObject({
+      account_ids: 'a1',
+      category_ids: 'c1',
+      tag_ids: 't2',
+      tag_mode: 'and',
+      date_from: '2026-08-01',
+      date_to: '2026-08-31',
+      include_transfer_expenses: true,
+    })
+
+    const href = markup.match(/href="([^"]*\/transactions\/filtered\/2[^"]*)"/)?.[1].replace(/&amp;/g, '&')
+    expect(href).toBeDefined()
+    const params = new URL(href!, 'http://localhost').searchParams
+    expect(filterFromParams(params)).toMatchObject({
+      accountIds: ['a1'],
+      categoryIds: ['c1'],
+      tagIds: ['t1'],
+      includeTransferExpenses: true,
+    })
+    expect(periodFromParams(params, {
+      period: 'month', periodOffset: 0, customFrom: '', customTo: '',
+    })).toEqual({
+      period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-31',
+    })
+
+    const untaggedHref = [...markup.matchAll(/href="([^"]*without_tags=true[^"]*)"/g)][0]?.[1].replace(/&amp;/g, '&')
+    expect(untaggedHref).toBeDefined()
+    expect(filterFromParams(new URL(untaggedHref!, 'http://localhost').searchParams)).toMatchObject({
+      accountIds: ['a1'],
+      categoryIds: ['c1'],
+      withoutTags: true,
+      includeTransferExpenses: true,
+    })
+  })
+})
+
 
 describe('active filter summary', () => {
   it('shows a clear unfiltered state without empty groups', () => {
     const markup = renderPage('/transactions')
-    expect(markup).toContain('все счета, категории и теги')
-    expect(markup).not.toContain('class="transactions-filter-group"')
+    expect(markup).toContain('Текущие средства · личные счета')
+    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(1)
     expect(markup).not.toContain('Сбросить все')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a1'] })
+    expect(pagination.options?.enabled).toBe(true)
   })
 
   it('shows one value per type with independent overflow counts', () => {
@@ -77,7 +166,7 @@ describe('active filter summary', () => {
     expect(markup).toContain('aria-label="Счета:')
     expect(markup).toContain('aria-label="Категории:')
     expect(markup).toContain('aria-label="Теги:')
-    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(3)
+    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(4)
     expect(markup).toContain('Личная')
     expect(markup).toContain('Продукты')
     expect(markup).toContain('#путешествия')
@@ -91,6 +180,29 @@ describe('active filter summary', () => {
     expect(markup).not.toContain('Сбросить все')
   })
 
+  it('intersects selected account kinds with shared visibility and explicit accounts', () => {
+    renderPage('/transactions?account_ids=a2,a3&account_kinds=investment&include_shared=true')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a3'] })
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')
+    expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a3' })
+  })
+
+  it('disables list and analytics requests when no account kinds are selected', () => {
+    const markup = renderPage('/transactions?account_kinds=none')
+    expect(markup).toContain('Типы средств не выбраны')
+    expect(pagination.options?.enabled).toBe(false)
+    expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
+  })
+
+  it('passes independent transfer preferences to summary analytics', () => {
+    renderPage('/transactions?include_transfer_expenses=true&include_transfer_income=false')
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')
+    expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({
+      include_transfer_expenses: true,
+      include_transfer_income: false,
+    })
+  })
+
   it('omits empty types and overflow for a single selected value', () => {
     const markup = renderPage('/transactions?tag_ids=t1')
     expect(markup).toContain('aria-label="Теги:')
@@ -99,6 +211,12 @@ describe('active filter summary', () => {
     expect(markup).not.toContain('Ещё')
     expect(markup).toContain('aria-label="Теги: #путешествия. Открыть фильтры"')
     expect(markup).toContain('title="Теги: #путешествия"')
+  })
+
+  it('shows the without-tags filter as an active condition', () => {
+    const markup = renderPage('/transactions?without_tags=true')
+    expect(markup).toContain('aria-label="Теги: Без тегов. Открыть фильтры"')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ withoutTags: true })
   })
 
   it('keeps unknown selections visible and counted while dictionaries are unavailable', () => {
@@ -138,4 +256,19 @@ describe('paginated transaction list', () => {
     expect(markup).toContain('Повторить')
     expect(markup).not.toContain('<h2>Не удалось загрузить транзакции</h2>')
   })
+})
+
+
+it('passes the effective account selection to transfer amount presentation', () => {
+  pagination.data.pages = [[{
+    id: 'transfer', accountId: 'a1', toAccountId: 'a3', type: 'transfer',
+    amount: 100, currency: 'USD', toAmount: 90, toCurrency: 'EUR',
+    date: '2026-08-21', shares: [], tags: [],
+  } as unknown as Transaction]]
+  const destination = renderPage('/transactions?account_ids=a3&account_kinds=investment')
+  expect(destination).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">90 €</span>')
+  expect(destination).toContain('<span class="transaction-item__amount-meta">100 $</span>')
+  const source = renderPage('/transactions?account_ids=a1')
+  expect(source).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">100 $</span>')
+  expect(source).toContain('<span class="transaction-item__amount-meta">90 €</span>')
 })

@@ -39,6 +39,7 @@ interface TransactionItemProps {
   category?: Category
   currentUserId?: string
   defaultCurrency: string
+  selectedAccountIds?: string[]
   tagHref?: (id: string) => string
   onEdit: (id: string) => void
   onDelete?: (id: string) => void
@@ -52,6 +53,7 @@ export function TransactionItem({
   category,
   currentUserId,
   defaultCurrency,
+  selectedAccountIds,
   onEdit,
   onDelete,
   tagHref,
@@ -79,6 +81,29 @@ export function TransactionItem({
     defaultCurrency,
   )
   const showConvertedAmount = !tx.readOnly && convertedAmount != null && tx.currency !== defaultCurrency
+  const destinationCurrency = tx.toCurrency || toAccount?.currency
+  const destinationAmount = tx.type === 'transfer' && !tx.readOnly
+    && destinationCurrency && destinationCurrency !== tx.currency && tx.toAmount != null
+    ? formatTransactionAmount(tx.toAmount, destinationCurrency, 'transfer')
+    : null
+  const sourceSelected = selectedAccountIds?.includes(tx.accountId) ?? true
+  const destinationSelected = tx.toAccountId != null
+    && (selectedAccountIds?.includes(tx.toAccountId) ?? true)
+  const preferDestination = destinationSelected && !sourceSelected
+    || sourceSelected === destinationSelected && destinationCurrency === defaultCurrency
+  const preferConverted = sourceSelected === destinationSelected
+    && tx.currency !== defaultCurrency && destinationCurrency !== defaultCurrency
+    && convertedAmount != null
+  const transferAmounts = destinationAmount ? (
+    preferConverted
+      ? [formatTransactionAmount(convertedAmount!, defaultCurrency, 'transfer'), amount, destinationAmount]
+      : preferDestination ? [destinationAmount, amount] : [amount, destinationAmount]
+  ) : null
+  const primaryAmount = transferAmounts?.[0]
+    ?? (showConvertedAmount
+      ? formatTransactionAmount(convertedAmount, defaultCurrency, tx.type)
+      : amount)
+  const secondaryAmounts = transferAmounts?.slice(1) ?? (showConvertedAmount ? [amount] : [])
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
   return (
@@ -92,7 +117,7 @@ export function TransactionItem({
         <button
           type="button"
           className="transaction-item__open"
-          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}`}
+          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}${destinationAmount ? `. На счёт ${destinationAmount}` : ''}`}
         />
         {tx.type === 'transfer' ? (
           <div slot="start" className="transaction-item__icon transaction-item__icon--transfer">
@@ -134,21 +159,19 @@ export function TransactionItem({
         </IonLabel>
 
         <IonNote slot="end" className="transaction-item__amounts">
-          <span className={amountClass}>
-            {showConvertedAmount ? formatTransactionAmount(convertedAmount, defaultCurrency, tx.type) : amount}
-          </span>
-          {shared && (
+          <span className={amountClass}>{primaryAmount}</span>
+          {shared && !(transferAmounts && preferDestination) && (
             <span className="transaction-item__amount-meta">
               <IonIcon icon={peopleOutline} aria-hidden="true" />
               Ваша доля
             </span>
           )}
+          {secondaryAmounts.map((secondaryAmount) => (
+            <span key={secondaryAmount} className="transaction-item__amount-meta">{secondaryAmount}{shared && preferDestination && secondaryAmount === amount ? ' · Ваша доля' : ''}</span>
+          ))}
           {!tx.readOnly && tx.type !== 'transfer' && tx.currency !== defaultCurrency && convertedAmount == null && (
-            <span className="transaction-item__amount-meta">Нет суммы в {defaultCurrency}</span>
-          )}
-          {showConvertedAmount && (
             <span className="transaction-item__amount-meta">
-              {amount}
+              Нет суммы в {defaultCurrency}
             </span>
           )}
         </IonNote>

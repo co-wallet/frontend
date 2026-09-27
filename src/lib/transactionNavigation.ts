@@ -1,4 +1,6 @@
 import type { TransactionFilter } from '@/api/transactions'
+import type { History, LocationDescriptorObject } from 'history'
+import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
 
 export interface TransactionPeriod {
@@ -6,6 +8,40 @@ export interface TransactionPeriod {
   periodOffset: number
   customFrom: string
   customTo: string
+}
+
+interface TransactionCreationState {
+  transactionReturnTo: string
+}
+
+export function transactionCreationLocation(
+  source: Pick<LocationDescriptorObject, 'pathname' | 'search'>,
+  search = '',
+): LocationDescriptorObject<TransactionCreationState> {
+  return {
+    pathname: '/transactions/add',
+    search,
+    state: { transactionReturnTo: `${source.pathname ?? ''}${source.search ?? ''}` },
+  }
+}
+
+export function transactionCreationReturnTo(state: unknown): string | null {
+  if (!state || typeof state !== 'object' || !('transactionReturnTo' in state)) return null
+  const returnTo = (state as TransactionCreationState).transactionReturnTo
+  return typeof returnTo === 'string' && returnTo.startsWith('/') && !returnTo.startsWith('//')
+    ? returnTo
+    : null
+}
+
+export function finishTransactionCreation(
+  history: Pick<History, 'goBack' | 'replace'>,
+  state: unknown,
+): void {
+  if (transactionCreationReturnTo(state)) {
+    history.goBack()
+    return
+  }
+  history.replace('/transactions')
 }
 
 export function filterFromParams(params: URLSearchParams): TransactionFilter {
@@ -17,6 +53,16 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
     if (values?.length) filter[field] = values
   }
   if (params.get('tag_mode') === 'and') filter.tagMode = 'and'
+  if (params.get('without_tags') === 'true') filter.withoutTags = true
+  const accountKinds = params.get('account_kinds')
+  if (accountKinds === 'none') filter.accountKinds = []
+  else if (accountKinds) {
+    const validKinds = accountKinds.split(',').filter(isAccountKind)
+    if (validKinds.length) filter.accountKinds = validKinds
+  }
+  if (params.get('include_shared') === 'true') filter.includeShared = true
+  if (params.get('include_transfer_expenses') === 'true') filter.includeTransferExpenses = true
+  if (params.get('include_transfer_income') === 'false') filter.includeTransferIncome = false
   return filter
 }
 
@@ -30,6 +76,21 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
   }
   result.delete('tag_mode')
   if (filter.tagMode === 'and') result.set('tag_mode', 'and')
+  result.delete('without_tags')
+  if (filter.withoutTags) result.set('without_tags', 'true')
+  result.delete('account_kinds')
+  if (filter.accountKinds) {
+    result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'none')
+  }
+  for (const [key, enabled] of [
+    ['include_shared', filter.includeShared],
+    ['include_transfer_expenses', filter.includeTransferExpenses],
+  ] as const) {
+    result.delete(key)
+    if (enabled === true) result.set(key, 'true')
+  }
+  result.delete('include_transfer_income')
+  if (filter.includeTransferIncome === false) result.set('include_transfer_income', 'false')
   return result
 }
 

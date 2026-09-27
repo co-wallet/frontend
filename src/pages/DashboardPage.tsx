@@ -5,6 +5,7 @@ import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useState } from 'react'
+import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
@@ -25,9 +26,6 @@ import {
   IonSelect,
   IonSelectOption,
   IonChip,
-  IonItem,
-  IonList,
-  IonNote,
   IonText,
 } from '@ionic/react'
 import {
@@ -42,6 +40,7 @@ import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
 import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
+import type { TransactionFilter } from '@/api/transactions'
 import { currenciesApi, type Currency } from '@/api/currencies'
 import { authApi } from '@/api/auth'
 import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
@@ -56,8 +55,7 @@ import {
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
-
-import { filteredTransactionsHref } from '@/lib/transactionNavigation'
+import { filteredTransactionsHref, transactionCreationLocation } from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
 
@@ -188,6 +186,8 @@ function ChartBlock({
 }
 
 export function DashboardPage() {
+  const history = useHistory()
+  const location = useLocation()
   const user = useAuthStore((s) => s.user)
   const updateUser = useAuthStore((s) => s.updateUser)
 
@@ -229,6 +229,18 @@ export function DashboardPage() {
     account_ids: filteredAccountIds,
     account_kinds: selectedKinds.join(','),
   }
+  const transactionFilter: TransactionFilter = {
+    accountKinds: selectedKinds,
+    ...(includeShared ? { includeShared: true } : {}),
+    ...(accountFilter === 'custom' ? { accountIds: effectiveSelectedAccountIds } : {}),
+    ...(transferVisibility.expenses ? { includeTransferExpenses: true } : {}),
+    ...(!transferVisibility.income ? { includeTransferIncome: false } : {}),
+  }
+  const transactionPeriod = { period, periodOffset, customFrom, customTo }
+  const recentTransactionFilter: TransactionFilter = chartMode === 'balance'
+    ? {}
+    : { dateFrom, dateTo }
+  const allTransactionsHref = filteredTransactionsHref(transactionFilter, transactionPeriod)
 
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', displayCurrency],
@@ -257,18 +269,9 @@ export function DashboardPage() {
     enabled: hasAnalyticsAccounts,
   })
 
-  const tagParams: AnalyticsParams = { ...params, type: chartMode === 'income' ? 'income' : 'expense' }
-
-  const { data: byTagRaw = [] } = useQuery({
-    queryKey: ['analytics', 'by-tag', tagParams],
-    queryFn: () => analyticsApi.byTag(tagParams),
-    enabled: chartMode !== 'balance' && hasAnalyticsAccounts,
-  })
-
   const summary = !hasAnalyticsAccounts ? { balance: 0, expenses: 0, income: 0 } : summaryRaw
   const byExpense = !hasAnalyticsAccounts ? [] : byExpenseRaw
   const byIncome = !hasAnalyticsAccounts ? [] : byIncomeRaw
-  const byTag = !hasAnalyticsAccounts ? [] : byTagRaw
 
   const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
@@ -344,7 +347,10 @@ export function DashboardPage() {
         className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
         fixed={
           <IonFab slot="fixed" vertical="bottom" horizontal="end">
-            <IonFabButton routerLink="/transactions/add">
+            <IonFabButton
+              onClick={() => history.push(transactionCreationLocation(location))}
+              aria-label="Добавить транзакцию"
+            >
               <IonIcon icon={addOutline} />
             </IonFabButton>
           </IonFab>
@@ -555,46 +561,16 @@ export function DashboardPage() {
             </div>
           </IonPopover>
 
-          {/* Tags breakdown */}
-          {chartMode !== 'balance' && byTag.length > 0 && (
-            <IonCard style={{ margin: '0 0 16px 0' }}>
-              <IonCardHeader>
-                <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartMode === 'income' ? 'Доходы по тегам' : 'Расходы по тегам'}</IonCardTitle>
-              </IonCardHeader>
-              <IonCardContent>
-                <IonList>
-                  {byTag.slice(0, 6).map((s) => (
-                    <IonItem
-                      key={s.tagId}
-                      routerLink={filteredTransactionsHref(
-                        { accountIds: filteredAccounts.map((account) => account.id), tagIds: [s.tagId] },
-                        { period, periodOffset, customFrom, customTo },
-                      )}
-                      routerDirection="forward"
-                      disabled={accountsLoading || filteredAccounts.length === 0}
-                      detail
-                      lines="none"
-                      className="dashboard-tag-row"
-                    >
-                      <IonLabel color="medium" style={{ fontSize: '0.75rem' }}>#{s.tagName}</IonLabel>
-                      <IonNote slot="end" style={{ fontSize: '0.75rem', fontWeight: 500 }}>{formatAmount(s.amount, sym)}</IonNote>
-                    </IonItem>
-                  ))}
-                </IonList>
-              </IonCardContent>
-            </IonCard>
-          )}
-
-          {chartMode === 'balance' && (
-            <RecentTransactions
-              accounts={accounts}
-              accountIds={filteredAccounts.map((account) => account.id)}
-              accountsLoading={accountsLoading}
-              accountsError={accountsError}
-              currentUserId={user?.id}
-              defaultCurrency={displayCurrency}
-            />
-          )}
+          <RecentTransactions
+            accounts={accounts}
+            accountIds={filteredAccounts.map((account) => account.id)}
+            accountsLoading={accountsLoading}
+            accountsError={accountsError}
+            currentUserId={user?.id}
+            defaultCurrency={displayCurrency}
+            filter={recentTransactionFilter}
+            fullListHref={allTransactionsHref}
+          />
         </div>
 
         {/* FAB */}

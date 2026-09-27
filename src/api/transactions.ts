@@ -1,4 +1,5 @@
 import { apiClient } from './client'
+import type { AccountKind } from './accounts'
 
 export type TransactionType = 'expense' | 'income' | 'transfer'
 
@@ -54,6 +55,8 @@ export interface CreateTransactionDto {
 }
 
 export interface UpdateTransactionDto {
+  accountId?: string
+  toAccountId?: string
   amount?: number
   toAmount?: number | null
   defaultCurrency?: string
@@ -67,9 +70,14 @@ export interface UpdateTransactionDto {
 
 export interface TransactionFilter {
   accountIds?: string[]
+  accountKinds?: AccountKind[]
+  includeShared?: boolean
+  includeTransferExpenses?: boolean
+  includeTransferIncome?: boolean
   categoryIds?: string[]
   tagIds?: string[]
   tagMode?: 'or' | 'and'
+  withoutTags?: boolean
   dateFrom?: string
   dateTo?: string
   page?: number
@@ -83,6 +91,7 @@ export const transactionsApi = {
     if (filter.categoryIds?.length) params.category_ids = filter.categoryIds.join(',')
     if (filter.tagIds?.length) params.tag_ids = filter.tagIds.join(',')
     if (filter.tagMode === 'and') params.tag_mode = 'and'
+    if (filter.withoutTags) params.without_tags = 'true'
     if (filter.dateFrom) params.date_from = filter.dateFrom
     if (filter.dateTo) params.date_to = filter.dateTo
     if (filter.page) params.page = String(filter.page)

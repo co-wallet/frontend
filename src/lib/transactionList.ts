@@ -176,17 +176,29 @@ export function buildTransactionAnalyticsParams(
     date_to: dateTo,
     currency,
     account_kinds: 'all',
+    include_transfer_expenses: filter.includeTransferExpenses ?? false,
+    include_transfer_income: filter.includeTransferIncome ?? true,
     ...(filter.accountIds?.length ? { account_ids: filter.accountIds.join(',') } : {}),
     ...(filter.categoryIds?.length ? { category_ids: filter.categoryIds.join(',') } : {}),
     ...(filter.tagIds?.length ? {
       tag_ids: filter.tagIds.join(','),
       tag_mode: filter.tagMode ?? 'or',
     } : {}),
+    ...(filter.withoutTags ? { without_tags: true } : {}),
   }
 }
 
 export function hasTransactionFilters(filter: TransactionFilter): boolean {
-  return Boolean(filter.accountIds?.length || filter.categoryIds?.length || filter.tagIds?.length)
+  return Boolean(
+    filter.accountIds?.length
+    || filter.accountKinds !== undefined
+    || filter.includeShared === true
+    || filter.includeTransferExpenses === true
+    || filter.includeTransferIncome === false
+    || filter.categoryIds?.length
+    || filter.tagIds?.length
+    || filter.withoutTags
+  )
 }
 
 function localDateKey(date: Date): string {

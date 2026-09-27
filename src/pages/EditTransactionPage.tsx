@@ -14,6 +14,7 @@ import { accountsApi, type AccountMember } from '@/api/accounts'
 import { categoriesApi } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
+import { AccountSelect } from '@/components/AccountSelect'
 import { CategorySelect } from '@/components/CategorySelect'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
@@ -28,6 +29,8 @@ export function EditTransactionPage() {
   const qc = useQueryClient()
   const userDefaultCurrency = useAuthStore((s) => s.user?.defaultCurrency ?? 'USD')
 
+  const [accountId, setAccountId] = useState('')
+  const [toAccountId, setToAccountId] = useState('')
   const [amount, setAmount] = useState('')
   const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
   const [toAmountStr, setToAmountStr] = useState('')
@@ -60,13 +63,13 @@ export function EditTransactionPage() {
     staleTime: 60_000,
   })
 
-  const selectedAccount = accounts.find((a) => a.id === tx?.accountId)
+  const selectedAccount = accounts.find((a) => a.id === (accountId || tx?.accountId))
   const isShared = selectedAccount?.accessMode === 'shared'
 
   const { data: members = [] } = useQuery<AccountMember[]>({
-    queryKey: ['account-members', tx?.accountId],
-    queryFn: () => accountsApi.getMembers(tx!.accountId),
-    enabled: !!tx?.accountId && isShared,
+    queryKey: ['account-members', accountId],
+    queryFn: () => accountsApi.getMembers(accountId),
+    enabled: !!accountId && isShared,
   })
 
   const catType = tx?.type === 'income' ? 'income' : 'expense'
@@ -78,6 +81,8 @@ export function EditTransactionPage() {
 
   useEffect(() => {
     if (!tx || initialized) return
+    setAccountId(tx.accountId)
+    setToAccountId(tx.toAccountId ?? '')
     setAmount(String(tx.amount))
     setCategoryId(tx.categoryId ?? '')
     setDescription(tx.description ?? '')
@@ -124,10 +129,32 @@ export function EditTransactionPage() {
   const sharesValid = !isShared || members.length <= 1 || Math.abs(sharesSum - totalAmount) <= 0.01
 
   const accountCurrency = selectedAccount?.currency ?? tx?.currency ?? ''
-  const toAccount = accounts.find((a) => a.id === tx?.toAccountId)
-  const toAccountCurrency = toAccount?.currency ?? tx?.toCurrency ?? ''
+  const toAccount = accounts.find((a) => a.id === toAccountId)
+  const toAccountCurrency = toAccount?.currency ?? (toAccountId === tx?.toAccountId ? tx?.toCurrency : '') ?? ''
   const isCrossCurrencyTransfer = tx?.type === 'transfer' && !!accountCurrency && !!toAccountCurrency && toAccountCurrency !== accountCurrency
   const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
+
+  const accountsValid = !!accountId && (tx?.type !== 'transfer' || (!!toAccountId && toAccountId !== accountId))
+  const transferAmountValid = !isCrossCurrencyTransfer || (isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0)
+
+  function changeAccount(id: string) {
+    if (id === accountId) return
+    const nextCurrency = accounts.find((a) => a.id === id)?.currency
+    if (nextCurrency !== accountCurrency) {
+      setDefaultCurrencyAmountStr('')
+      setToAmountStr('')
+    }
+    setAccountId(id)
+    if (id === tx?.accountId) {
+      setCustomShares(tx.shares.some((share) => share.isCustom))
+      setShareAmounts(Object.fromEntries(tx.shares.map((share) => [share.userId, String(share.amount)])))
+      setDefaultCurrencyAmountStr(tx.defaultCurrencyAmount == null ? '' : String(tx.defaultCurrencyAmount))
+      setToAmountStr(tx.toAmount == null ? '' : String(tx.toAmount))
+    } else {
+      setCustomShares(false)
+      setShareAmounts({})
+    }
+  }
 
   const updateMutation = useMutation({
     mutationFn: (dto: UpdateTransactionDto) => transactionsApi.update(txID!, dto),
@@ -152,7 +179,7 @@ export function EditTransactionPage() {
   })
 
   function handleSubmit() {
-    if (tx?.readOnly || !amountValid || !sharesValid) return
+    if (tx?.readOnly || !amountValid || !sharesValid || !accountsValid || !transferAmountValid) return
 
     const pendingTrimmed = pendingTagRef.current.trim().toLowerCase()
     const allTags = pendingTrimmed && !tags.includes(pendingTrimmed)
@@ -162,6 +189,8 @@ export function EditTransactionPage() {
     const dcaValue = parseDecimal(defaultCurrencyAmountStr)
     const toAmountValue = parseDecimal(toAmountStr)
     const dto: UpdateTransactionDto = {
+      ...(accountId !== tx?.accountId ? { accountId } : {}),
+      ...(tx?.type === 'transfer' && toAccountId !== tx.toAccountId ? { toAccountId } : {}),
       amount: totalAmount,
       ...(isCrossCurrencyTransfer ? { toAmount: toAmountValue > 0 ? toAmountValue : null } : {}),
       categoryId: categoryId || null,
@@ -173,7 +202,7 @@ export function EditTransactionPage() {
         : {}),
     }
 
-    if (isShared && members.length > 1) {
+    if (isShared && members.length > 1 && (accountId === tx?.accountId || customShares)) {
       dto.shares = members.map((m) => ({
         userId: m.userId,
         amount: parseDecimal(shareAmounts[m.userId] ?? '0'),
@@ -255,6 +284,30 @@ export function EditTransactionPage() {
       <AppContent>
         <div>
           <IonList>
+            <AccountSelect
+              label={tx.type === 'transfer' ? 'Со счёта' : 'Счёт'}
+              value={accountId || tx.accountId}
+              accounts={[
+                ...(!accounts.some((a) => a.id === tx.accountId) ? [{ id: tx.accountId, name: tx.accountName ?? 'Текущий счёт', currency: tx.currency, icon: '' }] : []),
+                ...accounts.filter((a) => tx.type !== 'transfer' || a.id !== toAccountId),
+              ]}
+              onChange={changeAccount}
+            />
+            {tx.type === 'transfer' && <AccountSelect
+              label="На счёт"
+              value={toAccountId}
+              accounts={[
+                ...(tx.toAccountId && !accounts.some((a) => a.id === tx.toAccountId) && tx.toAccountId !== accountId ? [{ id: tx.toAccountId, name: tx.toAccountName ?? 'Текущий счёт назначения', currency: tx.toCurrency ?? '', icon: '' }] : []),
+                ...accounts.filter((a) => a.id !== accountId),
+              ]}
+              onChange={(id) => {
+                if (id === toAccountId) return
+                setToAccountId(id)
+                setToAmountStr('')
+              }}
+            />}
+            {accountId && accountCurrency !== tx.currency && <IonNote className="entity-form-note">Валюта счёта изменилась. Проверьте сумму: автоматическая конвертация не выполняется.</IonNote>}
+            {accountId && accountId !== tx.accountId && <IonNote className="entity-form-note">Доли будут распределены между участниками выбранного счёта.</IonNote>}
             {/* Amount */}
             <IonItem>
               <IonInput
@@ -446,7 +499,7 @@ export function EditTransactionPage() {
                       />
                     ) : (
                       <IonNote slot="end">
-                        {shareAmounts[m.userId] ?? '0.00'} {tx.currency}
+                        {shareAmounts[m.userId] ?? '0.00'} {accountCurrency}
                       </IonNote>
                     )}
                   </IonItem>
@@ -479,7 +532,7 @@ export function EditTransactionPage() {
               expand="block"
               style={{ flex: 1 }}
               onClick={handleSubmit}
-              disabled={updateMutation.isPending || !amountValid || !sharesValid}
+              disabled={updateMutation.isPending || !amountValid || !sharesValid || !accountsValid || !transferAmountValid}
             >
               {updateMutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
             </IonButton>

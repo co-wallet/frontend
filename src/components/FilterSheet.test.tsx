@@ -12,7 +12,11 @@ vi.mock('@ionic/react', async (importOriginal) => ({
 vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey }: { queryKey: string[] }) => {
     if (queryKey[0] === 'accounts') {
-      return { data: [{ id: 'account-1', name: 'Личная', icon: null }] }
+      return { data: [{
+        id: 'account-1', name: 'Личная', icon: null, kind: 'spending', accessMode: 'personal',
+      }, {
+        id: 'account-shared', name: 'Общая', icon: null, kind: 'spending', accessMode: 'shared',
+      }] }
     }
     if (queryKey[0] === 'categories' && queryKey[1] === 'expense') {
       return {
@@ -50,6 +54,12 @@ describe('FilterSheet', () => {
     expect(markup).not.toContain('filter-sheet-trigger__label')
     expect(markup).not.toContain('Период с')
     expect(markup).not.toContain('Период по')
+    expect(markup).toContain('Тип средств')
+    expect(markup).toContain('Учитывать общие счета')
+    expect(markup).toContain('Переводы в суммах')
+    expect(markup).toContain('Учитывать в расходах')
+    expect(markup).toContain('Учитывать в доходах')
+    expect(markup.match(/class="filter-sheet-checkboxes"/g)).toHaveLength(2)
   })
 })
 
@@ -84,5 +94,5 @@ it.each([true, false])('supports externally controlled open state: %s', (isOpen)
   )
   expect(markup).toContain(`data-open="${isOpen}"`)
   expect(markup).toContain('aria-label="Фильтры, активно: 2"')
-  expect(markup.match(/aria-pressed="true"/g)).toHaveLength(2)
+  expect(markup.match(/aria-pressed="true"/g)).toHaveLength(3)
 })

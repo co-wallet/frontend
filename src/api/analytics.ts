@@ -33,6 +33,7 @@ export interface AnalyticsParams {
   category_ids?: string
   tag_ids?: string
   tag_mode?: 'or' | 'and'
+  without_tags?: boolean
   currency?: string
   type?: string
 }

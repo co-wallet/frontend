@@ -25,6 +25,7 @@ import {
   IonList,
   IonNote,
   IonPage,
+  IonRouterLink,
   IonSegment,
   IonSegmentButton,
   IonSkeletonText,
@@ -60,6 +61,11 @@ import {
 } from '@/lib/transactionList'
 import { useChartTheme } from '@/lib/useChartTheme'
 import { useAuthStore } from '@/store/authStore'
+import { accountKindShortLabel } from '@/lib/accountKind'
+import {
+  transactionAccountKinds,
+  transactionFilterAccounts,
+} from '@/lib/accountFilters'
 import {
   computeDateRange,
   usePeriodStore,
@@ -71,10 +77,24 @@ import {
   filteredTransactionsHref,
   periodFromParams,
   periodToParams,
+  transactionCreationLocation,
   type TransactionPeriod,
 } from '@/lib/transactionNavigation'
 
 import './TransactionsPage.css'
+
+type ChartMode = 'expenses' | 'income'
+type ChartGrouping = 'categories' | 'tags'
+
+const TAG_CHART_COLORS = [
+  'var(--account-icon-color-blue)',
+  'var(--account-icon-color-purple)',
+  'var(--account-icon-color-pink)',
+  'var(--account-icon-color-orange)',
+  'var(--account-icon-color-green)',
+  'var(--account-icon-color-graphite)',
+]
+const UNTAGGED_TAG_ID = 'untagged'
 
 export function TransactionsPage() {
   const tooltip = usePieChartTooltip()
@@ -110,7 +130,8 @@ export function TransactionsPage() {
   }
   const [showFilters, setShowFilters] = useState(false)
   const [showChart, setShowChart] = useState(false)
-  const [chartMode, setChartMode] = useState<'expenses' | 'income'>('expenses')
+  const [chartMode, setChartMode] = useState<ChartMode>('expenses')
+  const [chartGrouping, setChartGrouping] = useState<ChartGrouping>('categories')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
   const chartTheme = useChartTheme()
 
@@ -120,9 +141,24 @@ export function TransactionsPage() {
     customFrom,
     customTo,
   )
-  const effectiveFilter: TransactionFilter = { ...filter, dateFrom, dateTo }
+  const accountsQuery = useQuery({
+    queryKey: ['accounts'],
+    queryFn: () => accountsApi.list(),
+  })
+  const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data])
+  const filteredAccounts = transactionFilterAccounts(accounts, filter)
+  const filteredAccountIds = filteredAccounts.map((account) => account.id)
+  const hasEffectiveAccounts = !accountsQuery.isLoading
+    && !accountsQuery.isError
+    && filteredAccountIds.length > 0
+  const effectiveFilter: TransactionFilter = {
+    ...filter,
+    accountIds: filteredAccountIds,
+    dateFrom,
+    dateTo,
+  }
   const analyticsParams = buildTransactionAnalyticsParams(
-    filter,
+    effectiveFilter,
     dateFrom,
     dateTo,
     defaultCurrency,
@@ -131,20 +167,25 @@ export function TransactionsPage() {
   const expenseAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'by-category', 'expense', analyticsParams],
     queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'expense' }),
-    enabled: showChart,
+    enabled: showChart && chartGrouping === 'categories' && hasEffectiveAccounts,
   })
   const incomeAnalyticsQuery = useQuery({
     queryKey: ['analytics', 'by-category', 'income', analyticsParams],
     queryFn: () => analyticsApi.byCategory({ ...analyticsParams, type: 'income' }),
-    enabled: showChart,
+    enabled: showChart && chartGrouping === 'categories' && hasEffectiveAccounts,
+  })
+  const tagAnalyticsQuery = useQuery({
+    queryKey: ['analytics', 'by-tag', chartMode, analyticsParams],
+    queryFn: () => analyticsApi.byTag({
+      ...analyticsParams,
+      type: chartMode === 'expenses' ? 'expense' : 'income',
+    }),
+    enabled: showChart && chartGrouping === 'tags' && hasEffectiveAccounts,
   })
   const summaryQuery = useQuery({
     queryKey: ['analytics', 'summary', 'transactions', analyticsParams],
     queryFn: () => analyticsApi.summary(analyticsParams),
-  })
-  const accountsQuery = useQuery({
-    queryKey: ['accounts'],
-    queryFn: () => accountsApi.list(),
+    enabled: hasEffectiveAccounts,
   })
   const expenseCategoriesQuery = useQuery({
     queryKey: ['categories', 'expense'],
@@ -158,7 +199,9 @@ export function TransactionsPage() {
     queryKey: ['tags'],
     queryFn: () => tagsApi.list(),
   })
-  const transactionsQuery = useInfiniteQuery(transactionPaginationOptions(effectiveFilter))
+  const transactionsQuery = useInfiniteQuery(
+    transactionPaginationOptions(effectiveFilter, hasEffectiveAccounts),
+  )
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
@@ -170,7 +213,6 @@ export function TransactionsPage() {
     },
   })
 
-  const accounts = useMemo(() => accountsQuery.data ?? [], [accountsQuery.data])
   const allCategories = useMemo(() => [
     ...(expenseCategoriesQuery.data ?? []),
     ...(incomeCategoriesQuery.data ?? []),
@@ -194,9 +236,10 @@ export function TransactionsPage() {
     ),
   ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data])
 
-  const chartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
+  const categoryChartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
+  const chartQuery = chartGrouping === 'categories' ? categoryChartQuery : tagAnalyticsQuery
   const chartCategoryType = chartMode === 'expenses' ? 'expense' : 'income'
-  const chartData = (chartQuery.data ?? [])
+  const categoryChartData = (categoryChartQuery.data ?? [])
     .filter((stat) => stat.amount > 0)
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10)
@@ -206,11 +249,34 @@ export function TransactionsPage() {
         : stat.icon
       return {
         ...stat,
+        id: stat.categoryId,
+        name: stat.categoryName,
         icon,
+        iconType: 'category' as const,
         color: categoryIconChartColor(icon, chartCategoryType),
       }
     })
+  const tagChartData = (tagAnalyticsQuery.data ?? [])
+    .filter((stat) => stat.amount > 0)
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 10)
+    .map((stat, index) => ({
+      ...stat,
+      id: stat.tagId,
+      name: stat.tagName,
+      iconType: stat.tagId === UNTAGGED_TAG_ID ? 'untagged' as const : 'tag' as const,
+      color: TAG_CHART_COLORS[index % TAG_CHART_COLORS.length],
+    }))
+  const chartData = chartGrouping === 'categories' ? categoryChartData : tagChartData
   const hasFilters = hasTransactionFilters(filter)
+  const accountKinds = transactionAccountKinds(filter)
+  const accountScopeLabel = `${accountKinds.length === 0
+    ? 'Типы средств не выбраны'
+    : accountKinds.length === 1
+      ? accountKindShortLabel(accountKinds[0])
+      : `Типов средств: ${accountKinds.length}`} · ${filter.includeShared
+    ? 'личные и общие счета'
+    : 'личные счета'}`
   const filterGroups = [
     { kind: 'accountIds', label: 'Счета',
       items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },
@@ -218,11 +284,13 @@ export function TransactionsPage() {
       items: (filter.categoryIds ?? []).map((id) => ({ id, name: categoriesById.get(id)?.name ?? 'Категория' })) },
     { kind: 'tagIds', label: 'Теги',
       items: (filter.tagIds ?? []).map((id) => ({ id, name: tags.find((tag) => tag.id === id)?.name ?? 'Тег' })) },
+    { kind: 'withoutTags', label: 'Теги',
+      items: filter.withoutTags ? [{ id: UNTAGGED_TAG_ID, name: 'Без тегов' }] : [] },
   ] as const
 
   function addTransaction() {
     const selectedDate = periodOffset !== 0 || period !== 'day' ? `?date=${dateTo}` : ''
-    history.push(`/transactions/add${selectedDate}`)
+    history.push(transactionCreationLocation(location, selectedDate))
   }
 
   return (
@@ -243,30 +311,37 @@ export function TransactionsPage() {
             trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
-            {hasFilters ? (
-              <div className="transactions-active-filters" aria-label="Активные фильтры">
-                {filterGroups.filter((group) => group.items.length > 0).map((group) => {
-                  const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
-                  const remaining = group.items.length - 1
-                  return (
-                    <IonButton
-                      key={group.kind}
-                      className="transactions-filter-group"
-                      fill="clear"
-                      size="small"
-                      onClick={() => setShowFilters(true)}
-                      aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
-                      title={`${group.label}: ${name}`}
-                    >
-                      <span className="transactions-filter-group__name">{name}</span>
-                      {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
-                    </IonButton>
-                  )
-                })}
-              </div>
-            ) : (
-              <><span className="transactions-filter-status__label">Фильтры:</span><span>все счета, категории и теги</span></>
-            )}
+            <span className="transactions-filter-status__label">Фильтры:</span>
+            <div className="transactions-active-filters" aria-label="Активные фильтры">
+              <IonButton
+                className="transactions-filter-group"
+                fill="clear"
+                size="small"
+                onClick={() => setShowFilters(true)}
+                aria-label={`${accountScopeLabel}. Открыть фильтры`}
+                title={accountScopeLabel}
+              >
+                <span className="transactions-filter-group__name">{accountScopeLabel}</span>
+              </IonButton>
+              {filterGroups.filter((group) => group.items.length > 0).map((group) => {
+                const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
+                const remaining = group.items.length - 1
+                return (
+                  <IonButton
+                    key={group.kind}
+                    className="transactions-filter-group"
+                    fill="clear"
+                    size="small"
+                    onClick={() => setShowFilters(true)}
+                    aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
+                    title={`${group.label}: ${name}`}
+                  >
+                    <span className="transactions-filter-group__name">{name}</span>
+                    {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
+                  </IonButton>
+                )
+              })}
+            </div>
           </div>
 
           {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
@@ -322,7 +397,7 @@ export function TransactionsPage() {
               <div slot="content" className="transactions-analytics__content">
                 <IonSegment
                   value={chartMode}
-                  onIonChange={(event) => setChartMode(event.detail.value as 'expenses' | 'income')}
+                  onIonChange={(event) => setChartMode(event.detail.value as ChartMode)}
                   aria-label="Тип аналитики"
                 >
                   <IonSegmentButton value="expenses">
@@ -332,6 +407,20 @@ export function TransactionsPage() {
                   <IonSegmentButton value="income">
                     <IonIcon icon={trendingUpOutline} />
                     <IonLabel>Доходы</IonLabel>
+                  </IonSegmentButton>
+                </IonSegment>
+
+                <IonSegment
+                  value={chartGrouping}
+                  onIonChange={(event) => setChartGrouping(event.detail.value as ChartGrouping)}
+                  aria-label="Группировка аналитики"
+                  className="transactions-analytics__grouping"
+                >
+                  <IonSegmentButton value="categories">
+                    <IonLabel>Категории</IonLabel>
+                  </IonSegmentButton>
+                  <IonSegmentButton value="tags">
+                    <IonLabel>Теги</IonLabel>
                   </IonSegmentButton>
                 </IonSegment>
 
@@ -356,7 +445,7 @@ export function TransactionsPage() {
                         <Pie
                           data={chartData}
                           dataKey="amount"
-                          nameKey="categoryName"
+                          nameKey="name"
                           cx="50%"
                           cy="50%"
                           outerRadius={70}
@@ -365,7 +454,7 @@ export function TransactionsPage() {
                         >
                           {chartData.map((stat) => (
                             <Cell
-                              key={stat.categoryId}
+                              key={stat.id}
                               fill={stat.color}
                             />
                           ))}
@@ -379,27 +468,55 @@ export function TransactionsPage() {
                       </PieChart>
                     </ResponsiveContainer>
                     <div className="transactions-chart-legend">
-                      {chartData.map((stat) => (
-                        <div key={stat.categoryId} className="transactions-chart-legend__item">
+                      {chartData.map((stat) => {
+                        const content = <>
                           <div className="transactions-chart-legend__label">
                             <span
                               className="transactions-chart-legend__dot"
                               style={{ background: stat.color }}
                               aria-hidden="true"
                             />
-                            <CategoryIcon
-                              value={stat.icon}
-                              type={chartCategoryType}
-                              size={20}
-                              ariaLabel={stat.categoryId === 'uncategorized' ? 'Без категории' : undefined}
-                            />
-                            <span style={{ color: chartTheme.legendColor }}>{stat.categoryName}</span>
+                            {stat.iconType === 'category' && (
+                              <CategoryIcon
+                                value={stat.icon}
+                                type={chartCategoryType}
+                                size={20}
+                                ariaLabel={stat.categoryId === 'uncategorized' ? 'Без категории' : undefined}
+                              />
+                            )}
+                            <span style={{ color: chartTheme.legendColor }}>{stat.iconType === 'tag' ? '#' : ''}{stat.name}</span>
                           </div>
                           <span className="transactions-chart-legend__amount">
                             {formatCurrencyAmount(stat.amount, defaultCurrency, 2)}
                           </span>
-                        </div>
-                      ))}
+                        </>
+
+                        return stat.iconType !== 'category' ? (
+                          <IonRouterLink
+                            key={stat.id}
+                            className="transactions-chart-legend__item transactions-chart-legend__item--link"
+                            routerLink={filteredTransactionsHref(
+                              stat.iconType === 'untagged'
+                                ? { ...filter, tagIds: undefined, tagMode: undefined, withoutTags: true }
+                                : { ...filter, tagIds: [stat.id], tagMode: 'or', withoutTags: undefined },
+                              navigationPeriod,
+                              location.pathname,
+                            )}
+                            routerDirection="forward"
+                            aria-label={stat.iconType === 'untagged'
+                              ? 'Транзакции без тегов'
+                              : `Транзакции с тегом ${stat.tagName}`}
+                          >
+                            <span className="transactions-chart-legend__link-content">
+                              {content}
+                            </span>
+                          </IonRouterLink>
+                        ) : (
+                          <div key={stat.id} className="transactions-chart-legend__item">
+                            {content}
+                          </div>
+                        )
+                      })}
                     </div>
                   </>
                 )}
@@ -471,6 +588,7 @@ export function TransactionsPage() {
                       category={tx.categoryId ? categoriesById.get(tx.categoryId) : undefined}
                       currentUserId={currentUserId}
                       defaultCurrency={defaultCurrency}
+                      selectedAccountIds={filteredAccountIds}
                       onEdit={(id) => history.push(`/transactions/${id}/edit`)}
                       onDelete={(id) => setDeleteAlertTxId(id)}
                     />

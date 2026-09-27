@@ -11,7 +11,9 @@ import {
   IonText,
 } from '@ionic/react'
 import { closeCircle } from 'ionicons/icons'
-import { tagsApi } from '@/api/tags'
+import { tagsApi, type Tag } from '@/api/tags'
+
+import './TagInput.css'
 
 interface TagInputProps {
   value: string[]
@@ -20,6 +22,36 @@ interface TagInputProps {
 }
 
 const MAX_TAGS = 10
+
+interface TagSuggestionListProps {
+  suggestions: Tag[]
+  onSelect: (name: string) => void
+}
+
+export function TagSuggestionList({ suggestions, onSelect }: TagSuggestionListProps) {
+  return (
+    <div className="tag-input__suggestions">
+      <IonList aria-label="Подсказки тегов">
+        {suggestions.map((suggestion) => (
+          <IonItem
+            key={suggestion.id}
+            button
+            detail={false}
+            onMouseDown={(event) => {
+              event.preventDefault()
+              onSelect(suggestion.name)
+            }}
+          >
+            <IonLabel>#{suggestion.name}</IonLabel>
+            {suggestion.txCount !== undefined && (
+              <IonNote slot="end">{suggestion.txCount}</IonNote>
+            )}
+          </IonItem>
+        ))}
+      </IonList>
+    </div>
+  )
+}
 
 export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
   const [input, setInput] = useState('')
@@ -71,8 +103,8 @@ export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
   }, [])
 
   return (
-    <div ref={wrapperRef} style={{ position: 'relative' }}>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '4px' }}>
+    <div ref={wrapperRef} className="tag-input">
+      <div className="tag-input__chips">
         {value.map((tag) => (
           <IonChip key={tag} color="primary" onClick={() => removeTag(tag)}>
             <IonLabel>#{tag}</IonLabel>
@@ -103,33 +135,7 @@ export function TagInput({ value, onChange, onPendingChange }: TagInputProps) {
       )}
 
       {showSuggestions && filteredSuggestions.length > 0 && (
-        <IonList
-          style={{
-            position: 'absolute',
-            zIndex: 10,
-            width: '100%',
-            background: 'var(--ion-background-color)',
-            border: '1px solid var(--ion-border-color, #e0e0e0)',
-            borderRadius: '8px',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-            maxHeight: '200px',
-            overflow: 'auto',
-          }}
-        >
-          {filteredSuggestions.map((s) => (
-            <IonItem
-              key={s.id}
-              button
-              detail={false}
-              onMouseDown={(e) => { e.preventDefault(); addTag(s.name) }}
-            >
-              <IonLabel>#{s.name}</IonLabel>
-              {s.txCount !== undefined && (
-                <IonNote slot="end">{s.txCount}</IonNote>
-              )}
-            </IonItem>
-          ))}
-        </IonList>
+        <TagSuggestionList suggestions={filteredSuggestions} onSelect={addTag} />
       )}
 
       <IonText color="medium">

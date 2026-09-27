@@ -6,7 +6,7 @@ import {
 } from '@ionic/react'
 import type { Account } from '@/api/accounts'
 import { categoriesApi } from '@/api/categories'
-import { transactionsApi } from '@/api/transactions'
+import { transactionsApi, type TransactionFilter } from '@/api/transactions'
 import { useRecentTransactionsFit } from '@/lib/useRecentTransactionsFit'
 import { formatTransactionDate } from '@/lib/transactionList'
 import './RecentTransactions.css'
@@ -19,15 +19,18 @@ interface RecentTransactionsProps {
   accountsError?: boolean
   currentUserId?: string
   defaultCurrency: string
+  filter?: TransactionFilter
+  fullListHref?: string
 }
 
 export function RecentTransactions({
   accounts, accountIds, accountsLoading, accountsError, currentUserId, defaultCurrency,
+  filter: additionalFilter = {}, fullListHref = '/transactions',
 }: RecentTransactionsProps) {
   const history = useHistory()
   const queryClient = useQueryClient()
   const enabled = !accountsLoading && !accountsError && accountIds.length > 0
-  const filter = { accountIds, page: 1, limit: 20 }
+  const filter = { ...additionalFilter, accountIds, page: 1, limit: 20 }
   const transactions = useQuery({
     queryKey: ['transactions', 'recent', filter],
     queryFn: () => transactionsApi.list(filter),
@@ -106,7 +109,7 @@ export function RecentTransactions({
           </IonList>
         )}
         <IonCardContent className="recent-transactions__footer">
-          <IonButton expand="block" fill="clear" routerLink="/transactions" routerDirection="forward">
+          <IonButton expand="block" fill="clear" routerLink={fullListHref} routerDirection="forward">
             Все транзакции
           </IonButton>
         </IonCardContent>

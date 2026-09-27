@@ -95,7 +95,7 @@ it('warns about irreversible deletion without a backup and shows the old manifes
     accounts: [{ id: 'old', name: 'Старый счёт', currency: 'RUB', deleted_at: '2025-01-01' }], blockers: {},
   } } }
   const html = render(s)
-  for (const text of ['Старый счёт', 'ранее удалён', 'Резервная копия не создаётся', 'Отменить замену после завершения нельзя', 'Подтверждаю безвозвратное удаление', 'Общие счета и внешние связи блокируют', 'Удалить старые данные и импортировать']) expect(html).toContain(text)
+  for (const text of ['Старый счёт', 'ранее удалён', 'Резервная копия не создаётся', 'Отменить замену после завершения нельзя', 'Подтверждаю безвозвратное удаление', 'Общие счета, участие в них и их история сохранятся', 'Удалить старые данные и импортировать']) expect(html).toContain(text)
   expect(html).toMatch(/ion-button[^>]*disabled="true"[^>]*color="danger"/)
   expect(render({ ...s, deletionAccepted: true })).not.toMatch(/ion-button[^>]*disabled="true"/)
 })
