@@ -58,6 +58,7 @@ import {
   transactionDefaultCurrencyAmount,
 } from '@/lib/transactionList'
 import { useChartTheme } from '@/lib/useChartTheme'
+import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
 import { useAuthStore } from '@/store/authStore'
 import { accountKindShortLabel } from '@/lib/accountKind'
 import {
@@ -440,6 +441,7 @@ export function TransactionsPage() {
                     <ResponsiveContainer width="100%" height={180}>
                       <PieChart>
                         <Pie
+                          {...NON_ANIMATED_PIE_PROPS}
                           data={chartData}
                           dataKey="amount"
                           nameKey="name"
