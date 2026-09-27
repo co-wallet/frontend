@@ -53,7 +53,12 @@ export function AccountSelect({
         key={isSheet ? 'sheet' : 'dialog'}
         className={`account-select-modal ${isSheet ? 'account-select-modal--sheet' : 'account-select-modal--dialog'}`}
         isOpen={isOpen}
-        {...(isSheet ? { initialBreakpoint: 0.5, breakpoints: [0, 0.5, 0.85], handleBehavior: 'cycle' as const } : {})}
+        {...(isSheet ? {
+          initialBreakpoint: 0.5,
+          breakpoints: [0, 0.5, 0.85],
+          expandToScroll: false,
+          handleBehavior: 'cycle' as const,
+        } : {})}
         onDidDismiss={() => setIsOpen(false)}
       >
         <IonHeader>
