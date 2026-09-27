@@ -1,14 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { Account } from '@/api/accounts'
-import { useAccountSelectSheet } from '@/lib/useAccountSelectSheet'
 
 import { AccountSelect } from './AccountSelect'
-
-vi.mock('@/lib/useAccountSelectSheet', () => ({
-  useAccountSelectSheet: vi.fn(),
-}))
 
 const accounts: Account[] = [
   {
@@ -40,10 +35,6 @@ const accounts: Account[] = [
 ]
 
 describe('AccountSelect', () => {
-  beforeEach(() => {
-    vi.mocked(useAccountSelectSheet).mockReturnValue(false)
-  })
-
   it('renders the selected account with its visual icon instead of the storage value', () => {
     const markup = renderToStaticMarkup(
       <AccountSelect
@@ -74,23 +65,7 @@ describe('AccountSelect', () => {
     expect(markup).toContain('Выберите счёт')
   })
 
-  it('allows the account list to scroll at the initial mobile sheet breakpoint', () => {
-    vi.mocked(useAccountSelectSheet).mockReturnValue(true)
-
-    const markup = renderToStaticMarkup(
-      <AccountSelect
-        label="Счёт"
-        accounts={accounts}
-        value="account-1"
-        onChange={vi.fn()}
-      />,
-    )
-
-    expect(markup).toContain('initial-breakpoint="0.5"')
-    expect(markup).toContain('expand-to-scroll="false"')
-  })
-
-  it('keeps the desktop account picker as a regular dialog', () => {
+  it('uses a regular modal so iPhone scrolling is not intercepted by a sheet gesture', () => {
     const markup = renderToStaticMarkup(
       <AccountSelect
         label="Счёт"
@@ -102,5 +77,6 @@ describe('AccountSelect', () => {
 
     expect(markup).not.toContain('initial-breakpoint')
     expect(markup).not.toContain('expand-to-scroll')
+    expect(markup).not.toContain('handle-behavior')
   })
 })
