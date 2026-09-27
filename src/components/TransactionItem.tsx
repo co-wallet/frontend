@@ -99,8 +99,11 @@ export function TransactionItem({
       ? [formatTransactionAmount(convertedAmount!, defaultCurrency, 'transfer'), amount, destinationAmount]
       : preferDestination ? [destinationAmount, amount] : [amount, destinationAmount]
   ) : null
-  const primaryAmount = transferAmounts?.[0] ?? amount
-  const secondaryAmounts = transferAmounts?.slice(1) ?? []
+  const primaryAmount = transferAmounts?.[0]
+    ?? (showConvertedAmount
+      ? formatTransactionAmount(convertedAmount, defaultCurrency, tx.type)
+      : amount)
+  const secondaryAmounts = transferAmounts?.slice(1) ?? (showConvertedAmount ? [amount] : [])
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
   return (
@@ -166,9 +169,9 @@ export function TransactionItem({
           {secondaryAmounts.map((secondaryAmount) => (
             <span key={secondaryAmount} className="transaction-item__amount-meta">{secondaryAmount}{shared && preferDestination && secondaryAmount === amount ? ' · Ваша доля' : ''}</span>
           ))}
-          {!transferAmounts && showConvertedAmount && (
+          {!tx.readOnly && tx.type !== 'transfer' && tx.currency !== defaultCurrency && convertedAmount == null && (
             <span className="transaction-item__amount-meta">
-              ≈ {formatTransactionAmount(convertedAmount, defaultCurrency, tx.type)}
+              Нет суммы в {defaultCurrency}
             </span>
           )}
         </IonNote>

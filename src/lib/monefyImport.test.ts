@@ -18,7 +18,7 @@ const deferred = <T,>() => { let resolve!: (value: T) => void; const promise = n
 function setup() {
   const values = new Map<string, string>()
   const storage = { getItem: (key: string) => values.get(key) || null, setItem: (key: string, v: string) => { values.set(key, v) }, removeItem: (key: string) => { values.delete(key) } }
-  const api = { availability: vi.fn().mockResolvedValue({ available: true, reasons: [] }), preview: vi.fn().mockResolvedValue(structuredClone(preview)), configure: vi.fn().mockResolvedValue({ ...preview, preview_id: 'preview-2' }), confirm: vi.fn().mockResolvedValue(result) }
+  const api = { configureRates: vi.fn().mockResolvedValue({ ...preview, preview_id: 'preview-rates' }), availability: vi.fn().mockResolvedValue({ available: true, reasons: [] }), preview: vi.fn().mockResolvedValue(structuredClone(preview)), configure: vi.fn().mockResolvedValue({ ...preview, preview_id: 'preview-2' }), confirm: vi.fn().mockResolvedValue(result) }
   const success = vi.fn()
   return { api, storage, success, model: new MonefyImport('u', api, storage, success) }
 }
@@ -363,5 +363,41 @@ describe('shared import configuration', () => {
     await model.refreshOptions()
     expect(api.configure.mock.lastCall?.[4]).toEqual({ a: { access_mode: 'personal', members: [] } })
     expect(model.getSnapshot().accessDrafts).toBeUndefined()
+  })
+})
+
+
+describe('fallback exchange rates', () => {
+  it('requires saving edited rates and confirms the returned snapshot', async () => {
+    const { model, api } = setup()
+    api.preview.mockResolvedValue({ ...preview, currency_rates: [{ currency: 'TRY', base_currency: 'RUB', rate: '3', source: 'current', transactions: 2 }] })
+    await model.upload(file)
+    model.accept(true)
+    model.editRate('TRY', '2,5')
+    model.accept(true)
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    await model.confirm()
+    expect(api.confirm).not.toHaveBeenCalled()
+    await model.saveRates()
+    expect(api.configureRates).toHaveBeenCalledWith('preview-1', { TRY: '2.5' })
+    model.accept(true)
+    await model.confirm()
+    expect(api.confirm).toHaveBeenCalledWith('preview-rates', true, false)
+  })
+  it('keeps edits after an API error and rejects invalid rates locally', async () => {
+    const { model, api } = setup()
+    api.preview.mockResolvedValue({ ...preview, currency_rates: [{ currency: 'TRY', base_currency: 'RUB', rate: '3', source: 'current', transactions: 2 }] })
+    await model.upload(file)
+    model.editRate('TRY', '-1')
+    await model.saveRates()
+    expect(api.configureRates).not.toHaveBeenCalled()
+    model.editRate('TRY', '2')
+    api.configureRates.mockRejectedValue(new Error('offline'))
+    await model.saveRates()
+    expect(model.getSnapshot().rateDrafts).toEqual({ TRY: '2' })
+    expect(canConfirmImport(model.getSnapshot())).toBe(false)
+    api.configureRates.mockResolvedValue({ ...preview, preview_id: 'retry' })
+    await model.saveRates()
+    expect(model.getSnapshot().preview?.preview_id).toBe('retry')
   })
 })

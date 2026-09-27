@@ -12,6 +12,7 @@ export const importReasons: Record<string, string> = {
   transactions: 'У вас уже есть операции или доли в операциях.',
 }
 const errors: Record<string, string> = {
+  invalid_currency_rate: 'Введите положительный курс: до 12 цифр до и после точки.',
  members_changed: 'Участник больше недоступен. Создайте новый предпросмотр.',
   invalid_account_kinds: 'Выберите допустимый тип средств для каждого счёта.',
   deletion_not_confirmed: 'Отдельно подтвердите безвозвратное удаление старых данных.',
@@ -42,6 +43,7 @@ function errorText(error: unknown) {
 }
 type Pending = { id: string; accepted: boolean; deletion?: boolean }
 export interface ImportState {
+  rateDrafts?: Record<string, string>
   accessDrafts?: Record<string, { mode: 'personal' | 'shared'; members: MemberDraft[] }>
   mode?: ImportMode
   deletionAccepted?: boolean
@@ -55,7 +57,7 @@ export interface ImportState {
 }
 export function canConfirmImport(s: ImportState) {
   const p = s.preview
-  return s.phase === 'idle' && !!s.availability && (s.mode === 'replace' || s.availability.available === true) && !!p?.can_confirm &&
+  return !Object.keys(s.rateDrafts || {}).length && s.phase === 'idle' && !!s.availability && (s.mode === 'replace' || s.availability.available === true) && !!p?.can_confirm &&
     (p.mode || 'empty') === (s.mode || 'empty') &&
     (p.mode !== 'replace' || (!!p.replacement && s.deletionAccepted === true && !Object.values(p.replacement.blockers).some(n => n > 0))) &&
     Date.parse(p.expires_at) > Date.now() && !p.diagnostics.some(d => d.severity === 'blocking') &&
@@ -94,7 +96,7 @@ export class MonefyImport {
   cancel() {
     if (this.pending || this.state.phase === 'done') return
     ++this.generation
-    this.update({ phase: 'idle', preview: undefined, accessDrafts: undefined, accepted: false, deletionAccepted: false, error: undefined, fileName: undefined })
+    this.update({ phase: 'idle', preview: undefined, accessDrafts: undefined, rateDrafts: undefined, accepted: false, deletionAccepted: false, error: undefined, fileName: undefined })
   }
   setMode(mode: ImportMode) {
     if (this.pending || this.state.phase === 'done' || !['empty', 'replace'].includes(mode)) return
@@ -175,6 +177,24 @@ export class MonefyImport {
       const preview = await this.api.configure(draft.preview_id, kinds, categoryIcons, Object.fromEntries(draft.accounts.map(a => [a.source_id, a.icon])), access)
       if (version === this.generation) this.update({ preview, accessDrafts: preview.diagnostics.some(d => d.code === 'target_account_members') ? this.state.accessDrafts : undefined, phase: 'idle' })
     } catch (e) { if (version === this.generation) this.update({ preview: { ...draft, can_confirm: false }, phase: 'idle', error: errorText(e) }) }
+  }
+  editRate(currency: string, value: string) {
+    if (this.state.phase !== 'idle' || this.pending || !this.state.preview?.currency_rates?.some(r => r.currency === currency)) return
+    this.update({ rateDrafts: { ...this.state.rateDrafts, [currency]: value.replace(',', '.') }, accepted: false, deletionAccepted: false })
+  }
+  async saveRates() {
+    const p = this.state.preview
+    if (!p || this.state.phase !== 'idle' || this.pending) return
+    const rates = this.state.rateDrafts || {}
+    if (Object.values(rates).some(rate => !/^[0-9]{1,12}(\.[0-9]{1,12})?$/.test(rate) || Number(rate) <= 0)) {
+      this.update({ error: errors.invalid_currency_rate }); return
+    }
+    const version = ++this.generation
+    this.update({ phase: 'configuring', error: undefined, accepted: false, deletionAccepted: false })
+    try {
+      const preview = await this.api.configureRates(p.preview_id, rates)
+      if (version === this.generation) this.update({ preview: { ...preview, can_confirm: preview.can_confirm && !Object.keys(this.state.accessDrafts || {}).length }, rateDrafts: undefined, phase: 'idle' })
+    } catch (e) { if (version === this.generation) this.update({ phase: 'idle', error: errorText(e) }) }
   }
   async confirm() {
     if (!canConfirmImport(this.state) || this.pending) return
