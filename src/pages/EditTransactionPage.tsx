@@ -16,6 +16,7 @@ import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
 import { AccountSelect } from '@/components/AccountSelect'
 import { CategorySelect } from '@/components/CategorySelect'
+import { TransactionDescriptionInput } from '@/components/TransactionDescriptionInput'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 
@@ -416,16 +417,7 @@ export function EditTransactionPage() {
             </IonItem>
 
             {/* Description */}
-            <IonItem>
-              <IonInput
-                label="Описание"
-                labelPlacement="stacked"
-                type="text"
-                value={description}
-                placeholder="Необязательно"
-                onIonInput={(e) => setDescription(e.detail.value ?? '')}
-              />
-            </IonItem>
+            <TransactionDescriptionInput value={description} onChange={setDescription} />
           </IonList>
 
           {/* Tags */}
