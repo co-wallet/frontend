@@ -1,17 +1,11 @@
 import { EntityFormPicker } from './EntityForm'
+import { EntitySelectModal } from './EntitySelectModal'
 import { useState } from 'react'
 import {
-  IonButton,
-  IonButtons,
-  IonContent,
-  IonHeader,
   IonIcon,
   IonItem,
   IonLabel,
   IonList,
-  IonModal,
-  IonTitle,
-  IonToolbar,
 } from '@ionic/react'
 import { checkmarkCircle } from 'ionicons/icons'
 
@@ -47,60 +41,50 @@ export function AccountSelect({
         icon={selectedAccount && <AccountIcon value={selectedAccount.icon} size={24} />}
         isOpen={isOpen} onOpen={() => setIsOpen(true)} />
 
-      <IonModal
-        className="account-select-modal"
+      <EntitySelectModal
+        title={label}
         isOpen={isOpen}
-        onDidDismiss={() => setIsOpen(false)}
+        onDismiss={() => setIsOpen(false)}
       >
-        <IonHeader>
-          <IonToolbar>
-            <IonTitle>{label}</IonTitle>
-            <IonButtons slot="end">
-              <IonButton onClick={() => setIsOpen(false)}>Закрыть</IonButton>
-            </IonButtons>
-          </IonToolbar>
-        </IonHeader>
-        <IonContent className="account-select-modal__content">
-          {accounts.length === 0 ? (
-            <p className="account-select-modal__empty">Нет доступных счетов</p>
-          ) : (
-            <IonList inset className="account-select-modal__list">
-              {accounts.map((account) => {
-                const selected = account.id === value
-                return (
-                  <IonItem
-                    button
-                    detail={false}
-                    key={account.id}
-                    className="account-select-option"
-                    aria-label={`${account.name}, ${account.currency}`}
-                    aria-current={selected ? 'true' : undefined}
-                    onClick={() => selectAccount(account.id)}
-                  >
-                    <span slot="start" className="account-select-icon">
-                      <AccountIcon value={account.icon} size={42} />
-                    </span>
-                    <IonLabel>
-                      <h2>{account.name}</h2>
-                      <p>
-                        {account.accessMode ? `${account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · ` : ''}{account.currency}
-                      </p>
-                    </IonLabel>
-                    {selected && (
-                      <IonIcon
-                        slot="end"
-                        icon={checkmarkCircle}
-                        color="primary"
-                        aria-label="Выбран"
-                      />
-                    )}
-                  </IonItem>
-                )
-              })}
-            </IonList>
-          )}
-        </IonContent>
-      </IonModal>
+        {accounts.length === 0 ? (
+          <p className="account-select-modal__empty">Нет доступных счетов</p>
+        ) : (
+          <IonList inset className="account-select-modal__list">
+            {accounts.map((account) => {
+              const selected = account.id === value
+              return (
+                <IonItem
+                  button
+                  detail={false}
+                  key={account.id}
+                  className="account-select-option"
+                  aria-label={`${account.name}, ${account.currency}`}
+                  aria-current={selected ? 'true' : undefined}
+                  onClick={() => selectAccount(account.id)}
+                >
+                  <span slot="start" className="account-select-icon">
+                    <AccountIcon value={account.icon} size={42} />
+                  </span>
+                  <IonLabel>
+                    <h2>{account.name}</h2>
+                    <p>
+                      {account.accessMode ? `${account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · ` : ''}{account.currency}
+                    </p>
+                  </IonLabel>
+                  {selected && (
+                    <IonIcon
+                      slot="end"
+                      icon={checkmarkCircle}
+                      color="primary"
+                      aria-label="Выбран"
+                    />
+                  )}
+                </IonItem>
+              )
+            })}
+          </IonList>
+        )}
+      </EntitySelectModal>
     </>
   )
 }
