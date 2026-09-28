@@ -25,6 +25,8 @@ import {
   IonItemOptions,
   IonItemOption,
   IonAlert,
+  IonRouterLink,
+  IonButtons,
 } from '@ionic/react'
 import {
   addOutline,
@@ -32,6 +34,7 @@ import {
   trashOutline,
   peopleOutline,
   personOutline,
+  createOutline,
 } from 'ionicons/icons'
 import {
   accountsApi,
@@ -63,6 +66,8 @@ import {
 } from '@/components/AccountIcon'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
 import { AccountKindField } from '@/components/AccountKindField'
+import { usePeriodStore } from '@/store/periodStore'
+import { accountTransactionsHref } from '@/lib/transactionNavigation'
 
 import './AccountsPage.css'
 
@@ -353,6 +358,7 @@ export function AccountsPage() {
   const history = useHistory()
   const user = useAuthStore((s) => s.user)
   const defaultCurrency = user?.defaultCurrency ?? 'USD'
+  const period = usePeriodStore()
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null)
@@ -428,53 +434,69 @@ export function AccountsPage() {
           <IonList>
             {accounts.map((account) => {
               const isOwner = account.ownerId === user?.id
+              const kindLabel = accountKindShortLabel(account.kind)
               return (
                 <IonItemSliding key={account.id}>
                   <IonItem
                     className="account-list-item"
-                    button
-                    onClick={() => openEditor(account)}
                     detail={false}
                   >
-                    <span slot="start">
-                      <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
-                    </span>
-                    <IonLabel className="account-list-label">
-                      <h2 title={account.name}>{account.name}</h2>
-                      <div className="account-list-meta">
-                        <span className="account-list-currency">
-                          <span
-                            className="account-list-access"
-                            role="img"
-                            aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                            title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                          >
-                            <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
-                          </span>
-                          <span>{account.currency}</span>
+                    <IonRouterLink
+                      className="account-list-link"
+                      routerLink={accountTransactionsHref(account, period)}
+                      routerDirection="forward"
+                      aria-label={`Транзакции по счету ${account.name}`}
+                    >
+                      <span className="account-list-link-content">
+                        <span className="account-list-icon">
+                          <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
                         </span>
-                        {account.kind !== 'spending' && (
-                          <span className="account-list-kind">{accountKindShortLabel(account.kind)}</span>
+                        <IonLabel className="account-list-label">
+                          <h2 title={account.name}>{account.name}</h2>
+                          <div className="account-list-meta">
+                            <span
+                              className="account-list-access"
+                              role="img"
+                              aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                              title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                            >
+                              <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
+                            </span>
+                            <span className="account-list-meta-text" title={kindLabel}>
+                              {kindLabel}
+                            </span>
+                          </div>
+                        </IonLabel>
+                        {account.balance && (
+                          <IonNote className="account-list-balance">
+                            <div style={{ textAlign: 'right' }}>
+                              {fmtCurrency(account.balance.native, account.currency)}
+                              {account.balance.displayCurrency !== account.currency && (
+                                <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                                  ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                                </div>
+                              )}
+                              {account.accessMode === 'shared' && (
+                                <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                                  {fmtCurrency(account.balance.totalNative, account.currency)}
+                                </div>
+                              )}
+                            </div>
+                          </IonNote>
                         )}
-                      </div>
-                    </IonLabel>
-                    {account.balance && (
-                      <IonNote slot="end" className="account-list-balance">
-                        <div style={{ textAlign: 'right' }}>
-                          {fmtCurrency(account.balance.native, account.currency)}
-                          {account.balance.displayCurrency !== account.currency && (
-                            <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                              ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
-                            </div>
-                          )}
-                          {account.accessMode === 'shared' && (
-                            <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                              Всего: {fmtCurrency(account.balance.totalNative, account.currency)}
-                            </div>
-                          )}
-                        </div>
-                      </IonNote>
-                    )}
+                      </span>
+                    </IonRouterLink>
+                    <IonButtons slot="end" className="account-list-actions">
+                      <IonButton
+                        fill="clear"
+                        color="medium"
+                        title="Редактировать счёт"
+                        aria-label={`Редактировать счёт ${account.name}`}
+                        onClick={() => openEditor(account)}
+                      >
+                        <IonIcon slot="icon-only" icon={createOutline} />
+                      </IonButton>
+                    </IonButtons>
                   </IonItem>
                   <IonItemOptions side="end">
                     {account.accessMode === 'shared' && (

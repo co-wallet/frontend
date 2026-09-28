@@ -4,7 +4,7 @@ import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
@@ -25,6 +25,7 @@ import {
   IonSelectOption,
   IonChip,
   IonText,
+  IonRouterLink,
 } from '@ionic/react'
 import {
   trendingDownOutline,
@@ -50,11 +51,18 @@ import {
 } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
+  DASHBOARD_TOOLTIP_WIDTH,
+  dashboardTooltipPosition,
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
 import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
-import { filteredTransactionsHref, transactionCreationLocation } from '@/lib/transactionNavigation'
+import {
+  accountTransactionsHref,
+  categoryTransactionsHref,
+  filteredTransactionsHref,
+  transactionCreationLocation,
+} from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
 
@@ -76,17 +84,44 @@ function ChartBlock({
   emptyText,
   tooltipStyle,
   legendColor,
+  onNavigate,
 }: {
   data: DashboardPieEntry[]
   sym: string
   emptyText: string
   tooltipStyle: React.CSSProperties
   legendColor: string
+  onNavigate: (href: string) => void
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>()
+  const positionedSector = useRef<string | null>(null)
   const tooltip = usePieChartTooltip()
   const { chartEntries, legendEntries } = prepareDashboardChart(data)
   const visibleEntries = legendEntries.slice(0, visibleCount)
+
+  const positionTooltip = (event: React.MouseEvent<Element>, sectorKey: string) => {
+    if (positionedSector.current === sectorKey) return
+    const svg = event.currentTarget.closest('svg')
+    if (!svg) return
+    const bounds = svg.getBoundingClientRect()
+    setTooltipPosition(dashboardTooltipPosition({
+      chartWidth: bounds.width,
+      chartHeight: bounds.height,
+      pointerX: event.clientX - bounds.left,
+      pointerY: event.clientY - bounds.top,
+      chartLeft: bounds.left,
+      chartTop: bounds.top,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    }))
+    positionedSector.current = sectorKey
+  }
+
+  const resetTooltipPosition = () => {
+    positionedSector.current = null
+    setTooltipPosition(undefined)
+  }
 
   if (data.length === 0) {
     return (
@@ -109,7 +144,18 @@ function ChartBlock({
               cy="50%"
               outerRadius={80}
               innerRadius={40}
-              onClick={tooltip.onSectorClick}
+              onMouseMove={(entry, index, event) => positionTooltip(
+                event, `${entry.transactionsHref ?? entry.name}:${index}`,
+              )}
+              onMouseLeave={resetTooltipPosition}
+              onClick={(entry, index, event) => {
+                positionTooltip(event, `${entry.transactionsHref ?? entry.name}:${index}`)
+                if (entry.transactionsHref) {
+                  tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
+                  return
+                }
+                tooltip.onSectorClick()
+              }}
             >
               {chartEntries.map((entry, i) => (
                 <Cell
@@ -121,8 +167,14 @@ function ChartBlock({
             <Tooltip
               trigger={tooltip.trigger}
               active={tooltip.active}
+              position={tooltipPosition}
+              allowEscapeViewBox={{ x: true, y: true }}
+              wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
               contentStyle={tooltipStyle}
-              content={<PieChartTooltip formatAmount={(amount) => formatAmount(amount, sym)} />}
+              content={<PieChartTooltip
+                maxWidth={DASHBOARD_TOOLTIP_WIDTH}
+                formatAmount={(amount) => formatAmount(amount, sym)}
+              />}
             />
           </PieChart>
         </ResponsiveContainer>
@@ -130,8 +182,8 @@ function ChartBlock({
       <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
           const isNegative = s.amount < 0
-          return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', padding: '2px 0' }}>
+          const content = (
+            <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span
                   style={{
@@ -165,6 +217,23 @@ function ChartBlock({
               <span style={{ fontWeight: 500, color: isNegative ? 'var(--ion-color-danger)' : undefined }}>
                 {formatAmount(s.amount, sym)}
               </span>
+            </>
+          )
+          return s.legendTransactionsHref ? (
+            <IonRouterLink
+              key={i}
+              className="dashboard-chart-legend-link"
+              routerLink={s.legendTransactionsHref}
+              routerDirection="forward"
+              aria-label={`Транзакции по счету ${s.name}`}
+            >
+              <div className="dashboard-chart-legend-row dashboard-chart-legend-row--link">
+                {content}
+              </div>
+            </IonRouterLink>
+          ) : (
+            <div key={i} className="dashboard-chart-legend-row">
+              {content}
             </div>
           )
         })}
@@ -286,17 +355,25 @@ export function DashboardPage() {
 
   const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
-    .map((a) => ({
-      name: a.name,
-      icon: a.icon ?? undefined,
-      iconType: 'account' as const,
-      amount: a.balance!.display,
-    }))
+    .map((a) => {
+      const transactionsHref = accountTransactionsHref(a, transactionPeriod, location.pathname)
+      return {
+        name: a.name,
+        transactionsHref,
+        legendTransactionsHref: transactionsHref,
+        icon: a.icon ?? undefined,
+        iconType: 'account' as const,
+        amount: a.balance!.display,
+      }
+    })
 
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
     .map((s) => ({
       name: s.categoryName,
+      transactionsHref: categoryTransactionsHref(
+        s.categoryId, transactionFilter, transactionPeriod, location.pathname,
+      ),
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
       iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'expense',
@@ -307,6 +384,9 @@ export function DashboardPage() {
     .filter((s) => s.amount > 0)
     .map((s) => ({
       name: s.categoryName,
+      transactionsHref: categoryTransactionsHref(
+        s.categoryId, transactionFilter, transactionPeriod, location.pathname,
+      ),
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
       iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'income',
@@ -527,6 +607,7 @@ export function DashboardPage() {
                 emptyText={chartEmptyTexts[chartMode]}
                 tooltipStyle={chartTheme.tooltipStyle}
                 legendColor={chartTheme.legendColor}
+                onNavigate={(href) => history.push(href)}
               />
             </IonCardContent>
           </IonCard>

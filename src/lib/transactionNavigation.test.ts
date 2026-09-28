@@ -3,6 +3,8 @@ import { createMemoryHistory } from 'history'
 import type { TransactionFilter } from '@/api/transactions'
 import { computeDateRange } from '@/store/periodStore'
 import {
+  accountTransactionsHref,
+  categoryTransactionsHref,
   filterFromParams,
   filterToParams,
   filteredTransactionsHref,
@@ -98,6 +100,63 @@ describe('tag navigation', () => {
       expect(periodFromParams(new URLSearchParams(`period=month&offset=${offset}`), period).periodOffset).toBe(0)
     }
   })
+})
+
+describe('account navigation', () => {
+  it('selects a personal account with its kind and preserves the period', () => {
+    const href = accountTransactionsHref({
+      id: 'deposit & one',
+      kind: 'deposit',
+      accessMode: 'personal',
+    }, period)
+
+    expect(filterFromParams(query(href))).toEqual({
+      accountIds: ['deposit & one'],
+      accountKinds: ['deposit'],
+    })
+    expect(periodFromParams(query(href), { ...period, periodOffset: 0 })).toEqual(period)
+  })
+
+  it('includes shared accounts and advances filtered navigation depth', () => {
+    const href = accountTransactionsHref({
+      id: 'shared-account',
+      kind: 'savings_account',
+      accessMode: 'shared',
+    }, period, '/transactions/filtered/2')
+
+    expect(href).toContain('/transactions/filtered/3?')
+    expect(filterFromParams(query(href))).toEqual({
+      accountIds: ['shared-account'],
+      accountKinds: ['savings_account'],
+      includeShared: true,
+    })
+  })
+})
+
+describe('category navigation', () => {
+  it('adds the category while preserving account scope and period', () => {
+    const href = categoryTransactionsHref('travel', {
+      accountIds: ['account-1'],
+      accountKinds: ['spending'],
+      includeShared: true,
+    }, period)
+
+    expect(href).toBeDefined()
+    expect(filterFromParams(query(href!))).toEqual({
+      accountIds: ['account-1'],
+      accountKinds: ['spending'],
+      includeShared: true,
+      categoryIds: ['travel'],
+    })
+    expect(periodFromParams(query(href!), { ...period, periodOffset: 0 })).toEqual(period)
+  })
+
+  it.each(['uncategorized', 'transfers', 'transfers:bank'])(
+    'does not create an invalid transaction filter for %s analytics',
+    (categoryId) => {
+      expect(categoryTransactionsHref(categoryId, {}, period)).toBeUndefined()
+    },
+  )
 })
 
 describe('transaction creation navigation', () => {

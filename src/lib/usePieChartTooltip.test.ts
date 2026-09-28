@@ -3,6 +3,7 @@ import { usePieChartTooltip } from './usePieChartTooltip'
 
 const state = vi.hoisted(() => ({
   active: false,
+  navigationRef: { current: { activeSector: null as string | null, dismissTimer: null as ReturnType<typeof setTimeout> | null } },
   trigger: 'click' as 'click' | 'hover',
   effects: [] as Array<() => void | (() => void)>,
 }))
@@ -10,16 +11,23 @@ const state = vi.hoisted(() => ({
 vi.mock('./useChartTooltipTrigger', () => ({ useChartTooltipTrigger: () => state.trigger }))
 vi.mock('react', () => ({
   useState: () => [state.active, (active: boolean) => { state.active = active }],
+  useRef: () => state.navigationRef,
   useEffect: (effect: () => void | (() => void)) => { state.effects.push(effect) },
 }))
 
 beforeEach(() => {
+  vi.useFakeTimers()
   state.active = false
+  state.navigationRef = { current: { activeSector: null, dismissTimer: null } }
   state.trigger = 'click'
   state.effects = []
   vi.stubGlobal('document', new EventTarget())
 })
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.clearAllTimers()
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 describe('usePieChartTooltip', () => {
   it('opens on a sector tap, dismisses on an area tap and reopens on the same sector', () => {
@@ -35,6 +43,8 @@ describe('usePieChartTooltip', () => {
     document.dispatchEvent(new Event('click'))
     tooltip = usePieChartTooltip()
     expect(tooltip.active).toBe(false)
+    vi.runOnlyPendingTimers()
+    expect(state.navigationRef.current.activeSector).toBeNull()
 
     document.dispatchEvent(new Event('click'))
     tooltip.onSectorClick()
@@ -68,5 +78,51 @@ describe('usePieChartTooltip', () => {
     tooltip.onSectorClick()
     expect(usePieChartTooltip().active).toBeUndefined()
     expect(add).not.toHaveBeenCalled()
+  })
+
+  it('navigates after a second tap even when Recharts handles it after a microtask and re-render', async () => {
+    const navigate = vi.fn()
+    let tooltip = usePieChartTooltip()
+    state.effects[0]()
+
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-1', navigate)
+    expect(navigate).not.toHaveBeenCalled()
+    expect(state.active).toBe(true)
+
+    tooltip = usePieChartTooltip()
+    document.dispatchEvent(new Event('click'))
+    await Promise.resolve()
+    tooltip = usePieChartTooltip()
+    tooltip.onNavigableSectorClick('account-1', navigate)
+    expect(navigate).toHaveBeenCalledOnce()
+    expect(state.active).toBe(false)
+  })
+
+  it('shows the newly tapped mobile sector before allowing navigation', () => {
+    const navigate = vi.fn()
+    let tooltip = usePieChartTooltip()
+    state.effects[0]()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-1', navigate)
+
+    tooltip = usePieChartTooltip()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-2', navigate)
+    expect(navigate).not.toHaveBeenCalled()
+    expect(state.navigationRef.current.activeSector).toBe('account-2')
+
+    tooltip = usePieChartTooltip()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-2', navigate)
+    expect(navigate).toHaveBeenCalledOnce()
+  })
+
+  it('navigates on desktop click because hover already reveals the tooltip', () => {
+    state.trigger = 'hover'
+    const navigate = vi.fn()
+    const tooltip = usePieChartTooltip()
+    tooltip.onNavigableSectorClick('account-1', navigate)
+    expect(navigate).toHaveBeenCalledOnce()
   })
 })

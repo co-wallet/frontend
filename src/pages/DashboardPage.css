@@ -16,6 +16,47 @@
   border: 1px solid transparent;
 }
 
+.dashboard-chart-card .recharts-wrapper:focus,
+.dashboard-chart-card .recharts-surface:focus,
+.dashboard-chart-card .recharts-sector:focus {
+  outline: none;
+}
+
+.dashboard-chart-card .recharts-tooltip-wrapper {
+  pointer-events: none;
+}
+
+.dashboard-chart-card,
+.dashboard-chart-card ion-card-content,
+.dashboard-chart-card .recharts-responsive-container,
+.dashboard-chart-card .recharts-wrapper {
+  overflow: visible;
+}
+
+.dashboard-chart-legend-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 0;
+  border-radius: 6px;
+  font-size: 0.75rem;
+}
+
+.dashboard-chart-legend-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.dashboard-chart-legend-row--link {
+  cursor: pointer;
+}
+
+.dashboard-chart-legend-link:focus-visible {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+
 body.dark .dashboard-chart-card {
   --background: #202238;
 

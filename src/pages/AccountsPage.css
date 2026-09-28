@@ -1,5 +1,22 @@
-.account-list-item > [slot="start"] {
-  margin-inline-end: 12px;
+.account-list-link {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-list-link-content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 100%;
+  padding-block: 8px;
+}
+
+.account-list-icon {
+  display: inline-flex;
 }
 
 .account-list-label {
@@ -7,48 +24,61 @@
 }
 
 .account-list-label h2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: block;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-list-meta {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 4px 8px;
+  gap: 6px;
+  min-width: 0;
   margin-top: 4px;
+  overflow: hidden;
   color: var(--ion-color-medium-shade);
   font-size: 13px;
   line-height: 18px;
-}
-
-.account-list-currency {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
   white-space: nowrap;
 }
 
 .account-list-access {
   display: inline-flex;
   align-items: center;
+  flex-shrink: 0;
   font-size: 16px;
 }
 
-.account-list-kind {
+.account-list-meta-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .account-list-balance {
   flex-shrink: 0;
+  min-width: 88px;
   max-width: 50%;
-  margin-inline-start: 12px;
   font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+.account-list-actions {
+  align-self: stretch;
+  margin-inline: 0 -4px;
+}
+
+.account-list-actions ion-button {
+  --padding-start: 4px;
+  --padding-end: 4px;
+  width: 36px;
+  min-width: 36px;
+  min-height: 44px;
+  margin: 0;
 }
 
 .account-form-sign-button {

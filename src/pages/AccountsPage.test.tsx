@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/api/accounts'
+import { accountKindShortLabel } from '@/lib/accountKind'
 import { AccountsPage } from './AccountsPage'
 
 const queryState = vi.hoisted(() => ({ accounts: [] as Account[] }))
@@ -25,13 +26,13 @@ function renderAccount(overrides: Partial<Account> = {}) {
 }
 
 describe('AccountsPage list', () => {
-  it('keeps the name and currency without the everyday account type or access text', () => {
+  it('shows personal access as an icon and the everyday account type without a text access label', () => {
     const markup = renderAccount()
     expect(markup).toContain('Мой счёт')
-    expect(markup).toContain('<span>RUB</span>')
-    expect(markup).not.toContain('Текущие средства')
+    expect(markup).not.toContain('<span>RUB</span>')
     expect(markup).toContain('role="img" aria-label="Личный счёт"')
-    expect(markup).not.toMatch(/>Личный(?: счёт)?</)
+    expect(markup).toContain('class="account-list-meta-text" title="Текущие средства">Текущие средства</span>')
+    expect(markup).not.toContain('Личный ·')
   })
 
   it.each([
@@ -39,10 +40,11 @@ describe('AccountsPage list', () => {
     ['savings', 'Сбережения'],
     ['savings_account', 'Накопительный счёт'],
     ['investment', 'Инвестиции'],
-  ] as const)('preserves the %s type after the currency', (kind, label) => {
+  ] as const)('shows the %s type without currency or a text access label', (kind, label) => {
     const markup = renderAccount({ kind })
-    expect(markup).toContain(`class="account-list-kind">${label}</span>`)
-    expect(markup.indexOf('<span>RUB</span>')).toBeLessThan(markup.indexOf(`>${label}</span>`))
+    expect(markup).toContain(`title="${label}">${label}</span>`)
+    expect(markup).not.toContain('Личный ·')
+    expect(markup).not.toContain('<span>RUB</span>')
   })
 
   it.each(['spending', 'savings', 'savings_account'] as const)('labels shared access and preserves share, conversion and total balances for %s', (kind) => {
@@ -51,10 +53,11 @@ describe('AccountsPage list', () => {
       balance: { native: 123, display: 2, totalNative: 246, totalDisplay: 4, displayCurrency: 'USD' },
     })
     expect(markup).toContain('role="img" aria-label="Совместный счёт"')
-    expect(markup).not.toMatch(/>Совместный(?: счёт)?</)
+    expect(markup).toContain(`title="${accountKindShortLabel(kind)}">${accountKindShortLabel(kind)}</span>`)
+    expect(markup).not.toContain('Совместный ·')
     expect(markup).toContain('123')
     expect(markup).toContain('≈ ')
-    expect(markup).toContain('Всего: ')
+    expect(markup).not.toContain('Всего: ')
     expect(markup).toContain('246')
     expect(markup).toContain('/accounts/account-1/members')
   })
@@ -68,5 +71,14 @@ describe('AccountsPage list', () => {
     }).format(0))
     expect(markup).not.toContain('≈ ')
     expect(markup).not.toContain('Всего: ')
+  })
+
+  it('links the account content to filtered transactions and keeps editing explicit', () => {
+    const markup = renderAccount({ name: 'Семейный бюджет', accessMode: 'shared', kind: 'savings_account' })
+
+    expect(markup).toContain('aria-label="Транзакции по счету Семейный бюджет"')
+    expect(markup).toContain('account_ids=account-1&amp;account_kinds=savings_account&amp;include_shared=true&amp;period=')
+    expect(markup).toContain('aria-label="Редактировать счёт Семейный бюджет"')
+    expect(markup).toContain('/accounts/account-1/members')
   })
 })
