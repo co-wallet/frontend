@@ -46,6 +46,13 @@ describe('tag navigation', () => {
     expect(filterFromParams(filterToParams({ accountKinds: [] }))).toEqual({ accountKinds: [] })
   })
 
+  it('round-trips shared-only scope and keeps legacy include-shared links as all accounts', () => {
+    const sharedOnly: TransactionFilter = { includeShared: true, onlyShared: true }
+    expect(filterFromParams(filterToParams(sharedOnly))).toEqual(sharedOnly)
+    expect(filterFromParams(new URLSearchParams('include_shared=true'))).toEqual({ includeShared: true })
+    expect(filterFromParams(new URLSearchParams('only_shared=true'))).toEqual(sharedOnly)
+  })
+
   it('encodes tag ids and preserves AND mode when serializing an existing filter', () => {
     const filter = { tagIds: ['tag & one', 'two'], tagMode: 'and' as const }
     expect(filterFromParams(filterToParams(filter))).toEqual(filter)

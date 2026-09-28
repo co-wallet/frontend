@@ -213,6 +213,7 @@ export function hasTransactionFilters(filter: TransactionFilter): boolean {
     || filter.types?.length
     || filter.accountKinds !== undefined
     || filter.includeShared === true
+    || filter.onlyShared === true
     || filter.includeTransferExpenses === true
     || filter.includeTransferIncome === false
     || filter.categoryIds?.length

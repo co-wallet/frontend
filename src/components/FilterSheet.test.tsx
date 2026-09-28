@@ -55,12 +55,29 @@ describe('FilterSheet', () => {
     expect(markup).not.toContain('Период с')
     expect(markup).not.toContain('Период по')
     expect(markup).toContain('Тип средств')
-    expect(markup).toContain('Учитывать общие счета')
+    expect(markup).toContain('Доступ к счёту')
+    expect(markup).toContain('Личные')
+    expect(markup).toContain('Общие')
+    expect(markup).toContain('Все')
     expect(markup).not.toContain('Переводы в суммах')
     expect(markup).not.toContain('Учитывать в расходах')
     expect(markup).not.toContain('Учитывать в доходах')
-    expect(markup.match(/class="filter-sheet-checkboxes"/g)).toHaveLength(1)
+    expect(markup).toContain('value="personal"')
   })
+})
+
+it('shows only shared concrete accounts for the shared account scope', () => {
+  const markup = renderToStaticMarkup(
+    <FilterSheet
+      value={{ includeShared: true, onlyShared: true }}
+      onChange={vi.fn()}
+    />,
+  )
+
+  expect(markup).toContain('aria-label="Фильтры, активно: 1"')
+  expect(markup).toContain('value="shared"')
+  expect(markup).toContain('Общая')
+  expect(markup).not.toContain('>Личная<')
 })
 
 it('does not count transfer display settings as filters', () => {

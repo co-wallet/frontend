@@ -14,7 +14,6 @@ import {
   IonSegmentButton,
   IonLabel,
   IonNote,
-  IonCheckbox,
   IonFooter,
   IonPage,
 } from '@ionic/react'
@@ -28,7 +27,10 @@ import { type TransactionFilter } from '@/api/transactions'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import {
   DEFAULT_TRANSACTION_ACCOUNT_KINDS,
+  transactionAccountScope,
+  transactionAccountScopeFilter,
   transactionFilterAccounts,
+  type TransactionAccountScope,
 } from '@/lib/accountFilters'
 
 import './FilterSheet.css'
@@ -56,7 +58,9 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   const [accountKinds, setAccountKinds] = useState<AccountKind[]>(
     value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS],
   )
-  const [includeShared, setIncludeShared] = useState(value.includeShared ?? false)
+  const [accountScope, setAccountScope] = useState<TransactionAccountScope>(
+    transactionAccountScope(value),
+  )
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
   const [tagIds, setTagIds] = useState<string[]>(value.tagIds ?? [])
   const [tagMode, setTagMode] = useState<'or' | 'and'>(value.tagMode ?? 'or')
@@ -65,7 +69,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     if (open) {
       setAccountIds(value.accountIds ?? [])
       setAccountKinds(value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
-      setIncludeShared(value.includeShared ?? false)
+      setAccountScope(transactionAccountScope(value))
       setCategoryIds(value.categoryIds ?? [])
       setTagIds(value.tagIds ?? [])
       setTagMode(value.tagMode ?? 'or')
@@ -90,7 +94,10 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
   const hiddenCategories = allCategories.filter((category) => category.hidden)
   const hiddenTags = tags.filter((tag) => tag.hidden)
-  const visibleAccounts = transactionFilterAccounts(accounts, { accountKinds, includeShared })
+  const visibleAccounts = transactionFilterAccounts(accounts, {
+    accountKinds,
+    ...transactionAccountScopeFilter(accountScope),
+  })
 
   function categoryOption(c: Category) {
     const selected = categoryIds.includes(c.id)
@@ -126,7 +133,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
       ...(value.includeTransferExpenses ? { includeTransferExpenses: true } : {}),
       ...(value.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
     }
-    if (includeShared) f.includeShared = true
+    Object.assign(f, transactionAccountScopeFilter(accountScope))
     if (accountIds.length) f.accountIds = accountIds
     if (categoryIds.length) f.categoryIds = categoryIds
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
@@ -138,7 +145,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   function reset() {
     setAccountIds([])
     setAccountKinds([...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
-    setIncludeShared(false)
+    setAccountScope('personal')
     setCategoryIds([])
     setTagIds([])
     setTagMode('or')
@@ -153,7 +160,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     (value.accountIds?.length ?? 0) > 0,
     (value.types?.length ?? 0) > 0,
     value.accountKinds !== undefined,
-    value.includeShared === true,
+    value.includeShared === true || value.onlyShared === true,
     (value.categoryIds?.length ?? 0) > 0,
     (value.tagIds?.length ?? 0) > 0,
   ].filter(Boolean).length
@@ -219,16 +226,19 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                 )
               })}
             </div>
-            <div className="filter-sheet-checkboxes">
-              <IonCheckbox
-                className="filter-sheet-checkbox"
-                labelPlacement="end"
-                justify="start"
-                checked={includeShared}
-                onIonChange={(event) => setIncludeShared(event.detail.checked)}
+            <div className="filter-sheet-account-scope">
+              <IonLabel>Доступ к счёту</IonLabel>
+              <IonSegment
+                value={accountScope}
+                onIonChange={(event) => {
+                  if (event.detail.value) setAccountScope(event.detail.value as TransactionAccountScope)
+                }}
+                aria-label="Доступ к счёту"
               >
-                Учитывать общие счета
-              </IonCheckbox>
+                <IonSegmentButton value="personal"><IonLabel>Личные</IonLabel></IonSegmentButton>
+                <IonSegmentButton value="shared"><IonLabel>Общие</IonLabel></IonSegmentButton>
+                <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
+              </IonSegment>
             </div>
           </section>
 

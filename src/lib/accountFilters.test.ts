@@ -5,6 +5,8 @@ import type { Account } from '@/api/accounts'
 import {
   filterAccountsByKinds,
   selectedVisibleAccountIds,
+  transactionAccountScope,
+  transactionAccountScopeFilter,
   transactionAccountKinds,
   transactionFilterAccounts,
   toggleAccountKind,
@@ -43,6 +45,23 @@ describe('account analytics filters', () => {
   it('defaults transaction filters to personal spending accounts', () => {
     expect(transactionAccountKinds({})).toEqual(['spending'])
     expect(transactionFilterAccounts(accounts, {}).map((account) => account.id)).toEqual(['spending'])
+  })
+
+  it('maps personal, shared, and all account scopes to compatible filter flags', () => {
+    expect(transactionAccountScope({})).toBe('personal')
+    expect(transactionAccountScope({ includeShared: true })).toBe('all')
+    expect(transactionAccountScope({ includeShared: true, onlyShared: true })).toBe('shared')
+    expect(transactionAccountScopeFilter('personal')).toEqual({})
+    expect(transactionAccountScopeFilter('shared')).toEqual({ includeShared: true, onlyShared: true })
+    expect(transactionAccountScopeFilter('all')).toEqual({ includeShared: true })
+  })
+
+  it('filters all shared accounts as one scope without explicit account selections', () => {
+    expect(transactionFilterAccounts(accounts, {
+      accountKinds: ['spending'],
+      includeShared: true,
+      onlyShared: true,
+    }).map((account) => account.id)).toEqual(['shared-spending'])
   })
 
   it('intersects kinds, shared visibility, and explicitly selected accounts', () => {
