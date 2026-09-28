@@ -13,6 +13,7 @@ import {
   IonAccordionGroup,
   IonAlert,
   IonButton,
+  IonCheckbox,
   IonIcon,
   IonInfiniteScroll,
   IonInfiniteScrollContent,
@@ -23,6 +24,7 @@ import {
   IonList,
   IonNote,
   IonPage,
+  IonPopover,
   IonRouterLink,
   IonSegment,
   IonSegmentButton,
@@ -32,6 +34,7 @@ import {
   } from '@ionic/react'
 import {
   alertCircleOutline,
+  optionsOutline,
   receiptOutline,
   trendingDownOutline,
   trendingUpOutline,
@@ -267,6 +270,10 @@ export function TransactionsPage() {
       color: TAG_CHART_COLORS[index % TAG_CHART_COLORS.length],
     }))
   const chartData = chartGrouping === 'categories' ? categoryChartData : tagChartData
+  const chartSettingsLabel = chartMode === 'expenses' ? 'Настройки расходов' : 'Настройки доходов'
+  const includeTransfers = chartMode === 'expenses'
+    ? filter.includeTransferExpenses ?? false
+    : filter.includeTransferIncome ?? true
   const hasFilters = hasTransactionFilters(filter)
   const accountKinds = transactionAccountKinds(filter)
   const accountScopeLabel = `${accountKinds.length === 0
@@ -293,6 +300,12 @@ export function TransactionsPage() {
       date: dateTo,
       ...(filter.accountIds?.length === 1 ? { accountId: filter.accountIds[0] } : {}),
     }))
+  }
+
+  function setIncludeTransfers(checked: boolean) {
+    setFilter(chartMode === 'expenses'
+      ? { ...filter, includeTransferExpenses: checked || undefined }
+      : { ...filter, includeTransferIncome: checked ? undefined : false })
   }
 
   return (
@@ -380,18 +393,19 @@ export function TransactionsPage() {
             </div>
           )}
 
-          <IonAccordionGroup
-            value={showChart ? 'period-analytics' : undefined}
-            className="transactions-analytics"
-            onIonChange={(event) => {
-              if (event.target !== event.currentTarget) return
-              setShowChart(event.detail.value === 'period-analytics')
-            }}
-          >
-            <IonAccordion value="period-analytics" toggleIconSlot="end">
-              <IonItem slot="header" lines="none" className="transactions-analytics__header">
-                <IonLabel>Аналитика за период</IonLabel>
-              </IonItem>
+          <div className="transactions-analytics-wrapper">
+            <IonAccordionGroup
+              value={showChart ? 'period-analytics' : undefined}
+              className="transactions-analytics"
+              onIonChange={(event) => {
+                if (event.target !== event.currentTarget) return
+                setShowChart(event.detail.value === 'period-analytics')
+              }}
+            >
+              <IonAccordion value="period-analytics" toggleIconSlot="end">
+                <IonItem slot="header" lines="none" className="transactions-analytics__header">
+                  <IonLabel>Аналитика за период</IonLabel>
+                </IonItem>
               <div slot="content" className="transactions-analytics__content">
                 <IonSegment
                   value={chartMode}
@@ -520,8 +534,40 @@ export function TransactionsPage() {
                   </>
                 )}
               </div>
-            </IonAccordion>
-          </IonAccordionGroup>
+              </IonAccordion>
+            </IonAccordionGroup>
+            <IonButton
+              id="transactions-analytics-settings"
+              className="transactions-analytics__settings"
+              fill="clear"
+              color="medium"
+              aria-label={chartSettingsLabel}
+              aria-haspopup="dialog"
+            >
+              <IonIcon slot="icon-only" icon={optionsOutline} />
+            </IonButton>
+          </div>
+
+          <IonPopover
+            key={chartMode}
+            trigger="transactions-analytics-settings"
+            className="transactions-analytics__popover"
+            side="bottom"
+            alignment="end"
+            aria-label={chartSettingsLabel}
+          >
+            <div className="transactions-analytics__popover-content">
+              <IonCheckbox
+                className="transactions-analytics__transfer-checkbox"
+                labelPlacement="end"
+                justify="start"
+                checked={includeTransfers}
+                onIonChange={(event) => setIncludeTransfers(event.detail.checked)}
+              >
+                Отображать переводы
+              </IonCheckbox>
+            </div>
+          </IonPopover>
 
           {transactionsQuery.isLoading ? (
             <IonList className="transactions-list" aria-label="Загрузка транзакций">

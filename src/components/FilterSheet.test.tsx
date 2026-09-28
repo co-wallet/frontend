@@ -56,11 +56,23 @@ describe('FilterSheet', () => {
     expect(markup).not.toContain('Период по')
     expect(markup).toContain('Тип средств')
     expect(markup).toContain('Учитывать общие счета')
-    expect(markup).toContain('Переводы в суммах')
-    expect(markup).toContain('Учитывать в расходах')
-    expect(markup).toContain('Учитывать в доходах')
-    expect(markup.match(/class="filter-sheet-checkboxes"/g)).toHaveLength(2)
+    expect(markup).not.toContain('Переводы в суммах')
+    expect(markup).not.toContain('Учитывать в расходах')
+    expect(markup).not.toContain('Учитывать в доходах')
+    expect(markup.match(/class="filter-sheet-checkboxes"/g)).toHaveLength(1)
   })
+})
+
+it('does not count transfer display settings as filters', () => {
+  const markup = renderToStaticMarkup(
+    <FilterSheet
+      value={{ includeTransferExpenses: true, includeTransferIncome: false }}
+      onChange={vi.fn()}
+    />,
+  )
+
+  expect(markup).toContain('aria-label="Фильтры"')
+  expect(markup).not.toContain('Фильтры, активно:')
 })
 
 it('puts hidden categories and tags in separate closed disclosures', () => {

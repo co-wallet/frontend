@@ -1,9 +1,28 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { MemoryRouter, Route } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
 import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
+
+vi.mock('@ionic/react', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@ionic/react')>(),
+  IonPopover: (props: {
+    children: ReactNode
+    className?: string
+    trigger?: string
+    'aria-label'?: string
+  }) => (
+    <div
+      className={props.className}
+      data-trigger={props.trigger}
+      aria-label={props['aria-label']}
+    >
+      {props.children}
+    </div>
+  ),
+}))
 
 const pagination = vi.hoisted(() => ({
   data: { pages: [] as Transaction[][] },
@@ -103,6 +122,18 @@ describe('transaction navigation controls', () => {
 })
 
 describe('transaction analytics grouping', () => {
+  it('places the contextual transfer setting beside the analytics heading', () => {
+    const markup = renderPage('/transactions?include_transfer_expenses=true')
+    expect(markup).toContain('id="transactions-analytics-settings"')
+    expect(markup).toContain('aria-label="Настройки расходов"')
+    expect(markup).toContain('class="transactions-analytics__popover"')
+    expect(markup).toContain('Отображать переводы')
+    expect(markup).toContain('checked="true"')
+    expect(markup).not.toContain('Переводы в суммах')
+    expect(markup).not.toContain('Учитывать в расходах')
+    expect(markup).not.toContain('Учитывать в доходах')
+  })
+
   it('offers category and tag grouping without requesting tags by default', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('aria-label="Группировка аналитики"')
