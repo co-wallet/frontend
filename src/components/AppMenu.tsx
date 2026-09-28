@@ -78,7 +78,7 @@ export function AppMenu() {
   const currentTheme = themeModes.find((t) => t.mode === themeMode) ?? themeModes[0]
 
   return (
-    <IonMenu contentId="main-content" type="overlay" side="end">
+    <IonMenu contentId="main-content" type="overlay" side="end" swipeGesture={false}>
       <IonHeader>
         <IonToolbar>
           <IonTitle>co-wallet</IonTitle>
