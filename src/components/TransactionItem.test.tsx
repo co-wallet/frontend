@@ -95,7 +95,7 @@ describe('TransactionItem', () => {
     expect(markup).toContain('Удалить')
   })
 
-  it('shows a user share and a converted amount for shared accounts', () => {
+  it('shows the full converted amount first and the user share below for shared accounts', () => {
     const sharedAccount = { ...account, accessMode: 'shared' as const }
     const markup = renderToStaticMarkup(
       <TransactionItem
@@ -116,11 +116,34 @@ describe('TransactionItem', () => {
       />,
     )
 
-    expect(markup).toContain('Ваша доля')
-    expect(markup).toContain('−25 $')
-    expect(markup).toContain('−2 000 ₽')
+    expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−8 000 ₽</span>')
+    expect(markup).toContain('−2 000 ₽ · Ваша доля')
+    expect(markup).toContain('<span class="transaction-item__amount-meta">−100 $</span>')
     expect(markup).not.toContain('≈')
-    expect(markup.indexOf('−2 000 ₽')).toBeLessThan(markup.indexOf('−25 $'))
+    expect(markup.indexOf('−8 000 ₽')).toBeLessThan(markup.indexOf('−2 000 ₽ · Ваша доля'))
+    expect(markup.indexOf('−2 000 ₽ · Ваша доля')).toBeLessThan(markup.indexOf('−100 $'))
+  })
+
+  it('shows the full native amount first and the user share below for shared accounts', () => {
+    const sharedAccount = { ...account, accessMode: 'shared' as const }
+    const markup = renderToStaticMarkup(
+      <TransactionItem
+        tx={transaction({
+          accountId: sharedAccount.id,
+          amount: 1000,
+          shares: [{ userId: 'user-1', amount: 400, isCustom: false }],
+        })}
+        account={sharedAccount}
+        category={category}
+        defaultCurrency="RUB"
+        currentUserId="user-1"
+        onEdit={vi.fn()}
+      />,
+    )
+
+    expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−1 000 ₽</span>')
+    expect(markup).toContain('−400 ₽ · Ваша доля')
+    expect(markup.indexOf('−1 000 ₽')).toBeLessThan(markup.indexOf('−400 ₽ · Ваша доля'))
   })
 
   it('uses the shared uncategorized icon preset when a category is missing', () => {
@@ -235,7 +258,7 @@ describe('transfer currency follows the selected accounts', () => {
 })
 
 
-it('keeps the source share label beside the source amount when the destination is primary', () => {
+it('keeps the source share below the full destination amount when the destination is primary', () => {
   const markup = renderToStaticMarkup(
     <TransactionItem tx={transaction({ type: 'transfer', toAccountId: 'destination', currency: 'RUB',
       amount: 1000, toCurrency: 'EUR', toAmount: 10,
@@ -244,5 +267,6 @@ it('keeps the source share label beside the source amount when the destination i
       selectedAccountIds={['destination']} defaultCurrency="RUB" onEdit={vi.fn()} />,
   )
   expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">10 €</span>')
-  expect(markup).toContain('<span class="transaction-item__amount-meta">500 ₽ · Ваша доля</span>')
+  expect(markup).toContain('500 ₽ · Ваша доля')
+  expect(markup).toContain('<span class="transaction-item__amount-meta">1 000 ₽</span>')
 })
