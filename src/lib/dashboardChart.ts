@@ -3,6 +3,7 @@ import { categoryIconChartColor } from '@/components/CategoryIcon'
 import type { CategoryType } from '@/api/categories'
 
 export const TRANSFER_CHART_COLOR = 'var(--account-icon-color-blue)'
+export const DASHBOARD_TOOLTIP_WIDTH = 152
 
 export interface DashboardPieEntry {
   name: string
@@ -16,6 +17,19 @@ export interface DashboardPieEntry {
 
 export interface DashboardChartEntry extends DashboardPieEntry {
   chartAmount: number
+}
+
+export function dashboardTooltipPosition(
+  chartWidth: number,
+  chartHeight: number,
+  pointerX: number,
+): { x: number; y: number } {
+  const edge = 8
+  const x = pointerX <= chartWidth / 2
+    ? Math.max(edge, chartWidth - DASHBOARD_TOOLTIP_WIDTH - edge)
+    : edge
+  const y = Math.max(edge, Math.round((chartHeight - 72) / 2))
+  return { x: Math.round(x), y }
 }
 
 export function dashboardEntryColor(entry: DashboardPieEntry): string {

@@ -6,9 +6,10 @@ import { CategoryIcon } from './CategoryIcon'
 type Props = Pick<TooltipProps<number, string>, 'active' | 'payload' | 'contentStyle'> & {
   formatAmount: (amount: number) => string
   categoryType?: CategoryType
+  maxWidth?: number
 }
 
-export function PieChartTooltip({ active, payload, contentStyle, formatAmount, categoryType }: Props) {
+export function PieChartTooltip({ active, payload, contentStyle, formatAmount, categoryType, maxWidth = 260 }: Props) {
   const entry = payload?.[0]
   if (!active || !entry) return null
 
@@ -16,7 +17,7 @@ export function PieChartTooltip({ active, payload, contentStyle, formatAmount, c
   const amount = typeof entry.payload?.amount === 'number' ? entry.payload.amount : Number(entry.value)
 
   return (
-    <div role="tooltip" style={{ ...contentStyle, padding: '10px 12px', maxWidth: 260, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
+    <div role="tooltip" style={{ ...contentStyle, padding: '10px 12px', maxWidth, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 600, marginBottom: 4 }}>
         {entry.payload?.iconType === 'untagged' ? (
           <span aria-hidden="true">∅</span>

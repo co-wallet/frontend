@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
 
-import { dashboardEntryColor, prepareDashboardChart, type DashboardPieEntry } from './dashboardChart'
+import {
+  DASHBOARD_TOOLTIP_WIDTH,
+  dashboardEntryColor,
+  dashboardTooltipPosition,
+  prepareDashboardChart,
+  type DashboardPieEntry,
+} from './dashboardChart'
 
 describe('dashboard chart data', () => {
   it.each([
@@ -67,6 +73,20 @@ describe('dashboard chart data', () => {
 
     expect(result.legendEntries.map((entry) => entry.amount)).toEqual([50, 20, -80, -10])
     expect(result.chartEntries.map((entry) => entry.chartAmount)).toEqual([50, 20, 80, 10])
+  })
+})
+
+describe('dashboard tooltip position', () => {
+  it('places the tooltip on the opposite side from the pointer', () => {
+    expect(dashboardTooltipPosition(320, 200, 80)).toEqual({
+      x: 320 - DASHBOARD_TOOLTIP_WIDTH - 8,
+      y: 64,
+    })
+    expect(dashboardTooltipPosition(320, 200, 240)).toEqual({ x: 8, y: 64 })
+  })
+
+  it('keeps the tooltip inside a narrow chart', () => {
+    expect(dashboardTooltipPosition(150, 60, 10)).toEqual({ x: 8, y: 8 })
   })
 })
 

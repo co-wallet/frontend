@@ -51,6 +51,8 @@ import {
 } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
+  DASHBOARD_TOOLTIP_WIDTH,
+  dashboardTooltipPosition,
   prepareDashboardChart,
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
@@ -92,9 +94,21 @@ function ChartBlock({
   onNavigate: (href: string) => void
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
+  const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>()
   const tooltip = usePieChartTooltip()
   const { chartEntries, legendEntries } = prepareDashboardChart(data)
   const visibleEntries = legendEntries.slice(0, visibleCount)
+
+  const positionTooltip = (event: React.MouseEvent<Element>) => {
+    const svg = event.currentTarget.closest('svg')
+    if (!svg) return
+    const bounds = svg.getBoundingClientRect()
+    setTooltipPosition(dashboardTooltipPosition(
+      bounds.width,
+      bounds.height,
+      event.clientX - bounds.left,
+    ))
+  }
 
   if (data.length === 0) {
     return (
@@ -117,7 +131,9 @@ function ChartBlock({
               cy="50%"
               outerRadius={80}
               innerRadius={40}
-              onClick={(entry) => {
+              onMouseMove={(_entry, _index, event) => positionTooltip(event)}
+              onClick={(entry, _index, event) => {
+                positionTooltip(event)
                 if (entry.transactionsHref) {
                   tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
                   return
@@ -135,8 +151,13 @@ function ChartBlock({
             <Tooltip
               trigger={tooltip.trigger}
               active={tooltip.active}
+              position={tooltipPosition}
+              wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
               contentStyle={tooltipStyle}
-              content={<PieChartTooltip formatAmount={(amount) => formatAmount(amount, sym)} />}
+              content={<PieChartTooltip
+                maxWidth={DASHBOARD_TOOLTIP_WIDTH}
+                formatAmount={(amount) => formatAmount(amount, sym)}
+              />}
             />
           </PieChart>
         </ResponsiveContainer>
