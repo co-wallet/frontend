@@ -16,6 +16,12 @@
   border: 1px solid transparent;
 }
 
+.dashboard-chart-card .recharts-wrapper:focus,
+.dashboard-chart-card .recharts-surface:focus,
+.dashboard-chart-card .recharts-sector:focus {
+  outline: none;
+}
+
 .dashboard-chart-legend-row {
   display: flex;
   align-items: center;

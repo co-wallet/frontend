@@ -8,6 +8,7 @@ export interface DashboardPieEntry {
   name: string
   amount: number
   transactionsHref?: string
+  legendTransactionsHref?: string
   icon?: string
   iconType?: 'account' | 'category' | 'transfer'
   categoryType?: CategoryType

@@ -57,6 +57,7 @@ import {
 import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
 import {
   accountTransactionsHref,
+  categoryTransactionsHref,
   filteredTransactionsHref,
   transactionCreationLocation,
 } from '@/lib/transactionNavigation'
@@ -180,11 +181,11 @@ function ChartBlock({
               </span>
             </>
           )
-          return s.transactionsHref ? (
+          return s.legendTransactionsHref ? (
             <IonRouterLink
               key={i}
               className="dashboard-chart-legend-link"
-              routerLink={s.transactionsHref}
+              routerLink={s.legendTransactionsHref}
               routerDirection="forward"
               aria-label={`Транзакции по счету ${s.name}`}
             >
@@ -316,18 +317,25 @@ export function DashboardPage() {
 
   const balancePieData: DashboardPieEntry[] = filteredAccounts
     .filter((a) => a.balance != null)
-    .map((a) => ({
-      name: a.name,
-      transactionsHref: accountTransactionsHref(a, transactionPeriod, location.pathname),
-      icon: a.icon ?? undefined,
-      iconType: 'account' as const,
-      amount: a.balance!.display,
-    }))
+    .map((a) => {
+      const transactionsHref = accountTransactionsHref(a, transactionPeriod, location.pathname)
+      return {
+        name: a.name,
+        transactionsHref,
+        legendTransactionsHref: transactionsHref,
+        icon: a.icon ?? undefined,
+        iconType: 'account' as const,
+        amount: a.balance!.display,
+      }
+    })
 
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
     .map((s) => ({
       name: s.categoryName,
+      transactionsHref: categoryTransactionsHref(
+        s.categoryId, transactionFilter, transactionPeriod, location.pathname,
+      ),
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
       iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'expense',
@@ -338,6 +346,9 @@ export function DashboardPage() {
     .filter((s) => s.amount > 0)
     .map((s) => ({
       name: s.categoryName,
+      transactionsHref: categoryTransactionsHref(
+        s.categoryId, transactionFilter, transactionPeriod, location.pathname,
+      ),
       icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
       iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
       categoryType: 'income',

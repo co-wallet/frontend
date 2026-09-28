@@ -161,6 +161,18 @@ export function accountTransactionsHref(
   }, period, sourcePath)
 }
 
+export function categoryTransactionsHref(
+  categoryId: string,
+  baseFilter: TransactionFilter,
+  period: TransactionPeriod,
+  sourcePath = '',
+): string | undefined {
+  if (categoryId === 'uncategorized' || categoryId === 'transfers' || categoryId.startsWith('transfers:')) {
+    return undefined
+  }
+  return filteredTransactionsHref({ ...baseFilter, categoryIds: [categoryId] }, period, sourcePath)
+}
+
 function validDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
   const date = new Date(`${value}T00:00:00Z`)

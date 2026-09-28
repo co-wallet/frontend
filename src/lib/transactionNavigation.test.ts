@@ -4,6 +4,7 @@ import type { TransactionFilter } from '@/api/transactions'
 import { computeDateRange } from '@/store/periodStore'
 import {
   accountTransactionsHref,
+  categoryTransactionsHref,
   filterFromParams,
   filterToParams,
   filteredTransactionsHref,
@@ -130,6 +131,32 @@ describe('account navigation', () => {
       includeShared: true,
     })
   })
+})
+
+describe('category navigation', () => {
+  it('adds the category while preserving account scope and period', () => {
+    const href = categoryTransactionsHref('travel', {
+      accountIds: ['account-1'],
+      accountKinds: ['spending'],
+      includeShared: true,
+    }, period)
+
+    expect(href).toBeDefined()
+    expect(filterFromParams(query(href!))).toEqual({
+      accountIds: ['account-1'],
+      accountKinds: ['spending'],
+      includeShared: true,
+      categoryIds: ['travel'],
+    })
+    expect(periodFromParams(query(href!), { ...period, periodOffset: 0 })).toEqual(period)
+  })
+
+  it.each(['uncategorized', 'transfers', 'transfers:bank'])(
+    'does not create an invalid transaction filter for %s analytics',
+    (categoryId) => {
+      expect(categoryTransactionsHref(categoryId, {}, period)).toBeUndefined()
+    },
+  )
 })
 
 describe('transaction creation navigation', () => {
