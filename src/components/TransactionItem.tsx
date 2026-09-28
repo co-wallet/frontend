@@ -129,7 +129,7 @@ export function TransactionItem({
         <button
           type="button"
           className="transaction-item__open"
-          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}${shared ? `. Ваша доля ${userAmount} ${tx.currency}` : ''}${destinationAmount ? `. На счёт ${destinationAmount}` : ''}`}
+          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}${shared ? `. Доля пользователя ${userAmount} ${tx.currency}` : ''}${destinationAmount ? `. На счёт ${destinationAmount}` : ''}`}
         />
         {tx.type === 'transfer' ? (
           <div slot="start" className="transaction-item__icon transaction-item__icon--transfer">
@@ -175,7 +175,7 @@ export function TransactionItem({
           {shared && (
             <span className="transaction-item__amount-meta">
               <IonIcon icon={peopleOutline} aria-hidden="true" />
-              {userShareAmount} · Ваша доля
+              {userShareAmount}
             </span>
           )}
           {secondaryAmounts.map((secondaryAmount) => (

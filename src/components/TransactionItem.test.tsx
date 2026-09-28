@@ -117,11 +117,12 @@ describe('TransactionItem', () => {
     )
 
     expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−8 000 ₽</span>')
-    expect(markup).toContain('−2 000 ₽ · Ваша доля')
+    expect(markup).toContain('−2 000 ₽')
     expect(markup).toContain('<span class="transaction-item__amount-meta">−100 $</span>')
+    expect(markup).not.toContain('Ваша доля')
     expect(markup).not.toContain('≈')
-    expect(markup.indexOf('−8 000 ₽')).toBeLessThan(markup.indexOf('−2 000 ₽ · Ваша доля'))
-    expect(markup.indexOf('−2 000 ₽ · Ваша доля')).toBeLessThan(markup.indexOf('−100 $'))
+    expect(markup.indexOf('−8 000 ₽')).toBeLessThan(markup.indexOf('−2 000 ₽'))
+    expect(markup.indexOf('−2 000 ₽')).toBeLessThan(markup.indexOf('−100 $'))
   })
 
   it('shows the full native amount first and the user share below for shared accounts', () => {
@@ -142,8 +143,9 @@ describe('TransactionItem', () => {
     )
 
     expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−1 000 ₽</span>')
-    expect(markup).toContain('−400 ₽ · Ваша доля')
-    expect(markup.indexOf('−1 000 ₽')).toBeLessThan(markup.indexOf('−400 ₽ · Ваша доля'))
+    expect(markup).toContain('−400 ₽')
+    expect(markup).not.toContain('Ваша доля')
+    expect(markup.indexOf('−1 000 ₽')).toBeLessThan(markup.indexOf('−400 ₽'))
   })
 
   it('uses the shared uncategorized icon preset when a category is missing', () => {
@@ -267,6 +269,7 @@ it('keeps the source share below the full destination amount when the destinatio
       selectedAccountIds={['destination']} defaultCurrency="RUB" onEdit={vi.fn()} />,
   )
   expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">10 €</span>')
-  expect(markup).toContain('500 ₽ · Ваша доля')
+  expect(markup).toContain('500 ₽')
+  expect(markup).not.toContain('Ваша доля')
   expect(markup).toContain('<span class="transaction-item__amount-meta">1 000 ₽</span>')
 })
