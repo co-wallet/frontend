@@ -13,6 +13,8 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey }: { queryKey: string[] }) => ({
     data: queryKey[0] === 'accounts'
       ? [{ id: 'account-1', name: 'Личная', currency: 'RUB', accessMode: 'personal' }]
+      : queryKey[0] === 'currencies'
+        ? [{ code: 'RUB', rateToUsd: 80 }, { code: 'USD', rateToUsd: 1 }]
       : [],
     isLoading: false,
     isFetching: false,
@@ -40,5 +42,14 @@ describe('AddTransactionPage creation defaults', () => {
 
     expect(markup).toContain('Выберите счёт')
     expect(markup).toContain('value="expense"')
+  })
+
+  it('marks a transfer exchange rate for platform-aligned spacing', () => {
+    route.search = '?type=transfer&account_id=account-1'
+    const markup = renderToStaticMarkup(<AddTransactionPage />)
+
+    expect(markup).toContain('class="entity-form-rate"')
+    expect(markup).toContain('RUB')
+    expect(markup).toContain('USD')
   })
 })
