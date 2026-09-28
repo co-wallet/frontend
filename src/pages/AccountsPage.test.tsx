@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/api/accounts'
+import { accountKindShortLabel } from '@/lib/accountKind'
 import { AccountsPage } from './AccountsPage'
 
 const queryState = vi.hoisted(() => ({ accounts: [] as Account[] }))
@@ -25,13 +26,13 @@ function renderAccount(overrides: Partial<Account> = {}) {
 }
 
 describe('AccountsPage list', () => {
-  it('keeps the name without redundant currency, everyday type or access text', () => {
+  it('shows personal access as an icon and the everyday account type without a text access label', () => {
     const markup = renderAccount()
     expect(markup).toContain('Мой счёт')
     expect(markup).not.toContain('<span>RUB</span>')
-    expect(markup).not.toContain('Текущие средства')
     expect(markup).toContain('role="img" aria-label="Личный счёт"')
-    expect(markup).not.toMatch(/>Личный(?: счёт)?</)
+    expect(markup).toContain('class="account-list-meta-text" title="Текущие средства">Текущие средства</span>')
+    expect(markup).not.toContain('Личный ·')
   })
 
   it.each([
@@ -39,9 +40,10 @@ describe('AccountsPage list', () => {
     ['savings', 'Сбережения'],
     ['savings_account', 'Накопительный счёт'],
     ['investment', 'Инвестиции'],
-  ] as const)('preserves the %s type without duplicating the currency', (kind, label) => {
+  ] as const)('shows the %s type without currency or a text access label', (kind, label) => {
     const markup = renderAccount({ kind })
-    expect(markup).toContain(`class="account-list-kind">${label}</span>`)
+    expect(markup).toContain(`title="${label}">${label}</span>`)
+    expect(markup).not.toContain('Личный ·')
     expect(markup).not.toContain('<span>RUB</span>')
   })
 
@@ -51,7 +53,8 @@ describe('AccountsPage list', () => {
       balance: { native: 123, display: 2, totalNative: 246, totalDisplay: 4, displayCurrency: 'USD' },
     })
     expect(markup).toContain('role="img" aria-label="Совместный счёт"')
-    expect(markup).not.toMatch(/>Совместный(?: счёт)?</)
+    expect(markup).toContain(`title="${accountKindShortLabel(kind)}">${accountKindShortLabel(kind)}</span>`)
+    expect(markup).not.toContain('Совместный ·')
     expect(markup).toContain('123')
     expect(markup).toContain('≈ ')
     expect(markup).not.toContain('Всего: ')

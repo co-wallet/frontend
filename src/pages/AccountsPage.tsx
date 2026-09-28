@@ -434,6 +434,7 @@ export function AccountsPage() {
           <IonList>
             {accounts.map((account) => {
               const isOwner = account.ownerId === user?.id
+              const kindLabel = accountKindShortLabel(account.kind)
               return (
                 <IonItemSliding key={account.id}>
                   <IonItem
@@ -461,9 +462,9 @@ export function AccountsPage() {
                             >
                               <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
                             </span>
-                            {account.kind !== 'spending' && (
-                              <span className="account-list-kind">{accountKindShortLabel(account.kind)}</span>
-                            )}
+                            <span className="account-list-meta-text" title={kindLabel}>
+                              {kindLabel}
+                            </span>
                           </div>
                         </IonLabel>
                         {account.balance && (
