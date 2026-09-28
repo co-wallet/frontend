@@ -75,6 +75,14 @@ it('does not count transfer display settings as filters', () => {
   expect(markup).not.toContain('Фильтры, активно:')
 })
 
+it('counts the summary transaction type selection as a filter', () => {
+  const markup = renderToStaticMarkup(
+    <FilterSheet value={{ types: ['expense', 'transfer'] }} onChange={vi.fn()} />,
+  )
+
+  expect(markup).toContain('aria-label="Фильтры, активно: 1"')
+})
+
 it('puts hidden categories and tags in separate closed disclosures', () => {
   const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
   const disclosures = markup.match(/<details[^>]*>.*?<\/details>/g) ?? []

@@ -70,6 +70,7 @@ export interface UpdateTransactionDto {
 
 export interface TransactionFilter {
   accountIds?: string[]
+  types?: TransactionType[]
   accountKinds?: AccountKind[]
   includeShared?: boolean
   includeTransferExpenses?: boolean
@@ -88,6 +89,7 @@ export const transactionsApi = {
   list: async (filter: TransactionFilter = {}): Promise<Transaction[]> => {
     const params: Record<string, string> = {}
     if (filter.accountIds?.length) params.account_ids = filter.accountIds.join(',')
+    if (filter.types?.length) params.types = filter.types.join(',')
     if (filter.categoryIds?.length) params.category_ids = filter.categoryIds.join(',')
     if (filter.tagIds?.length) params.tag_ids = filter.tagIds.join(',')
     if (filter.tagMode === 'and') params.tag_mode = 'and'

@@ -36,8 +36,6 @@ import {
   alertCircleOutline,
   optionsOutline,
   receiptOutline,
-  trendingDownOutline,
-  trendingUpOutline,
 } from 'ionicons/icons'
 
 import { accountsApi } from '@/api/accounts'
@@ -58,7 +56,9 @@ import {
   formatCurrencyAmount,
   groupTransactionsByDate,
   hasTransactionFilters,
+  isTransactionTypeFilterActive,
   transactionDefaultCurrencyAmount,
+  transactionTypesForSummary,
 } from '@/lib/transactionList'
 import { useChartTheme } from '@/lib/useChartTheme'
 import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
@@ -74,6 +74,7 @@ import {
 } from '@/store/periodStore'
 
 import {
+  categoryTransactionsHref,
   filterFromParams,
   filterToParams,
   filteredTransactionsHref,
@@ -132,7 +133,10 @@ export function TransactionsPage() {
   }
   const [showFilters, setShowFilters] = useState(false)
   const [showChart, setShowChart] = useState(false)
-  const [chartMode, setChartMode] = useState<ChartMode>('expenses')
+  const initialChartMode: ChartMode = filter.types?.includes('income') && !filter.types.includes('expense')
+    ? 'income'
+    : 'expenses'
+  const [chartMode, setChartMode] = useState<ChartMode>(initialChartMode)
   const [chartGrouping, setChartGrouping] = useState<ChartGrouping>('categories')
   const [deleteAlertTxId, setDeleteAlertTxId] = useState<string | null>(null)
   const chartTheme = useChartTheme()
@@ -253,6 +257,12 @@ export function TransactionsPage() {
         ...stat,
         id: stat.categoryId,
         name: stat.categoryName,
+        transactionsHref: categoryTransactionsHref(
+          stat.categoryId,
+          filter,
+          navigationPeriod,
+          location.pathname,
+        ),
         icon,
         iconType: 'category' as const,
         color: categoryIconChartColor(icon, chartCategoryType),
@@ -274,6 +284,16 @@ export function TransactionsPage() {
   const includeTransfers = chartMode === 'expenses'
     ? filter.includeTransferExpenses ?? false
     : filter.includeTransferIncome ?? true
+  const expenseFilterActive = isTransactionTypeFilterActive(
+    filter,
+    'expenses',
+    filter.includeTransferExpenses ?? false,
+  )
+  const incomeFilterActive = isTransactionTypeFilterActive(
+    filter,
+    'income',
+    filter.includeTransferIncome ?? true,
+  )
   const hasFilters = hasTransactionFilters(filter)
   const accountKinds = transactionAccountKinds(filter)
   const accountScopeLabel = `${accountKinds.length === 0
@@ -303,9 +323,26 @@ export function TransactionsPage() {
   }
 
   function setIncludeTransfers(checked: boolean) {
-    setFilter(chartMode === 'expenses'
-      ? { ...filter, includeTransferExpenses: checked || undefined }
-      : { ...filter, includeTransferIncome: checked ? undefined : false })
+    const activeTypeFilter = isTransactionTypeFilterActive(filter, chartMode, includeTransfers)
+    setFilter({
+      ...filter,
+      ...(chartMode === 'expenses'
+        ? { includeTransferExpenses: checked || undefined }
+        : { includeTransferIncome: checked ? undefined : false }),
+      ...(activeTypeFilter ? { types: transactionTypesForSummary(chartMode, checked) } : {}),
+    })
+  }
+
+  function selectSummaryMode(mode: ChartMode) {
+    const transfersEnabled = mode === 'expenses'
+      ? filter.includeTransferExpenses ?? false
+      : filter.includeTransferIncome ?? true
+    const isActive = isTransactionTypeFilterActive(filter, mode, transfersEnabled)
+    setChartMode(mode)
+    setFilter({
+      ...filter,
+      types: isActive ? undefined : transactionTypesForSummary(mode, transfersEnabled),
+    })
   }
 
   return (
@@ -357,8 +394,14 @@ export function TransactionsPage() {
 
           {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
         <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций не заполнена сумма в {defaultCurrency}. Укажите её в транзакциях.</p></IonText>}
-      <section className="transactions-summary" aria-label="Сводка за период">
-            <div className="transactions-summary__item">
+          <section className="transactions-summary" aria-label="Сводка за период">
+            <button
+              type="button"
+              className={`transactions-summary__item${expenseFilterActive ? ' transactions-summary__item--active transactions-summary__item--expense' : ''}`}
+              aria-pressed={expenseFilterActive}
+              aria-label={expenseFilterActive ? 'Убрать фильтр расходов' : 'Показать расходы'}
+              onClick={() => selectSummaryMode('expenses')}
+            >
               <span>Расходы</span>
               {summaryQuery.isLoading ? (
                 <IonSkeletonText animated className="transactions-summary__skeleton" />
@@ -369,8 +412,14 @@ export function TransactionsPage() {
                   {formatCurrencyAmount(-(summaryQuery.data?.expenses ?? 0), defaultCurrency, 2)}
                 </strong>
               )}
-            </div>
-            <div className="transactions-summary__item">
+            </button>
+            <button
+              type="button"
+              className={`transactions-summary__item${incomeFilterActive ? ' transactions-summary__item--active transactions-summary__item--income' : ''}`}
+              aria-pressed={incomeFilterActive}
+              aria-label={incomeFilterActive ? 'Убрать фильтр доходов' : 'Показать доходы'}
+              onClick={() => selectSummaryMode('income')}
+            >
               <span>Доходы</span>
               {summaryQuery.isLoading ? (
                 <IonSkeletonText animated className="transactions-summary__skeleton" />
@@ -381,7 +430,7 @@ export function TransactionsPage() {
                   {formatCurrencyAmount(summaryQuery.data?.income ?? 0, defaultCurrency, 2)}
                 </strong>
               )}
-            </div>
+            </button>
           </section>
 
           {summaryQuery.isError && (
@@ -407,21 +456,6 @@ export function TransactionsPage() {
                   <IonLabel>Аналитика за период</IonLabel>
                 </IonItem>
               <div slot="content" className="transactions-analytics__content">
-                <IonSegment
-                  value={chartMode}
-                  onIonChange={(event) => setChartMode(event.detail.value as ChartMode)}
-                  aria-label="Тип аналитики"
-                >
-                  <IonSegmentButton value="expenses">
-                    <IonIcon icon={trendingDownOutline} />
-                    <IonLabel>Расходы</IonLabel>
-                  </IonSegmentButton>
-                  <IonSegmentButton value="income">
-                    <IonIcon icon={trendingUpOutline} />
-                    <IonLabel>Доходы</IonLabel>
-                  </IonSegmentButton>
-                </IonSegment>
-
                 <IonSegment
                   value={chartGrouping}
                   onIonChange={(event) => setChartGrouping(event.detail.value as ChartGrouping)}
@@ -463,7 +497,16 @@ export function TransactionsPage() {
                           cy="50%"
                           outerRadius={70}
                           innerRadius={35}
-                          onClick={tooltip.onSectorClick}
+                          onClick={(entry) => {
+                            const href = 'transactionsHref' in entry
+                              ? entry.transactionsHref as string | undefined
+                              : undefined
+                            if (href) {
+                              tooltip.onNavigableSectorClick(href, () => history.push(href))
+                              return
+                            }
+                            tooltip.onSectorClick()
+                          }}
                         >
                           {chartData.map((stat) => (
                             <Cell
@@ -482,6 +525,15 @@ export function TransactionsPage() {
                     </ResponsiveContainer>
                     <div className="transactions-chart-legend">
                       {chartData.map((stat) => {
+                        const transactionsHref = stat.iconType === 'category'
+                          ? stat.transactionsHref
+                          : filteredTransactionsHref(
+                            stat.iconType === 'untagged'
+                              ? { ...filter, tagIds: undefined, tagMode: undefined, withoutTags: true }
+                              : { ...filter, tagIds: [stat.id], tagMode: 'or', withoutTags: undefined },
+                            navigationPeriod,
+                            location.pathname,
+                          )
                         const content = <>
                           <div className="transactions-chart-legend__label">
                             <span
@@ -504,21 +556,17 @@ export function TransactionsPage() {
                           </span>
                         </>
 
-                        return stat.iconType !== 'category' ? (
+                        return transactionsHref ? (
                           <IonRouterLink
                             key={stat.id}
                             className="transactions-chart-legend__item transactions-chart-legend__item--link"
-                            routerLink={filteredTransactionsHref(
-                              stat.iconType === 'untagged'
-                                ? { ...filter, tagIds: undefined, tagMode: undefined, withoutTags: true }
-                                : { ...filter, tagIds: [stat.id], tagMode: 'or', withoutTags: undefined },
-                              navigationPeriod,
-                              location.pathname,
-                            )}
+                            routerLink={transactionsHref}
                             routerDirection="forward"
-                            aria-label={stat.iconType === 'untagged'
-                              ? 'Транзакции без тегов'
-                              : `Транзакции с тегом ${stat.tagName}`}
+                            aria-label={stat.iconType === 'category'
+                              ? `Транзакции категории ${stat.name}`
+                              : stat.iconType === 'untagged'
+                                ? 'Транзакции без тегов'
+                                : `Транзакции с тегом ${stat.tagName}`}
                           >
                             <span className="transactions-chart-legend__link-content">
                               {content}

@@ -122,6 +122,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   function apply() {
     const f: TransactionFilter = {
       accountKinds,
+      ...(value.types?.length ? { types: value.types } : {}),
       ...(value.includeTransferExpenses ? { includeTransferExpenses: true } : {}),
       ...(value.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
     }
@@ -150,6 +151,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
   const activeCount = [
     (value.accountIds?.length ?? 0) > 0,
+    (value.types?.length ?? 0) > 0,
     value.accountKinds !== undefined,
     value.includeShared === true,
     (value.categoryIds?.length ?? 0) > 0,

@@ -71,6 +71,8 @@ vi.mock('@tanstack/react-query', () => ({
         { tagId: 't1', tagName: 'путешествия', amount: 125 },
         { tagId: 'untagged', tagName: 'Без тегов', amount: 75 },
       ]
+      : queryKey[0] === 'analytics' && queryKey[1] === 'by-category'
+        ? [{ categoryId: 'c1', categoryName: 'Продукты', amount: 125, icon: 'preset:groceries' }]
       : queryKey[0] === 'accounts'
       ? [
         { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
@@ -136,11 +138,36 @@ describe('transaction analytics grouping', () => {
 
   it('offers category and tag grouping without requesting tags by default', () => {
     const markup = renderPage('/transactions')
+    expect(markup).not.toContain('aria-label="Тип аналитики"')
     expect(markup).toContain('aria-label="Группировка аналитики"')
     expect(markup).toContain('value="categories"')
     expect(markup).toContain('value="tags"')
     const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
     expect(tagQuery?.enabled).toBe(false)
+  })
+
+  it('uses summary cards as contextual type filters with transfer preferences', () => {
+    const expenseMarkup = renderPage('/transactions?types=expense,transfer&include_transfer_expenses=true')
+    expect(expenseMarkup).toContain('aria-label="Убрать фильтр расходов"')
+    expect(expenseMarkup).toContain('aria-pressed="true"')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ types: ['expense', 'transfer'] })
+
+    const incomeMarkup = renderPage('/transactions?types=income,transfer')
+    expect(incomeMarkup).toContain('aria-label="Убрать фильтр доходов"')
+    expect(incomeMarkup).toContain('aria-label="Настройки доходов"')
+    expect(incomeMarkup).not.toContain('aria-label="Тип аналитики"')
+  })
+
+  it('links a category legend entry to the filtered list with existing filters', () => {
+    const markup = renderPage('/transactions?types=expense&account_ids=a1&period=custom&from=2026-08-01&to=2026-08-31')
+    expect(markup).toContain('aria-label="Транзакции категории Продукты"')
+    const href = markup.match(/href="([^"]*category_ids=c1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
+    expect(href).toBeDefined()
+    expect(filterFromParams(new URL(href!, 'http://localhost').searchParams)).toMatchObject({
+      accountIds: ['a1'],
+      categoryIds: ['c1'],
+      types: ['expense'],
+    })
   })
 
   it('uses all active filters for tag analytics and links a tag to the filtered list', () => {
