@@ -480,7 +480,7 @@ export function AccountsPage() {
                               )}
                               {account.accessMode === 'shared' && (
                                 <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                                  Всего: {fmtCurrency(account.balance.totalNative, account.currency)}
+                                  {fmtCurrency(account.balance.totalNative, account.currency)}
                                 </div>
                               )}
                             </div>

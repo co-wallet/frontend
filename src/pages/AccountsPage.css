@@ -10,7 +10,7 @@
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   min-height: 100%;
   padding-block: 8px;
 }
@@ -24,10 +24,10 @@
 }
 
 .account-list-label h2 {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
+  display: block;
   overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .account-list-meta {
@@ -60,9 +60,8 @@
 
 .account-list-balance {
   flex-shrink: 0;
-  min-width: 104px;
+  min-width: 88px;
   max-width: 50%;
-  margin-inline-start: 12px;
   font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
@@ -71,11 +70,14 @@
 
 .account-list-actions {
   align-self: stretch;
-  margin-inline-start: 4px;
+  margin-inline: 0 -4px;
 }
 
 .account-list-actions ion-button {
-  min-width: 44px;
+  --padding-start: 4px;
+  --padding-end: 4px;
+  width: 36px;
+  min-width: 36px;
   min-height: 44px;
   margin: 0;
 }

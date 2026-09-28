@@ -54,7 +54,7 @@ describe('AccountsPage list', () => {
     expect(markup).not.toMatch(/>Совместный(?: счёт)?</)
     expect(markup).toContain('123')
     expect(markup).toContain('≈ ')
-    expect(markup).toContain('Всего: ')
+    expect(markup).not.toContain('Всего: ')
     expect(markup).toContain('246')
     expect(markup).toContain('/accounts/account-1/members')
   })
