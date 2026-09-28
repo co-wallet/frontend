@@ -87,6 +87,10 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
     if (validKinds.length) filter.accountKinds = validKinds
   }
   if (params.get('include_shared') === 'true') filter.includeShared = true
+  if (params.get('only_shared') === 'true') {
+    filter.includeShared = true
+    filter.onlyShared = true
+  }
   if (params.get('include_transfer_expenses') === 'true') filter.includeTransferExpenses = true
   if (params.get('include_transfer_income') === 'false') filter.includeTransferIncome = false
   return filter
@@ -112,6 +116,7 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
   }
   for (const [key, enabled] of [
     ['include_shared', filter.includeShared],
+    ['only_shared', filter.onlyShared],
     ['include_transfer_expenses', filter.includeTransferExpenses],
   ] as const) {
     result.delete(key)

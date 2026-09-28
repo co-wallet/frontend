@@ -66,6 +66,7 @@ import { useAuthStore } from '@/store/authStore'
 import { accountKindShortLabel } from '@/lib/accountKind'
 import {
   transactionAccountKinds,
+  transactionAccountScope,
   transactionFilterAccounts,
 } from '@/lib/accountFilters'
 import {
@@ -296,13 +297,14 @@ export function TransactionsPage() {
   )
   const hasFilters = hasTransactionFilters(filter)
   const accountKinds = transactionAccountKinds(filter)
+  const accountScope = transactionAccountScope(filter)
   const accountScopeLabel = `${accountKinds.length === 0
     ? 'Типы средств не выбраны'
     : accountKinds.length === 1
       ? accountKindShortLabel(accountKinds[0])
-      : `Типов средств: ${accountKinds.length}`} · ${filter.includeShared
+      : `Типов средств: ${accountKinds.length}`} · ${accountScope === 'all'
     ? 'личные и общие счета'
-    : 'личные счета'}`
+    : accountScope === 'shared' ? 'общие счета' : 'личные счета'}`
   const filterGroups = [
     { kind: 'accountIds', label: 'Счета',
       items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },

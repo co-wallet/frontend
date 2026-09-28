@@ -252,6 +252,14 @@ describe('active filter summary', () => {
     expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a3' })
   })
 
+  it('uses only shared accounts for the list, analytics, and filter summary', () => {
+    const markup = renderPage('/transactions?include_shared=true&only_shared=true')
+    expect(markup).toContain('Текущие средства · общие счета')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a2'] })
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')
+    expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a2' })
+  })
+
   it('disables list and analytics requests when no account kinds are selected', () => {
     const markup = renderPage('/transactions?account_kinds=none')
     expect(markup).toContain('Типы средств не выбраны')

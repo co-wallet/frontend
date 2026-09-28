@@ -73,6 +73,7 @@ export interface TransactionFilter {
   types?: TransactionType[]
   accountKinds?: AccountKind[]
   includeShared?: boolean
+  onlyShared?: boolean
   includeTransferExpenses?: boolean
   includeTransferIncome?: boolean
   categoryIds?: string[]

@@ -160,6 +160,7 @@ describe('transaction list helpers', () => {
     expect(hasTransactionFilters({ tagIds: ['tag-1'] })).toBe(true)
     expect(hasTransactionFilters({ withoutTags: true })).toBe(true)
     expect(hasTransactionFilters({ accountKinds: [] })).toBe(true)
+    expect(hasTransactionFilters({ includeShared: true, onlyShared: true })).toBe(true)
     expect(hasTransactionFilters({ includeTransferExpenses: true })).toBe(true)
     expect(hasTransactionFilters({ types: ['expense'] })).toBe(true)
     expect(hasTransactionFilters({})).toBe(false)
