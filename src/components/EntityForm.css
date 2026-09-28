@@ -57,6 +57,9 @@
   line-height: 1.5;
 }
 .entity-form-error { color: var(--ion-color-danger); }
+.entity-form-rate { margin: 12px 16px 0; }
+.entity-form-rate > .entity-form-note { margin: 0; }
+.ios .entity-form-rate { margin-inline: 20px; }
 .entity-form-tags { padding: 8px 16px; }
 
 .entity-form-picker { --min-height: 64px; }

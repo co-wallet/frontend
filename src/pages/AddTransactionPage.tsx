@@ -232,11 +232,13 @@ export function AddTransactionPage() {
       if (fromRate <= 0 || toRate <= 0) return null
       const rate = toRate / fromRate
       return (
-        <IonNote className="entity-form-note">
-          {rate >= 1
-            ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
-            : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
-        </IonNote>
+        <div className="entity-form-rate">
+          <IonNote className="entity-form-note">
+            {rate >= 1
+              ? `1 ${accountCurrency} = ${rate.toFixed(4)} ${toAccountCurrency}`
+              : `1 ${toAccountCurrency} = ${(1 / rate).toFixed(4)} ${accountCurrency}`}
+          </IonNote>
+        </div>
       )
     }
     if (selectedAccount.currency === userDefaultCurrency) return null
@@ -245,11 +247,13 @@ export function AddTransactionPage() {
     if (acctRate <= 0 || defRate <= 0) return null
     const rate = acctRate / defRate
     return (
-      <IonNote className="entity-form-note">
-        {rate >= 1
-          ? `1 ${userDefaultCurrency} = ${rate.toFixed(4)} ${selectedAccount.currency}`
-          : `1 ${selectedAccount.currency} = ${(1 / rate).toFixed(4)} ${userDefaultCurrency}`}
-      </IonNote>
+      <div className="entity-form-rate">
+        <IonNote className="entity-form-note">
+          {rate >= 1
+            ? `1 ${userDefaultCurrency} = ${rate.toFixed(4)} ${selectedAccount.currency}`
+            : `1 ${selectedAccount.currency} = ${(1 / rate).toFixed(4)} ${userDefaultCurrency}`}
+        </IonNote>
+      </div>
     )
   }
 
