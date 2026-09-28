@@ -4,7 +4,7 @@ import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
@@ -95,11 +95,13 @@ function ChartBlock({
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>()
+  const positionedSector = useRef<string | null>(null)
   const tooltip = usePieChartTooltip()
   const { chartEntries, legendEntries } = prepareDashboardChart(data)
   const visibleEntries = legendEntries.slice(0, visibleCount)
 
-  const positionTooltip = (event: React.MouseEvent<Element>) => {
+  const positionTooltip = (event: React.MouseEvent<Element>, sectorKey: string) => {
+    if (positionedSector.current === sectorKey) return
     const svg = event.currentTarget.closest('svg')
     if (!svg) return
     const bounds = svg.getBoundingClientRect()
@@ -113,6 +115,12 @@ function ChartBlock({
       viewportWidth: window.innerWidth,
       viewportHeight: window.innerHeight,
     }))
+    positionedSector.current = sectorKey
+  }
+
+  const resetTooltipPosition = () => {
+    positionedSector.current = null
+    setTooltipPosition(undefined)
   }
 
   if (data.length === 0) {
@@ -136,9 +144,12 @@ function ChartBlock({
               cy="50%"
               outerRadius={80}
               innerRadius={40}
-              onMouseMove={(_entry, _index, event) => positionTooltip(event)}
-              onClick={(entry, _index, event) => {
-                positionTooltip(event)
+              onMouseMove={(entry, index, event) => positionTooltip(
+                event, `${entry.transactionsHref ?? entry.name}:${index}`,
+              )}
+              onMouseLeave={resetTooltipPosition}
+              onClick={(entry, index, event) => {
+                positionTooltip(event, `${entry.transactionsHref ?? entry.name}:${index}`)
                 if (entry.transactionsHref) {
                   tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
                   return
