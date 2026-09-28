@@ -3,18 +3,22 @@ import { usePieChartTooltip } from './usePieChartTooltip'
 
 const state = vi.hoisted(() => ({
   active: false,
+  activeSector: null as string | null,
   trigger: 'click' as 'click' | 'hover',
   effects: [] as Array<() => void | (() => void)>,
 }))
 
 vi.mock('./useChartTooltipTrigger', () => ({ useChartTooltipTrigger: () => state.trigger }))
 vi.mock('react', () => ({
-  useState: () => [state.active, (active: boolean) => { state.active = active }],
+  useState: (initial: boolean | null) => initial === null
+    ? [state.activeSector, (sector: string | null) => { state.activeSector = sector }]
+    : [state.active, (active: boolean) => { state.active = active }],
   useEffect: (effect: () => void | (() => void)) => { state.effects.push(effect) },
 }))
 
 beforeEach(() => {
   state.active = false
+  state.activeSector = null
   state.trigger = 'click'
   state.effects = []
   vi.stubGlobal('document', new EventTarget())
@@ -68,5 +72,49 @@ describe('usePieChartTooltip', () => {
     tooltip.onSectorClick()
     expect(usePieChartTooltip().active).toBeUndefined()
     expect(add).not.toHaveBeenCalled()
+  })
+
+  it('navigates only after a second tap on the same mobile sector', () => {
+    const navigate = vi.fn()
+    let tooltip = usePieChartTooltip()
+    state.effects[0]()
+
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-1', navigate)
+    expect(navigate).not.toHaveBeenCalled()
+    expect(state.active).toBe(true)
+
+    tooltip = usePieChartTooltip()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-1', navigate)
+    expect(navigate).toHaveBeenCalledOnce()
+    expect(state.active).toBe(false)
+  })
+
+  it('shows the newly tapped mobile sector before allowing navigation', () => {
+    const navigate = vi.fn()
+    let tooltip = usePieChartTooltip()
+    state.effects[0]()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-1', navigate)
+
+    tooltip = usePieChartTooltip()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-2', navigate)
+    expect(navigate).not.toHaveBeenCalled()
+    expect(state.activeSector).toBe('account-2')
+
+    tooltip = usePieChartTooltip()
+    document.dispatchEvent(new Event('click'))
+    tooltip.onNavigableSectorClick('account-2', navigate)
+    expect(navigate).toHaveBeenCalledOnce()
+  })
+
+  it('navigates on desktop click because hover already reveals the tooltip', () => {
+    state.trigger = 'hover'
+    const navigate = vi.fn()
+    const tooltip = usePieChartTooltip()
+    tooltip.onNavigableSectorClick('account-1', navigate)
+    expect(navigate).toHaveBeenCalledOnce()
   })
 })

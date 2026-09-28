@@ -3,6 +3,7 @@ import { createMemoryHistory } from 'history'
 import type { TransactionFilter } from '@/api/transactions'
 import { computeDateRange } from '@/store/periodStore'
 import {
+  accountTransactionsHref,
   filterFromParams,
   filterToParams,
   filteredTransactionsHref,
@@ -97,6 +98,37 @@ describe('tag navigation', () => {
     for (const offset of ['NaN', '1', '-1.5', '-1000000000']) {
       expect(periodFromParams(new URLSearchParams(`period=month&offset=${offset}`), period).periodOffset).toBe(0)
     }
+  })
+})
+
+describe('account navigation', () => {
+  it('selects a personal account with its kind and preserves the period', () => {
+    const href = accountTransactionsHref({
+      id: 'deposit & one',
+      kind: 'deposit',
+      accessMode: 'personal',
+    }, period)
+
+    expect(filterFromParams(query(href))).toEqual({
+      accountIds: ['deposit & one'],
+      accountKinds: ['deposit'],
+    })
+    expect(periodFromParams(query(href), { ...period, periodOffset: 0 })).toEqual(period)
+  })
+
+  it('includes shared accounts and advances filtered navigation depth', () => {
+    const href = accountTransactionsHref({
+      id: 'shared-account',
+      kind: 'savings_account',
+      accessMode: 'shared',
+    }, period, '/transactions/filtered/2')
+
+    expect(href).toContain('/transactions/filtered/3?')
+    expect(filterFromParams(query(href))).toEqual({
+      accountIds: ['shared-account'],
+      accountKinds: ['savings_account'],
+      includeShared: true,
+    })
   })
 })
 

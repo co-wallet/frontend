@@ -2,6 +2,7 @@ import type { TransactionFilter, TransactionType } from '@/api/transactions'
 import type { History, LocationDescriptorObject } from 'history'
 import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
+import type { AccountAccessMode, AccountKind } from '@/api/accounts'
 
 export interface TransactionPeriod {
   period: Period
@@ -146,6 +147,18 @@ export function filteredTransactionsHref(
 ): string {
   const depth = Number(sourcePath.match(/^\/transactions\/filtered\/(\d+)$/)?.[1] ?? 0)
   return `/transactions/filtered/${depth + 1}?${periodToParams(period, filterToParams(filter))}`
+}
+
+export function accountTransactionsHref(
+  account: { id: string; kind: AccountKind; accessMode: AccountAccessMode },
+  period: TransactionPeriod,
+  sourcePath = '',
+): string {
+  return filteredTransactionsHref({
+    accountIds: [account.id],
+    accountKinds: [account.kind],
+    ...(account.accessMode === 'shared' ? { includeShared: true } : {}),
+  }, period, sourcePath)
 }
 
 function validDate(value: string): boolean {

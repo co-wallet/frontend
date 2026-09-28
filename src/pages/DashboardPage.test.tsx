@@ -180,6 +180,23 @@ describe('Dashboard recent transactions', () => {
   })
 })
 
+describe('Dashboard account transaction navigation', () => {
+  it('makes every balance legend account a filtered transaction link', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+
+    expect(markup).toContain('<ion-router-link')
+    expect(markup).toContain('aria-label="Транзакции по счету Личная"')
+    expect(markup).toContain('account_ids=spending&amp;account_kinds=spending&amp;period=month')
+  })
+
+  it('does not turn category legend entries into account links', () => {
+    queryState.chartMode = 'expenses'
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+
+    expect(markup).not.toContain('aria-label="Транзакции по счету')
+  })
+})
+
 
 describe('Dashboard shared accounts', () => {
   it.each(['balance', 'expenses', 'income'] as const)('excludes shared accounts from every analytics request in %s', (mode) => {

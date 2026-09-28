@@ -1,5 +1,22 @@
-.account-list-item > [slot="start"] {
-  margin-inline-end: 12px;
+.account-list-link {
+  flex: 1;
+  min-width: 0;
+  align-self: stretch;
+  color: inherit;
+  text-decoration: none;
+}
+
+.account-list-link-content {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 100%;
+  padding-block: 8px;
+}
+
+.account-list-icon {
+  display: inline-flex;
 }
 
 .account-list-label {
@@ -43,12 +60,24 @@
 
 .account-list-balance {
   flex-shrink: 0;
+  min-width: 104px;
   max-width: 50%;
   margin-inline-start: 12px;
   font-size: 14px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
+}
+
+.account-list-actions {
+  align-self: stretch;
+  margin-inline-start: 4px;
+}
+
+.account-list-actions ion-button {
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
 }
 
 .account-form-sign-button {

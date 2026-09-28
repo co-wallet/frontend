@@ -7,6 +7,7 @@ export const TRANSFER_CHART_COLOR = 'var(--account-icon-color-blue)'
 export interface DashboardPieEntry {
   name: string
   amount: number
+  transactionsHref?: string
   icon?: string
   iconType?: 'account' | 'category' | 'transfer'
   categoryType?: CategoryType

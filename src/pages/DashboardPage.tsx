@@ -25,6 +25,7 @@ import {
   IonSelectOption,
   IonChip,
   IonText,
+  IonRouterLink,
 } from '@ionic/react'
 import {
   trendingDownOutline,
@@ -54,7 +55,11 @@ import {
   type DashboardPieEntry,
 } from '@/lib/dashboardChart'
 import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
-import { filteredTransactionsHref, transactionCreationLocation } from '@/lib/transactionNavigation'
+import {
+  accountTransactionsHref,
+  filteredTransactionsHref,
+  transactionCreationLocation,
+} from '@/lib/transactionNavigation'
 
 import './DashboardPage.css'
 
@@ -76,12 +81,14 @@ function ChartBlock({
   emptyText,
   tooltipStyle,
   legendColor,
+  onNavigate,
 }: {
   data: DashboardPieEntry[]
   sym: string
   emptyText: string
   tooltipStyle: React.CSSProperties
   legendColor: string
+  onNavigate: (href: string) => void
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const tooltip = usePieChartTooltip()
@@ -109,7 +116,13 @@ function ChartBlock({
               cy="50%"
               outerRadius={80}
               innerRadius={40}
-              onClick={tooltip.onSectorClick}
+              onClick={(entry) => {
+                if (entry.transactionsHref) {
+                  tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
+                  return
+                }
+                tooltip.onSectorClick()
+              }}
             >
               {chartEntries.map((entry, i) => (
                 <Cell
@@ -130,8 +143,8 @@ function ChartBlock({
       <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
           const isNegative = s.amount < 0
-          return (
-            <div key={i} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', padding: '2px 0' }}>
+          const content = (
+            <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span
                   style={{
@@ -165,6 +178,21 @@ function ChartBlock({
               <span style={{ fontWeight: 500, color: isNegative ? 'var(--ion-color-danger)' : undefined }}>
                 {formatAmount(s.amount, sym)}
               </span>
+            </>
+          )
+          return s.transactionsHref ? (
+            <IonRouterLink
+              key={i}
+              className="dashboard-chart-legend-row dashboard-chart-legend-row--link"
+              routerLink={s.transactionsHref}
+              routerDirection="forward"
+              aria-label={`Транзакции по счету ${s.name}`}
+            >
+              {content}
+            </IonRouterLink>
+          ) : (
+            <div key={i} className="dashboard-chart-legend-row">
+              {content}
             </div>
           )
         })}
@@ -288,6 +316,7 @@ export function DashboardPage() {
     .filter((a) => a.balance != null)
     .map((a) => ({
       name: a.name,
+      transactionsHref: accountTransactionsHref(a, transactionPeriod, location.pathname),
       icon: a.icon ?? undefined,
       iconType: 'account' as const,
       amount: a.balance!.display,
@@ -527,6 +556,7 @@ export function DashboardPage() {
                 emptyText={chartEmptyTexts[chartMode]}
                 tooltipStyle={chartTheme.tooltipStyle}
                 legendColor={chartTheme.legendColor}
+                onNavigate={(href) => history.push(href)}
               />
             </IonCardContent>
           </IonCard>
