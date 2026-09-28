@@ -20,6 +20,7 @@ import { TransactionDescriptionInput } from '@/components/TransactionDescription
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 import { localDateISO } from '@/lib/date'
+import { needsDefaultCurrencyAmount } from '@/lib/transactionAmounts'
 import {
   finishTransactionCreation,
   transactionCreationDefaults,
@@ -132,7 +133,12 @@ export function AddTransactionPage() {
   const toAccount = destinationAccounts.find((a) => a.id === toAccountId && a.id !== accountId)
   const toAccountCurrency = toAccount?.currency ?? ''
   const isCrossCurrencyTransfer = type === 'transfer' && !!accountCurrency && !!toAccountCurrency && toAccountCurrency !== accountCurrency
-  const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
+  const needsDefaultCurrency = needsDefaultCurrencyAmount(
+    type,
+    accountCurrency,
+    toAccountCurrency,
+    userDefaultCurrency,
+  )
 
   useEffect(() => {
     if (!isCrossCurrencyTransfer) {
@@ -158,10 +164,6 @@ export function AddTransactionPage() {
     const total = parseDecimal(amount)
     if (total <= 0) {
       setDefaultCurrencyAmountStr('')
-      return
-    }
-    if (accountCurrency === userDefaultCurrency) {
-      setDefaultCurrencyAmountStr(String(total))
       return
     }
     const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
@@ -380,10 +382,6 @@ export function AddTransactionPage() {
                     onClick={() => {
                       const total = parseDecimal(amount)
                       if (total <= 0) return
-                      if (accountCurrency === userDefaultCurrency) {
-                        setDefaultCurrencyAmountStr(String(total))
-                        return
-                      }
                       const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
                       const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
                       if (acctRate <= 0 || defRate <= 0) return
