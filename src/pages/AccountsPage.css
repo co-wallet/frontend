@@ -41,13 +41,6 @@
   line-height: 18px;
 }
 
-.account-list-currency {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  white-space: nowrap;
-}
-
 .account-list-access {
   display: inline-flex;
   align-items: center;

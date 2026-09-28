@@ -453,16 +453,13 @@ export function AccountsPage() {
                         <IonLabel className="account-list-label">
                           <h2 title={account.name}>{account.name}</h2>
                           <div className="account-list-meta">
-                            <span className="account-list-currency">
-                              <span
-                                className="account-list-access"
-                                role="img"
-                                aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                                title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                              >
-                                <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
-                              </span>
-                              <span>{account.currency}</span>
+                            <span
+                              className="account-list-access"
+                              role="img"
+                              aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                              title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                            >
+                              <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
                             </span>
                             {account.kind !== 'spending' && (
                               <span className="account-list-kind">{accountKindShortLabel(account.kind)}</span>

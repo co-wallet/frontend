@@ -25,10 +25,10 @@ function renderAccount(overrides: Partial<Account> = {}) {
 }
 
 describe('AccountsPage list', () => {
-  it('keeps the name and currency without the everyday account type or access text', () => {
+  it('keeps the name without redundant currency, everyday type or access text', () => {
     const markup = renderAccount()
     expect(markup).toContain('Мой счёт')
-    expect(markup).toContain('<span>RUB</span>')
+    expect(markup).not.toContain('<span>RUB</span>')
     expect(markup).not.toContain('Текущие средства')
     expect(markup).toContain('role="img" aria-label="Личный счёт"')
     expect(markup).not.toMatch(/>Личный(?: счёт)?</)
@@ -39,10 +39,10 @@ describe('AccountsPage list', () => {
     ['savings', 'Сбережения'],
     ['savings_account', 'Накопительный счёт'],
     ['investment', 'Инвестиции'],
-  ] as const)('preserves the %s type after the currency', (kind, label) => {
+  ] as const)('preserves the %s type without duplicating the currency', (kind, label) => {
     const markup = renderAccount({ kind })
     expect(markup).toContain(`class="account-list-kind">${label}</span>`)
-    expect(markup.indexOf('<span>RUB</span>')).toBeLessThan(markup.indexOf(`>${label}</span>`))
+    expect(markup).not.toContain('<span>RUB</span>')
   })
 
   it.each(['spending', 'savings', 'savings_account'] as const)('labels shared access and preserves share, conversion and total balances for %s', (kind) => {
