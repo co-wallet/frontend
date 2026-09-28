@@ -1,18 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useChartTooltipTrigger } from './useChartTooltipTrigger'
 
 export function usePieChartTooltip() {
   const trigger = useChartTooltipTrigger()
   const [active, setActive] = useState(false)
-  const [activeSector, setActiveSector] = useState<string | null>(null)
+  const navigation = useRef({
+    activeSector: null as string | null,
+    capturedSector: null as string | null,
+  })
 
   useEffect(() => {
     if (trigger !== 'click') return
 
     // Capture закрывает старую подсказку до того, как тап по сектору откроет новую.
+    // Сектор сохраняется до конца текущего события: React может успеть перерендерить
+    // компонент между document capture и обработчиком Recharts.
     const dismiss = () => {
+      navigation.current.capturedSector = navigation.current.activeSector
+      navigation.current.activeSector = null
       setActive(false)
-      setActiveSector(null)
+      queueMicrotask(() => {
+        navigation.current.capturedSector = null
+      })
     }
     document.addEventListener('click', dismiss, true)
     return () => document.removeEventListener('click', dismiss, true)
@@ -29,13 +38,15 @@ export function usePieChartTooltip() {
         navigate()
         return
       }
-      if (active && activeSector === sector) {
+      if (navigation.current.capturedSector === sector) {
+        navigation.current.capturedSector = null
+        navigation.current.activeSector = null
         setActive(false)
-        setActiveSector(null)
         navigate()
         return
       }
-      setActiveSector(sector)
+      navigation.current.capturedSector = null
+      navigation.current.activeSector = sector
       setActive(true)
     },
   }

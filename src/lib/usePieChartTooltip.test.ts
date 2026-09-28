@@ -3,22 +3,21 @@ import { usePieChartTooltip } from './usePieChartTooltip'
 
 const state = vi.hoisted(() => ({
   active: false,
-  activeSector: null as string | null,
+  navigationRef: { current: { activeSector: null as string | null, capturedSector: null as string | null } },
   trigger: 'click' as 'click' | 'hover',
   effects: [] as Array<() => void | (() => void)>,
 }))
 
 vi.mock('./useChartTooltipTrigger', () => ({ useChartTooltipTrigger: () => state.trigger }))
 vi.mock('react', () => ({
-  useState: (initial: boolean | null) => initial === null
-    ? [state.activeSector, (sector: string | null) => { state.activeSector = sector }]
-    : [state.active, (active: boolean) => { state.active = active }],
+  useState: () => [state.active, (active: boolean) => { state.active = active }],
+  useRef: () => state.navigationRef,
   useEffect: (effect: () => void | (() => void)) => { state.effects.push(effect) },
 }))
 
 beforeEach(() => {
   state.active = false
-  state.activeSector = null
+  state.navigationRef = { current: { activeSector: null, capturedSector: null } }
   state.trigger = 'click'
   state.effects = []
   vi.stubGlobal('document', new EventTarget())
@@ -86,6 +85,7 @@ describe('usePieChartTooltip', () => {
 
     tooltip = usePieChartTooltip()
     document.dispatchEvent(new Event('click'))
+    tooltip = usePieChartTooltip()
     tooltip.onNavigableSectorClick('account-1', navigate)
     expect(navigate).toHaveBeenCalledOnce()
     expect(state.active).toBe(false)
@@ -102,7 +102,7 @@ describe('usePieChartTooltip', () => {
     document.dispatchEvent(new Event('click'))
     tooltip.onNavigableSectorClick('account-2', navigate)
     expect(navigate).not.toHaveBeenCalled()
-    expect(state.activeSector).toBe('account-2')
+    expect(state.navigationRef.current.activeSector).toBe('account-2')
 
     tooltip = usePieChartTooltip()
     document.dispatchEvent(new Event('click'))
