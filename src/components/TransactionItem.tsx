@@ -69,12 +69,19 @@ export function TransactionItem({
   const meta = description && tx.type !== 'transfer'
     ? `${categoryName} · ${accountLabel}`
     : accountLabel
-  const displayAmount = tx.readOnly ? tx.toAmount ?? tx.amount : transactionUserAmount(tx, account, currentUserId)
+  const displayAmount = tx.readOnly ? tx.toAmount ?? tx.amount : tx.amount
+  const userAmount = tx.readOnly ? displayAmount : transactionUserAmount(tx, account, currentUserId)
   const amount = tx.readOnly
     ? formatTransactionAmount(tx.toAmount ?? tx.amount, tx.toCurrency || tx.currency, 'income')
     : formatTransactionAmount(displayAmount, tx.currency, tx.type)
   const shared = isSharedTransaction(tx, account, currentUserId)
   const convertedAmount = transactionDefaultCurrencyAmount(
+    tx,
+    undefined,
+    undefined,
+    defaultCurrency,
+  )
+  const convertedUserAmount = transactionDefaultCurrencyAmount(
     tx,
     account,
     currentUserId,
@@ -104,6 +111,11 @@ export function TransactionItem({
       ? formatTransactionAmount(convertedAmount, defaultCurrency, tx.type)
       : amount)
   const secondaryAmounts = transferAmounts?.slice(1) ?? (showConvertedAmount ? [amount] : [])
+  const userShareAmount = formatTransactionAmount(
+    showConvertedAmount && convertedUserAmount != null ? convertedUserAmount : userAmount,
+    showConvertedAmount && convertedUserAmount != null ? defaultCurrency : tx.currency,
+    tx.type,
+  )
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
   return (
@@ -117,7 +129,7 @@ export function TransactionItem({
         <button
           type="button"
           className="transaction-item__open"
-          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}${destinationAmount ? `. На счёт ${destinationAmount}` : ''}`}
+          aria-label={`${title}. ${meta}. ${TRANSACTION_TYPE_LABELS[tx.type]} ${displayAmount} ${tx.currency}${shared ? `. Доля пользователя ${userAmount} ${tx.currency}` : ''}${destinationAmount ? `. На счёт ${destinationAmount}` : ''}`}
         />
         {tx.type === 'transfer' ? (
           <div slot="start" className="transaction-item__icon transaction-item__icon--transfer">
@@ -160,14 +172,14 @@ export function TransactionItem({
 
         <IonNote slot="end" className="transaction-item__amounts">
           <span className={amountClass}>{primaryAmount}</span>
-          {shared && !(transferAmounts && preferDestination) && (
+          {shared && (
             <span className="transaction-item__amount-meta">
               <IonIcon icon={peopleOutline} aria-hidden="true" />
-              Ваша доля
+              {userShareAmount}
             </span>
           )}
           {secondaryAmounts.map((secondaryAmount) => (
-            <span key={secondaryAmount} className="transaction-item__amount-meta">{secondaryAmount}{shared && preferDestination && secondaryAmount === amount ? ' · Ваша доля' : ''}</span>
+            <span key={secondaryAmount} className="transaction-item__amount-meta">{secondaryAmount}</span>
           ))}
           {!tx.readOnly && tx.type !== 'transfer' && tx.currency !== defaultCurrency && convertedAmount == null && (
             <span className="transaction-item__amount-meta">
