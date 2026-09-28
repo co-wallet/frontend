@@ -19,6 +19,7 @@ import { CategorySelect } from '@/components/CategorySelect'
 import { TransactionDescriptionInput } from '@/components/TransactionDescriptionInput'
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
+import { needsDefaultCurrencyAmount } from '@/lib/transactionAmounts'
 
 function roundCents(v: number): number {
   return Math.round(v * 100) / 100
@@ -133,7 +134,12 @@ export function EditTransactionPage() {
   const toAccount = accounts.find((a) => a.id === toAccountId)
   const toAccountCurrency = toAccount?.currency ?? (toAccountId === tx?.toAccountId ? tx?.toCurrency : '') ?? ''
   const isCrossCurrencyTransfer = tx?.type === 'transfer' && !!accountCurrency && !!toAccountCurrency && toAccountCurrency !== accountCurrency
-  const needsDefaultCurrency = (!!accountCurrency && accountCurrency !== userDefaultCurrency) || isCrossCurrencyTransfer
+  const needsDefaultCurrency = needsDefaultCurrencyAmount(
+    tx?.type ?? 'expense',
+    accountCurrency,
+    toAccountCurrency,
+    userDefaultCurrency,
+  )
 
   const accountsValid = !!accountId && (tx?.type !== 'transfer' || (!!toAccountId && toAccountId !== accountId))
   const transferAmountValid = !isCrossCurrencyTransfer || (isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0)
@@ -376,10 +382,6 @@ export function EditTransactionPage() {
                     onClick={() => {
                       const total = parseDecimal(amount)
                       if (total <= 0) return
-                      if (accountCurrency === userDefaultCurrency) {
-                        setDefaultCurrencyAmountStr(String(total))
-                        return
-                      }
                       const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
                       const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
                       if (acctRate <= 0 || defRate <= 0) return
