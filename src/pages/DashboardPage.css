@@ -26,6 +26,13 @@
   pointer-events: none;
 }
 
+.dashboard-chart-card,
+.dashboard-chart-card ion-card-content,
+.dashboard-chart-card .recharts-responsive-container,
+.dashboard-chart-card .recharts-wrapper {
+  overflow: visible;
+}
+
 .dashboard-chart-legend-row {
   display: flex;
   align-items: center;

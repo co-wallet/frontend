@@ -103,11 +103,16 @@ function ChartBlock({
     const svg = event.currentTarget.closest('svg')
     if (!svg) return
     const bounds = svg.getBoundingClientRect()
-    setTooltipPosition(dashboardTooltipPosition(
-      bounds.width,
-      bounds.height,
-      event.clientX - bounds.left,
-    ))
+    setTooltipPosition(dashboardTooltipPosition({
+      chartWidth: bounds.width,
+      chartHeight: bounds.height,
+      pointerX: event.clientX - bounds.left,
+      pointerY: event.clientY - bounds.top,
+      chartLeft: bounds.left,
+      chartTop: bounds.top,
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+    }))
   }
 
   if (data.length === 0) {
@@ -152,6 +157,7 @@ function ChartBlock({
               trigger={tooltip.trigger}
               active={tooltip.active}
               position={tooltipPosition}
+              allowEscapeViewBox={{ x: true, y: true }}
               wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
               contentStyle={tooltipStyle}
               content={<PieChartTooltip

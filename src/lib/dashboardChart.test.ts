@@ -77,16 +77,38 @@ describe('dashboard chart data', () => {
 })
 
 describe('dashboard tooltip position', () => {
-  it('places the tooltip on the opposite side from the pointer', () => {
-    expect(dashboardTooltipPosition(320, 200, 80)).toEqual({
-      x: 320 - DASHBOARD_TOOLTIP_WIDTH - 8,
-      y: 64,
-    })
-    expect(dashboardTooltipPosition(320, 200, 240)).toEqual({ x: 8, y: 64 })
+  it.each([
+    ['upper right', 220, 70, 200, 0],
+    ['lower right', 220, 130, 200, 128],
+    ['upper left', 100, 70, -32, 0],
+    ['lower left', 100, 130, -32, 128],
+  ] as const)('attaches the nearest tooltip corner outside the %s sector', (_name, pointerX, pointerY, x, y) => {
+    expect(dashboardTooltipPosition({
+      chartWidth: 320,
+      chartHeight: 200,
+      pointerX,
+      pointerY,
+      chartLeft: 40,
+      chartTop: 100,
+      viewportWidth: 400,
+      viewportHeight: 500,
+    })).toEqual({ x, y })
   })
 
-  it('keeps the tooltip inside a narrow chart', () => {
-    expect(dashboardTooltipPosition(150, 60, 10)).toEqual({ x: 8, y: 8 })
+  it('keeps an outward tooltip inside the viewport even when it leaves the chart', () => {
+    const position = dashboardTooltipPosition({
+      chartWidth: 300,
+      chartHeight: 200,
+      pointerX: 80,
+      pointerY: 100,
+      chartLeft: 16,
+      chartTop: 120,
+      viewportWidth: 320,
+      viewportHeight: 640,
+    })
+    expect(position.x).toBe(-8)
+    expect(position.x + 16).toBe(8)
+    expect(position.x + DASHBOARD_TOOLTIP_WIDTH).toBeLessThan(150)
   })
 })
 

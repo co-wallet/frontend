@@ -4,6 +4,9 @@ import type { CategoryType } from '@/api/categories'
 
 export const TRANSFER_CHART_COLOR = 'var(--account-icon-color-blue)'
 export const DASHBOARD_TOOLTIP_WIDTH = 152
+export const DASHBOARD_TOOLTIP_HEIGHT = 72
+const DASHBOARD_PIE_OUTER_RADIUS = 80
+const DASHBOARD_TOOLTIP_OVERLAP = 8
 
 export interface DashboardPieEntry {
   name: string
@@ -19,17 +22,50 @@ export interface DashboardChartEntry extends DashboardPieEntry {
   chartAmount: number
 }
 
-export function dashboardTooltipPosition(
-  chartWidth: number,
-  chartHeight: number,
-  pointerX: number,
-): { x: number; y: number } {
-  const edge = 8
-  const x = pointerX <= chartWidth / 2
-    ? Math.max(edge, chartWidth - DASHBOARD_TOOLTIP_WIDTH - edge)
-    : edge
-  const y = Math.max(edge, Math.round((chartHeight - 72) / 2))
-  return { x: Math.round(x), y }
+export function dashboardTooltipPosition({
+  chartWidth,
+  chartHeight,
+  pointerX,
+  pointerY,
+  chartLeft = 0,
+  chartTop = 0,
+  viewportWidth = chartWidth,
+  viewportHeight = chartHeight,
+}: {
+  chartWidth: number
+  chartHeight: number
+  pointerX: number
+  pointerY: number
+  chartLeft?: number
+  chartTop?: number
+  viewportWidth?: number
+  viewportHeight?: number
+}): { x: number; y: number } {
+  const centerX = chartWidth / 2
+  const centerY = chartHeight / 2
+  const dx = pointerX - centerX
+  const dy = pointerY - centerY
+  const distance = Math.hypot(dx, dy) || 1
+  const anchorX = centerX + (dx / distance) * DASHBOARD_PIE_OUTER_RADIUS
+  const anchorY = centerY + (dy / distance) * DASHBOARD_PIE_OUTER_RADIUS
+
+  const rawX = dx >= 0
+    ? anchorX - DASHBOARD_TOOLTIP_OVERLAP
+    : anchorX - DASHBOARD_TOOLTIP_WIDTH + DASHBOARD_TOOLTIP_OVERLAP
+  const rawY = dy >= 0
+    ? anchorY - DASHBOARD_TOOLTIP_OVERLAP
+    : anchorY - DASHBOARD_TOOLTIP_HEIGHT + DASHBOARD_TOOLTIP_OVERLAP
+
+  const viewportInset = 8
+  const minX = viewportInset - chartLeft
+  const maxX = viewportWidth - viewportInset - chartLeft - DASHBOARD_TOOLTIP_WIDTH
+  const minY = viewportInset - chartTop
+  const maxY = viewportHeight - viewportInset - chartTop - DASHBOARD_TOOLTIP_HEIGHT
+
+  return {
+    x: Math.round(Math.min(Math.max(rawX, minX), Math.max(minX, maxX))),
+    y: Math.round(Math.min(Math.max(rawY, minY), Math.max(minY, maxY))),
+  }
 }
 
 export function dashboardEntryColor(entry: DashboardPieEntry): string {
