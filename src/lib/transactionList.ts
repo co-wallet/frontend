@@ -9,6 +9,25 @@ export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   transfer: 'Перевод',
 }
 
+export type TransactionSummaryMode = 'expenses' | 'income'
+
+export function transactionTypesForSummary(
+  mode: TransactionSummaryMode,
+  includeTransfers: boolean,
+): TransactionType[] {
+  return [mode === 'expenses' ? 'expense' : 'income', ...(includeTransfers ? ['transfer' as const] : [])]
+}
+
+export function isTransactionTypeFilterActive(
+  filter: TransactionFilter,
+  mode: TransactionSummaryMode,
+  includeTransfers: boolean,
+): boolean {
+  const expected = transactionTypesForSummary(mode, includeTransfers)
+  return filter.types?.length === expected.length
+    && expected.every((type) => filter.types?.includes(type))
+}
+
 export interface TransactionGroup {
   dateKey: string
   label: string
@@ -191,6 +210,7 @@ export function buildTransactionAnalyticsParams(
 export function hasTransactionFilters(filter: TransactionFilter): boolean {
   return Boolean(
     filter.accountIds?.length
+    || filter.types?.length
     || filter.accountKinds !== undefined
     || filter.includeShared === true
     || filter.includeTransferExpenses === true

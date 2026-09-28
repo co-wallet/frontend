@@ -1,9 +1,28 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ReactNode } from 'react'
 import { MemoryRouter, Route } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
 import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
+
+vi.mock('@ionic/react', async (importOriginal) => ({
+  ...await importOriginal<typeof import('@ionic/react')>(),
+  IonPopover: (props: {
+    children: ReactNode
+    className?: string
+    trigger?: string
+    'aria-label'?: string
+  }) => (
+    <div
+      className={props.className}
+      data-trigger={props.trigger}
+      aria-label={props['aria-label']}
+    >
+      {props.children}
+    </div>
+  ),
+}))
 
 const pagination = vi.hoisted(() => ({
   data: { pages: [] as Transaction[][] },
@@ -52,6 +71,8 @@ vi.mock('@tanstack/react-query', () => ({
         { tagId: 't1', tagName: 'путешествия', amount: 125 },
         { tagId: 'untagged', tagName: 'Без тегов', amount: 75 },
       ]
+      : queryKey[0] === 'analytics' && queryKey[1] === 'by-category'
+        ? [{ categoryId: 'c1', categoryName: 'Продукты', amount: 125, icon: 'preset:groceries' }]
       : queryKey[0] === 'accounts'
       ? [
         { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
@@ -103,13 +124,50 @@ describe('transaction navigation controls', () => {
 })
 
 describe('transaction analytics grouping', () => {
+  it('places the contextual transfer setting beside the analytics heading', () => {
+    const markup = renderPage('/transactions?include_transfer_expenses=true')
+    expect(markup).toContain('id="transactions-analytics-settings"')
+    expect(markup).toContain('aria-label="Настройки расходов"')
+    expect(markup).toContain('class="transactions-analytics__popover"')
+    expect(markup).toContain('Отображать переводы')
+    expect(markup).toContain('checked="true"')
+    expect(markup).not.toContain('Переводы в суммах')
+    expect(markup).not.toContain('Учитывать в расходах')
+    expect(markup).not.toContain('Учитывать в доходах')
+  })
+
   it('offers category and tag grouping without requesting tags by default', () => {
     const markup = renderPage('/transactions')
+    expect(markup).not.toContain('aria-label="Тип аналитики"')
     expect(markup).toContain('aria-label="Группировка аналитики"')
     expect(markup).toContain('value="categories"')
     expect(markup).toContain('value="tags"')
     const tagQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'by-tag')
     expect(tagQuery?.enabled).toBe(false)
+  })
+
+  it('uses summary cards as contextual type filters with transfer preferences', () => {
+    const expenseMarkup = renderPage('/transactions?types=expense,transfer&include_transfer_expenses=true')
+    expect(expenseMarkup).toContain('aria-label="Убрать фильтр расходов"')
+    expect(expenseMarkup).toContain('aria-pressed="true"')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ types: ['expense', 'transfer'] })
+
+    const incomeMarkup = renderPage('/transactions?types=income,transfer')
+    expect(incomeMarkup).toContain('aria-label="Убрать фильтр доходов"')
+    expect(incomeMarkup).toContain('aria-label="Настройки доходов"')
+    expect(incomeMarkup).not.toContain('aria-label="Тип аналитики"')
+  })
+
+  it('links a category legend entry to the filtered list with existing filters', () => {
+    const markup = renderPage('/transactions?types=expense&account_ids=a1&period=custom&from=2026-08-01&to=2026-08-31')
+    expect(markup).toContain('aria-label="Транзакции категории Продукты"')
+    const href = markup.match(/href="([^"]*category_ids=c1[^"]*)"/)?.[1].replace(/&amp;/g, '&')
+    expect(href).toBeDefined()
+    expect(filterFromParams(new URL(href!, 'http://localhost').searchParams)).toMatchObject({
+      accountIds: ['a1'],
+      categoryIds: ['c1'],
+      types: ['expense'],
+    })
   })
 
   it('uses all active filters for tag analytics and links a tag to the filtered list', () => {

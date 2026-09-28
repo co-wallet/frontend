@@ -74,6 +74,10 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
     const values = params.get(key)?.split(',').filter(Boolean)
     if (values?.length) filter[field] = values
   }
+  const types = params.get('types')?.split(',').filter(
+    (type): type is TransactionType => type === 'expense' || type === 'income' || type === 'transfer',
+  )
+  if (types?.length) filter.types = [...new Set(types)]
   if (params.get('tag_mode') === 'and') filter.tagMode = 'and'
   if (params.get('without_tags') === 'true') filter.withoutTags = true
   const accountKinds = params.get('account_kinds')
@@ -96,6 +100,8 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
     result.delete(key)
     if (values?.length) result.set(key, values.join(','))
   }
+  result.delete('types')
+  if (filter.types?.length) result.set('types', filter.types.join(','))
   result.delete('tag_mode')
   if (filter.tagMode === 'and') result.set('tag_mode', 'and')
   result.delete('without_tags')

@@ -57,12 +57,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS],
   )
   const [includeShared, setIncludeShared] = useState(value.includeShared ?? false)
-  const [includeTransferExpenses, setIncludeTransferExpenses] = useState(
-    value.includeTransferExpenses ?? false,
-  )
-  const [includeTransferIncome, setIncludeTransferIncome] = useState(
-    value.includeTransferIncome ?? true,
-  )
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
   const [tagIds, setTagIds] = useState<string[]>(value.tagIds ?? [])
   const [tagMode, setTagMode] = useState<'or' | 'and'>(value.tagMode ?? 'or')
@@ -72,8 +66,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
       setAccountIds(value.accountIds ?? [])
       setAccountKinds(value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
       setIncludeShared(value.includeShared ?? false)
-      setIncludeTransferExpenses(value.includeTransferExpenses ?? false)
-      setIncludeTransferIncome(value.includeTransferIncome ?? true)
       setCategoryIds(value.categoryIds ?? [])
       setTagIds(value.tagIds ?? [])
       setTagMode(value.tagMode ?? 'or')
@@ -128,10 +120,13 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   }
 
   function apply() {
-    const f: TransactionFilter = { accountKinds }
+    const f: TransactionFilter = {
+      accountKinds,
+      ...(value.types?.length ? { types: value.types } : {}),
+      ...(value.includeTransferExpenses ? { includeTransferExpenses: true } : {}),
+      ...(value.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
+    }
     if (includeShared) f.includeShared = true
-    if (includeTransferExpenses) f.includeTransferExpenses = true
-    if (!includeTransferIncome) f.includeTransferIncome = false
     if (accountIds.length) f.accountIds = accountIds
     if (categoryIds.length) f.categoryIds = categoryIds
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
@@ -144,20 +139,21 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     setAccountIds([])
     setAccountKinds([...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
     setIncludeShared(false)
-    setIncludeTransferExpenses(false)
-    setIncludeTransferIncome(true)
     setCategoryIds([])
     setTagIds([])
     setTagMode('or')
-    onChange({})
+    onChange({
+      ...(value.includeTransferExpenses ? { includeTransferExpenses: true } : {}),
+      ...(value.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
+    })
     setOpen(false)
   }
 
   const activeCount = [
     (value.accountIds?.length ?? 0) > 0,
+    (value.types?.length ?? 0) > 0,
     value.accountKinds !== undefined,
     value.includeShared === true,
-    value.includeTransferExpenses === true || value.includeTransferIncome === false,
     (value.categoryIds?.length ?? 0) > 0,
     (value.tagIds?.length ?? 0) > 0,
   ].filter(Boolean).length
@@ -264,32 +260,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
               </div>
             </section>
           )}
-
-          <section className="filter-sheet-section" aria-labelledby="filter-transfers-title">
-            <IonNote id="filter-transfers-title" className="filter-sheet-section__title">
-              Переводы в суммах
-            </IonNote>
-            <div className="filter-sheet-checkboxes">
-              <IonCheckbox
-                className="filter-sheet-checkbox"
-                labelPlacement="end"
-                justify="start"
-                checked={includeTransferExpenses}
-                onIonChange={(event) => setIncludeTransferExpenses(event.detail.checked)}
-              >
-                Учитывать в расходах
-              </IonCheckbox>
-              <IonCheckbox
-                className="filter-sheet-checkbox"
-                labelPlacement="end"
-                justify="start"
-                checked={includeTransferIncome}
-                onIonChange={(event) => setIncludeTransferIncome(event.detail.checked)}
-              >
-                Учитывать в доходах
-              </IonCheckbox>
-            </div>
-          </section>
 
           {/* Categories */}
           {allCategories.length > 0 && (

@@ -55,6 +55,15 @@ describe('tag navigation', () => {
     expect(filterFromParams(filterToParams({ withoutTags: true }))).toEqual({ withoutTags: true })
   })
 
+  it('round-trips supported transaction types and ignores unknown values', () => {
+    expect(filterFromParams(filterToParams({ types: ['expense', 'transfer'] }))).toEqual({
+      types: ['expense', 'transfer'],
+    })
+    expect(filterFromParams(new URLSearchParams('types=unknown,income,income'))).toEqual({
+      types: ['income'],
+    })
+  })
+
   it('round-trips account scope and independent transfer preferences', () => {
     const filter: TransactionFilter = {
       accountKinds: ['spending', 'investment'],

@@ -63,10 +63,33 @@
   min-width: 0;
   flex-direction: column;
   gap: 4px;
+  border: 0;
   padding: 12px 14px;
+  appearance: none;
   background: var(--ion-card-background, var(--ion-background-color));
   color: var(--transaction-secondary-text);
+  cursor: pointer;
+  font: inherit;
   font-size: 0.8125rem;
+  text-align: start;
+}
+
+.transactions-summary__item:focus-visible {
+  z-index: 1;
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: -2px;
+}
+
+.transactions-summary__item--active {
+  background: var(--ion-color-step-50, rgba(var(--ion-color-primary-rgb), 0.06));
+}
+
+.transactions-summary__item--expense {
+  box-shadow: inset 0 -3px 0 var(--transaction-expense-text);
+}
+
+.transactions-summary__item--income {
+  box-shadow: inset 0 -3px 0 var(--transaction-income-text);
 }
 
 .transactions-summary__amount {
@@ -108,6 +131,10 @@
   margin: 0;
 }
 
+.transactions-analytics-wrapper {
+  position: relative;
+}
+
 .transactions-analytics {
   margin-bottom: 12px;
   border-bottom: 1px solid var(--ion-border-color, rgba(0, 0, 0, 0.13));
@@ -121,12 +148,55 @@
   font-weight: 600;
 }
 
+.transactions-analytics__settings {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: 2px;
+  inset-inline-end: 42px;
+  --padding-start: 10px;
+  --padding-end: 10px;
+  min-width: 44px;
+  height: 44px;
+  margin: 0;
+}
+
+.transactions-analytics__popover {
+  --width: 264px;
+  --max-width: calc(100vw - 32px);
+}
+
+.transactions-analytics__popover-content {
+  padding: 8px 16px;
+}
+
+.transactions-analytics__transfer-checkbox {
+  --size: 18px;
+  --border-radius: 5px;
+  --border-width: 1.5px;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.transactions-analytics__transfer-checkbox::part(container) {
+  margin-inline-end: 8px;
+}
+
+.transactions-analytics__transfer-checkbox::part(label) {
+  margin: 0;
+  white-space: normal;
+}
+
 .transactions-analytics__content {
   padding: 4px 4px 16px;
 }
 
 .transactions-analytics__grouping {
-  margin-top: 8px;
+  margin-top: 0;
 }
 
 .transactions-chart-skeleton {

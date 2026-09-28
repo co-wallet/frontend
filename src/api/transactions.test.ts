@@ -22,4 +22,12 @@ describe('transactionsApi.list', () => {
       params: { without_tags: 'true', page: '1', limit: '50' },
     })
   })
+
+  it('serializes multiple transaction types', async () => {
+    await transactionsApi.list({ types: ['income', 'transfer'] })
+
+    expect(apiClient.get).toHaveBeenCalledWith('/transactions', {
+      params: { types: 'income,transfer' },
+    })
+  })
 })

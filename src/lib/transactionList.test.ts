@@ -11,7 +11,9 @@ import {
   groupTransactionsByDate,
   hasTransactionFilters,
   isSharedTransaction,
+  isTransactionTypeFilterActive,
   transactionDefaultCurrencyAmount,
+  transactionTypesForSummary,
   transactionUserAmount,
 } from '@/lib/transactionList'
 
@@ -159,6 +161,7 @@ describe('transaction list helpers', () => {
     expect(hasTransactionFilters({ withoutTags: true })).toBe(true)
     expect(hasTransactionFilters({ accountKinds: [] })).toBe(true)
     expect(hasTransactionFilters({ includeTransferExpenses: true })).toBe(true)
+    expect(hasTransactionFilters({ types: ['expense'] })).toBe(true)
     expect(hasTransactionFilters({})).toBe(false)
   })
 
@@ -179,5 +182,13 @@ describe('transaction list helpers', () => {
       include_transfer_expenses: true,
       include_transfer_income: false,
     })
+  })
+
+  it('builds and recognizes summary type filters with optional transfers', () => {
+    expect(transactionTypesForSummary('expenses', false)).toEqual(['expense'])
+    expect(transactionTypesForSummary('income', true)).toEqual(['income', 'transfer'])
+    expect(isTransactionTypeFilterActive({ types: ['transfer', 'income'] }, 'income', true)).toBe(true)
+    expect(isTransactionTypeFilterActive({ types: ['income'] }, 'income', true)).toBe(false)
+    expect(isTransactionTypeFilterActive({}, 'expenses', false)).toBe(false)
   })
 })
