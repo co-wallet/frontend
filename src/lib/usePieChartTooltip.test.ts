@@ -3,7 +3,7 @@ import { usePieChartTooltip } from './usePieChartTooltip'
 
 const state = vi.hoisted(() => ({
   active: false,
-  navigationRef: { current: { activeSector: null as string | null, capturedSector: null as string | null } },
+  navigationRef: { current: { activeSector: null as string | null, dismissTimer: null as ReturnType<typeof setTimeout> | null } },
   trigger: 'click' as 'click' | 'hover',
   effects: [] as Array<() => void | (() => void)>,
 }))
@@ -16,13 +16,18 @@ vi.mock('react', () => ({
 }))
 
 beforeEach(() => {
+  vi.useFakeTimers()
   state.active = false
-  state.navigationRef = { current: { activeSector: null, capturedSector: null } }
+  state.navigationRef = { current: { activeSector: null, dismissTimer: null } }
   state.trigger = 'click'
   state.effects = []
   vi.stubGlobal('document', new EventTarget())
 })
-afterEach(() => vi.unstubAllGlobals())
+afterEach(() => {
+  vi.clearAllTimers()
+  vi.useRealTimers()
+  vi.unstubAllGlobals()
+})
 
 describe('usePieChartTooltip', () => {
   it('opens on a sector tap, dismisses on an area tap and reopens on the same sector', () => {
@@ -38,6 +43,8 @@ describe('usePieChartTooltip', () => {
     document.dispatchEvent(new Event('click'))
     tooltip = usePieChartTooltip()
     expect(tooltip.active).toBe(false)
+    vi.runOnlyPendingTimers()
+    expect(state.navigationRef.current.activeSector).toBeNull()
 
     document.dispatchEvent(new Event('click'))
     tooltip.onSectorClick()
@@ -73,7 +80,7 @@ describe('usePieChartTooltip', () => {
     expect(add).not.toHaveBeenCalled()
   })
 
-  it('navigates only after a second tap on the same mobile sector', () => {
+  it('navigates after a second tap even when Recharts handles it after a microtask and re-render', async () => {
     const navigate = vi.fn()
     let tooltip = usePieChartTooltip()
     state.effects[0]()
@@ -85,6 +92,7 @@ describe('usePieChartTooltip', () => {
 
     tooltip = usePieChartTooltip()
     document.dispatchEvent(new Event('click'))
+    await Promise.resolve()
     tooltip = usePieChartTooltip()
     tooltip.onNavigableSectorClick('account-1', navigate)
     expect(navigate).toHaveBeenCalledOnce()

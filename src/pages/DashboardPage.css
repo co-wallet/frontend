@@ -22,6 +22,10 @@
   outline: none;
 }
 
+.dashboard-chart-card .recharts-tooltip-wrapper {
+  pointer-events: none;
+}
+
 .dashboard-chart-legend-row {
   display: flex;
   align-items: center;
