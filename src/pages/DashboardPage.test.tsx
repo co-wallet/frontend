@@ -185,6 +185,7 @@ describe('Dashboard account transaction navigation', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
 
     expect(markup).toContain('<ion-router-link')
+    expect(markup).toMatch(/<ion-router-link[^>]*><div class="dashboard-chart-legend-row dashboard-chart-legend-row--link">/)
     expect(markup).toContain('aria-label="Транзакции по счету Личная"')
     expect(markup).toContain('account_ids=spending&amp;account_kinds=spending&amp;period=month')
   })

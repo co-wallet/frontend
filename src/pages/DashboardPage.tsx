@@ -183,12 +183,14 @@ function ChartBlock({
           return s.transactionsHref ? (
             <IonRouterLink
               key={i}
-              className="dashboard-chart-legend-row dashboard-chart-legend-row--link"
+              className="dashboard-chart-legend-link"
               routerLink={s.transactionsHref}
               routerDirection="forward"
               aria-label={`Транзакции по счету ${s.name}`}
             >
-              {content}
+              <div className="dashboard-chart-legend-row dashboard-chart-legend-row--link">
+                {content}
+              </div>
             </IonRouterLink>
           ) : (
             <div key={i} className="dashboard-chart-legend-row">
