@@ -113,8 +113,6 @@ body.dark .dashboard-chart-card {
 }
 
 .dashboard-chart-heading ion-card-title {
-  --color: var(--ion-text-color);
-
   flex: 1;
   min-width: 0;
 }

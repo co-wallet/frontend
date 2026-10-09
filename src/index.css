@@ -7,6 +7,21 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Shared defaults also cover cards and notes in modals and public pages. */
+ion-card-title {
+  --color: var(--ion-text-color);
+}
+
+ion-card-subtitle,
+ion-note,
+ion-item-divider {
+  --color: var(--transaction-secondary-text);
+}
+
+ion-label:not(.ion-color) p {
+  color: var(--transaction-secondary-text);
+}
+
 body.dark {
   color-scheme: dark;
 }
