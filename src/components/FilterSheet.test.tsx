@@ -49,6 +49,24 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 describe('FilterSheet', () => {
+  it.each(['or', 'and'] as const)('renders the tag matching control with a filled selection in %s mode', (tagMode) => {
+    const markup = renderToStaticMarkup(
+      <FilterSheet value={{ tagIds: ['tag-1'], tagMode }} onChange={vi.fn()} />,
+    )
+    const tags = markup.match(/<section[^>]*aria-labelledby="filter-tags-title".*?<\/section>/)?.[0] ?? ''
+    const segment = tags.match(/<ion-segment\s[^>]*>.*?<\/ion-segment>/)?.[0] ?? ''
+    expect(tags).not.toContain('filter-sheet-section__heading')
+    expect(tags).toContain('Совпадение')
+    expect(segment).toContain('mode="ios"')
+    expect(segment).toContain(`value="${tagMode}"`)
+    expect(segment).toContain('aria-label="Совпадение выбранных тегов"')
+    expect(segment).toMatch(/<ion-segment-button[^>]*mode="ios"[^>]*value="or"[^>]*aria-label="Любой выбранный тег"/)
+    expect(segment).toMatch(/<ion-segment-button[^>]*mode="ios"[^>]*value="and"[^>]*aria-label="Все выбранные теги"/)
+    expect(segment).toContain('Любой')
+    expect(segment).toContain('Все')
+    expect(tags).toContain('#дом')
+  })
+
   it('keeps dates in the period control and announces the active filter count', () => {
     const markup = renderToStaticMarkup(
       <FilterSheet

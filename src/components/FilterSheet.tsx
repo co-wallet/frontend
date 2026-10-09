@@ -296,24 +296,23 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
           {/* Tags */}
           {tags.length > 0 && (
             <section className="filter-sheet-section" aria-labelledby="filter-tags-title">
-              <div className="filter-sheet-section__heading">
-                <IonNote id="filter-tags-title" className="filter-sheet-section__title">Теги</IonNote>
-                <div className="filter-sheet-tag-mode-control">
-                  <span className="filter-sheet-tag-mode__label">Совпадение</span>
-                  <IonSegment
-                    value={tagMode}
-                    onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
-                    className="filter-sheet-tag-mode"
-                    aria-label="Совпадение выбранных тегов"
-                  >
-                    <IonSegmentButton value="or" aria-label="Любой выбранный тег">
-                      <IonLabel>Любой</IonLabel>
-                    </IonSegmentButton>
-                    <IonSegmentButton value="and" aria-label="Все выбранные теги">
-                      <IonLabel>Все</IonLabel>
-                    </IonSegmentButton>
-                  </IonSegment>
-                </div>
+              <IonNote id="filter-tags-title" className="filter-sheet-section__title">Теги</IonNote>
+              <div className="filter-sheet-tag-mode-control">
+                <span className="filter-sheet-tag-mode__label">Совпадение</span>
+                <IonSegment
+                  mode="ios"
+                  value={tagMode}
+                  onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
+                  className="filter-sheet-tag-mode"
+                  aria-label="Совпадение выбранных тегов"
+                >
+                  <IonSegmentButton mode="ios" value="or" aria-label="Любой выбранный тег">
+                    <IonLabel>Любой</IonLabel>
+                  </IonSegmentButton>
+                  <IonSegmentButton mode="ios" value="and" aria-label="Все выбранные теги">
+                    <IonLabel>Все</IonLabel>
+                  </IonSegmentButton>
+                </IonSegment>
               </div>
               <div className="filter-sheet-options">
                 {tags.filter((tag) => !tag.hidden).map(tagOption)}
