@@ -12,6 +12,21 @@ import {
 } from './CategoryIcon'
 
 describe('CategoryIcon', () => {
+  it.each([
+    ['preset:cafe|graphite|orange', 'orange'],
+    ['preset:cafe|graphite|yellow', 'yellow'],
+    ['preset:cafe|graphite|none', 'graphite'],
+    ['preset:cafe|graphite|graphite', 'graphite'],
+    ['preset:cafe|graphite|invalid', 'orange'],
+    ['preset:cafe|graphite', 'orange'],
+    ['preset:cafe|green|orange', 'green'],
+    ['preset:cafe|yellow|red', 'yellow'],
+  ])('resolves the chart color for %s to %s', (value, color) => {
+    for (const type of ['expense', 'income'] as const) {
+      expect(categoryIconChartColor(value, type)).toBe(`var(--account-icon-color-${color})`)
+    }
+  })
+
   it.each(['unprefixed-label', 'preset:unknown'])('uses category-type defaults for unsupported value %s', (value) => {
     expect(normalizeCategoryIconValue(value, 'expense')).toBe('preset:groceries')
     expect(normalizeCategoryIconValue(value, 'income')).toBe('preset:work')

@@ -4,6 +4,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   AccountIcon,
   AccountIconPicker,
+  accountIconChartColor,
   DEFAULT_ACCOUNT_ICON,
   MAX_CUSTOM_ACCOUNT_ICON_LENGTH,
   customAccountIconValue,
@@ -12,6 +13,19 @@ import {
 } from './AccountIcon'
 
 describe('AccountIcon', () => {
+  it.each([
+    ['preset:cash|graphite|orange', 'orange'],
+    ['custom:Bank|graphite|yellow', 'yellow'],
+    ['preset:cash|graphite|none', 'graphite'],
+    ['preset:cash|graphite|graphite', 'graphite'],
+    ['preset:cash|graphite|invalid', 'blue'],
+    ['preset:cash|graphite', 'blue'],
+    ['preset:cash|green|orange', 'green'],
+    ['preset:cash|yellow|red', 'yellow'],
+  ])('resolves the chart color for %s to %s', (value, color) => {
+    expect(accountIconChartColor(value)).toBe(`var(--account-icon-color-${color})`)
+  })
+
   it.each(['unprefixed-label', 'preset:unknown'])('uses the default preset for unsupported value %s', (value) => {
     expect(normalizeAccountIconValue(value)).toBe(DEFAULT_ACCOUNT_ICON)
     expect(renderToStaticMarkup(<AccountIcon value={value} />)).toContain('aria-label="Дебетовая"')

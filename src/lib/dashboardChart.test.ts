@@ -9,6 +9,22 @@ import {
 } from './dashboardChart'
 
 describe('dashboard chart data', () => {
+  it.each(['account', 'category'] as const)(
+    'uses the graphite %s icon border for both sectors and legend markers',
+    (iconType) => {
+      const { chartEntries, legendEntries } = prepareDashboardChart([
+        { name: 'Обводка', amount: -80, iconType, icon: 'preset:coins|graphite|orange' },
+        { name: 'Без обводки', amount: 50, iconType, icon: 'preset:coins|graphite|none' },
+      ])
+      for (const entries of [chartEntries, legendEntries]) {
+        expect(entries.map(dashboardEntryColor)).toEqual([
+          'var(--account-icon-color-graphite)',
+          'var(--account-icon-color-orange)',
+        ])
+      }
+    },
+  )
+
   it.each([
     ['preset:cash|green|purple', 'var(--account-icon-color-green)'],
     ['custom:TBank|yellow|none', 'var(--account-icon-color-yellow)'],

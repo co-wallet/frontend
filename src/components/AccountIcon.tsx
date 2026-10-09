@@ -251,8 +251,13 @@ export function accountIconStyle(
   }
 }
 
+export function iconAppearanceChartColor({ foreground, border }: AccountIconAppearance): string {
+  const color = foreground === 'graphite' && border !== 'none' ? border : foreground
+  return `var(--account-icon-color-${color})`
+}
+
 export function accountIconChartColor(value?: string | null): string {
-  return `var(--account-icon-color-${resolveAccountIcon(value).foreground})`
+  return iconAppearanceChartColor(resolveAccountIcon(value))
 }
 
 export function AccountIcon({
