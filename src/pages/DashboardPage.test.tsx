@@ -9,8 +9,6 @@ vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}
 const queryState = vi.hoisted(() => ({
   selectedKinds: ['spending'] as string[],
   includeShared: false,
-  accountFilter: 'all',
-  selectedIds: [] as string[],
   accountsLoading: false,
   accountsError: false,
   onlyShared: false,
@@ -24,7 +22,7 @@ vi.mock('react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('react')>()
   return {
     ...actual,
-    useState: (initial: unknown) => actual.useState(Array.isArray(initial) && initial[0] === 'spending' ? queryState.selectedKinds : initial === false ? queryState.includeShared : initial === 'all' ? queryState.accountFilter : Array.isArray(initial) && initial.length === 0 ? queryState.selectedIds : initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
+    useState: (initial: unknown) => actual.useState(Array.isArray(initial) && initial[0] === 'spending' ? queryState.selectedKinds : initial === false ? queryState.includeShared : initial === 'balance' ? queryState.chartMode : (typeof initial === 'object' && initial !== null && 'expenses' in initial && 'income' in initial) ? queryState.transferVisibility : initial),
   }
 })
 vi.mock('@/store/periodStore', async (importOriginal) => ({
@@ -53,7 +51,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn() }),
 }))
 const initialPeriod = { ...queryState.period }
-afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountFilter = 'all'; queryState.selectedIds = []; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
+afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 
 describe('Dashboard period visibility', () => {
@@ -168,11 +166,9 @@ describe('Dashboard recent transactions', () => {
     queryState.chartMode = 'expenses'
     queryState.selectedKinds = ['deposit', 'investment']
     queryState.includeShared = true
-    queryState.accountFilter = 'custom'
-    queryState.selectedIds = ['deposit', 'shared-deposit']
     queryState.transferVisibility = { expenses: true, income: false }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toContain('account_ids=deposit%2Cshared-deposit')
+    expect(markup).not.toContain('account_ids=')
     expect(markup).toContain('account_kinds=deposit%2Cinvestment')
     expect(markup).toContain('include_shared=true')
     expect(markup).toContain('include_transfer_expenses=true')
@@ -205,7 +201,7 @@ describe('Dashboard shared accounts', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(queryState.analyticsQueries).toHaveLength(3)
     for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe('spending')
-    expect(markup).toContain('Личные счета')
+    expect(markup).not.toContain('dashboard-account-settings')
     expect(markup).not.toContain('Общий кошелёк')
     expect(markup).not.toContain('dashboard-account-filter__options')
   })
@@ -219,17 +215,8 @@ describe('Dashboard shared accounts', () => {
     expect(markup).not.toContain('Учитывать общие счета')
   })
 
-  it.each([false, true])('intersects custom selection with shared visibility %s', (includeShared) => {
-    queryState.includeShared = includeShared
-    queryState.accountFilter = 'custom'
-    queryState.selectedIds = ['spending', 'shared', 'shared-deposit', 'deleted']
-    renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe(includeShared ? 'spending,shared' : 'spending')
-  })
-
-  it.each(['onlyShared', 'accountsLoading', 'accountsError', 'emptyCustom'] as const)('never requests all accounts when %s', (scenario) => {
-    if (scenario === 'emptyCustom') queryState.accountFilter = 'custom'
-    else queryState[scenario] = true
+  it.each(['onlyShared', 'accountsLoading', 'accountsError'] as const)('never requests all accounts when %s', (scenario) => {
+    queryState[scenario] = true
     queryState.chartMode = 'expenses'
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(queryState.analyticsQueries.every((query) => !query.enabled)).toBe(true)
@@ -255,4 +242,21 @@ it.each([false, true])('uses new kinds consistently in analytics, shared=%s', (i
   renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
   const ids = includeShared ? ['savings', 'shared-savings-account'] : ['savings']
   for (const query of queryState.analyticsQueries) expect(query.params.account_ids).toBe(ids.join(','))
+})
+
+
+it('filters all matching accounts by kind without a specific-account selector', () => {
+  queryState.selectedKinds = ['spending', 'savings_account']
+  queryState.includeShared = true
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  expect(markup).toContain('id="dashboard-kind-filter"')
+  expect(markup).toContain('Типов средств: 2')
+  expect(markup).not.toContain('dashboard-account-settings')
+  expect(markup).not.toContain('Выбрано счетов:')
+  expect(markup).not.toContain('ion-select-option value="spending"')
+  for (const query of queryState.analyticsQueries) {
+    expect(query.params.account_ids).toBe('spending,shared,shared-savings-account')
+    expect(query.params.account_kinds).toBe('spending,savings_account')
+  }
+  expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(['spending', 'shared', 'shared-savings-account'])
 })

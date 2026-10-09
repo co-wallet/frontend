@@ -14,16 +14,12 @@ import {
   IonPopover,
   IonButton,
   IonIcon,
-  IonSegment,
-  IonSegmentButton,
-  IonLabel,
   IonCard,
   IonCardHeader,
   IonCardTitle,
   IonCardContent,
   IonSelect,
   IonSelectOption,
-  IonChip,
   IonText,
   IonRouterLink,
 } from '@ionic/react'
@@ -33,6 +29,7 @@ import {
   analyticsOutline,
   optionsOutline,
   swapHorizontalOutline,
+  chevronDownOutline,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
@@ -45,10 +42,7 @@ import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
 import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/CategoryIcon'
 import { QuickTransactionFab } from '@/components/QuickTransactionFab'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
-import {
-  filterAccountsByKinds,
-  selectedVisibleAccountIds,
-} from '@/lib/accountFilters'
+import { filterAccountsByKinds } from '@/lib/accountFilters'
 import {
   dashboardEntryColor,
   DASHBOARD_TOOLTIP_WIDTH,
@@ -67,7 +61,6 @@ import {
 import './DashboardPage.css'
 
 type ChartMode = 'balance' | 'expenses' | 'income'
-type AccountFilter = 'all' | 'custom'
 
 import { useChartTheme } from '@/lib/useChartTheme'
 
@@ -265,9 +258,7 @@ export function DashboardPage() {
   const [chartMode, setChartMode] = useState<ChartMode>('balance')
   const [transferVisibility, setTransferVisibility] = useState({ expenses: false, income: true })
   const [includeShared, setIncludeShared] = useState(false)
-  const [accountFilter, setAccountFilter] = useState<AccountFilter>('all')
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
-  const [selectedAccountIds, setSelectedAccountIds] = useState<string[]>([])
 
   const saveCurrency = useMutation({
     mutationFn: (code: string) => authApi.updateMe(code),
@@ -278,13 +269,8 @@ export function DashboardPage() {
     queryFn: () => accountsApi.list(displayCurrency),
   })
 
-  const kindFilteredAccounts = filterAccountsByKinds(accounts, selectedKinds)
+  const filteredAccounts = filterAccountsByKinds(accounts, selectedKinds)
     .filter((account) => includeShared || account.accessMode !== 'shared')
-  const effectiveSelectedAccountIds = selectedVisibleAccountIds(kindFilteredAccounts, selectedAccountIds)
-
-  const filteredAccounts = accountFilter === 'all'
-    ? kindFilteredAccounts
-    : kindFilteredAccounts.filter((account) => effectiveSelectedAccountIds.includes(account.id))
   const filteredAccountIds = filteredAccounts.map((account) => account.id).join(',') || undefined
   const hasAnalyticsAccounts = !accountsLoading && !accountsError && filteredAccounts.length > 0
 
@@ -301,7 +287,6 @@ export function DashboardPage() {
   const transactionFilter: TransactionFilter = {
     accountKinds: selectedKinds,
     ...(includeShared ? { includeShared: true } : {}),
-    ...(accountFilter === 'custom' ? { accountIds: effectiveSelectedAccountIds } : {}),
     ...(transferVisibility.expenses ? { includeTransferExpenses: true } : {}),
     ...(!transferVisibility.income ? { includeTransferIncome: false } : {}),
   }
@@ -310,14 +295,10 @@ export function DashboardPage() {
     ? {}
     : { dateFrom, dateTo }
   const allTransactionsHref = filteredTransactionsHref(transactionFilter, transactionPeriod)
-  const quickAccountId = accountFilter === 'custom' && effectiveSelectedAccountIds.length === 1
-    ? effectiveSelectedAccountIds[0]
-    : undefined
 
   function addTransaction(type: TransactionType) {
     history.push(transactionCreationLocation(location, {
       type,
-      ...(quickAccountId ? { accountId: quickAccountId } : {}),
       ...(chartMode === 'balance' ? {} : { date: dateTo }),
     }))
   }
@@ -444,40 +425,51 @@ export function DashboardPage() {
           <section className="dashboard-view-controls" aria-label="Параметры отображения">
             {/* Account filter */}
             <div className="dashboard-account-filter">
-              <IonSelect
+              <IonButton
+                id="dashboard-kind-filter"
+                className="dashboard-kind-trigger"
+                fill="outline"
+                color="medium"
                 aria-label="Тип средств"
-                interface="popover"
-                multiple
-                value={selectedKinds}
-                onIonChange={(event) => {
-                  const kinds = event.detail.value as AccountKind[]
-                  setSelectedKinds(kinds)
-                }}
-                selectedText={selectedKinds.length === 0 ? 'Типы не выбраны' : selectedKinds.length === 1
+                aria-haspopup="dialog"
+              >
+                <span className="dashboard-kind-trigger__content"><span>{selectedKinds.length === 0 ? 'Типы не выбраны' : selectedKinds.length === 1
                   ? accountKindShortLabel(selectedKinds[0])
                   : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
                     ? 'Все типы средств'
-                    : `Типов средств: ${selectedKinds.length}`}
-                className="dashboard-currency-select"
-              >
-                {ACCOUNT_KIND_OPTIONS.map((option) => (
-                  <IonSelectOption key={option.value} value={option.value}>
-                    {option.shortLabel}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-              <IonButton
-                id="dashboard-account-settings"
-                className="dashboard-account-settings"
-                fill="outline"
-                color="medium"
-                aria-label={accountFilter === 'custom'
-                  ? `Выбрано счетов: ${effectiveSelectedAccountIds.length}`
-                  : includeShared ? 'Все счета' : 'Личные счета'}
-                aria-haspopup="dialog"
-              >
-                <IonIcon slot="icon-only" icon={optionsOutline} />
+                    : `Типов средств: ${selectedKinds.length}`}</span>
+                <IonIcon icon={chevronDownOutline} aria-hidden="true" /></span>
               </IonButton>
+              <IonPopover
+                trigger="dashboard-kind-filter"
+                className="dashboard-kind-popover"
+                reference="trigger"
+                size="cover"
+                side="bottom"
+                alignment="start"
+                arrow={false}
+                aria-label="Тип средств"
+              >
+                <div className="dashboard-kind-options">
+                  {ACCOUNT_KIND_OPTIONS.map((option) => {
+                    const selected = selectedKinds.includes(option.value)
+                    return (
+                      <IonButton
+                        key={option.value}
+                        className="dashboard-kind-option"
+                        fill={selected ? 'solid' : 'clear'}
+                        color={selected ? 'primary' : 'medium'}
+                        aria-pressed={selected}
+                        onClick={() => setSelectedKinds((previous) => previous.includes(option.value)
+                          ? previous.filter((kind) => kind !== option.value)
+                          : [...previous, option.value])}
+                      >
+                        <span>{option.shortLabel}</span>
+                      </IonButton>
+                    )
+                  })}
+                </div>
+              </IonPopover>
               <IonSelect
                 aria-label="Валюта"
                 interface="popover"
@@ -498,51 +490,6 @@ export function DashboardPage() {
                   </IonSelectOption>
                 ))}
               </IonSelect>
-              <IonPopover trigger="dashboard-account-settings" className="dashboard-chart-popover" aria-label="Фильтр счетов">
-                <div className="dashboard-chart-popover-content">
-                  <IonText color="medium" style={{ fontSize: '0.75rem' }}>Счета</IonText>
-                  <IonSegment
-                    value={accountFilter}
-                    onIonChange={(e) => setAccountFilter(e.detail.value as AccountFilter)}
-                  >
-                    <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
-                    <IonSegmentButton value="custom"><IonLabel>Выбрать</IonLabel></IonSegmentButton>
-                  </IonSegment>
-                  {accountFilter === 'custom' && (
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, paddingTop: 8 }}>
-                      {kindFilteredAccounts.map((a) => {
-                        const active = selectedAccountIds.includes(a.id)
-                        const toggleAccount = () => setSelectedAccountIds((previous) =>
-                          previous.includes(a.id)
-                            ? previous.filter((id) => id !== a.id)
-                            : [...previous, a.id]
-                        )
-                        return (
-                          <IonChip
-                            key={a.id}
-                            className="dashboard-account-chip"
-                            color={active ? 'primary' : 'medium'}
-                            outline={!active}
-                            role="button"
-                            tabIndex={0}
-                            aria-pressed={active}
-                            onClick={toggleAccount}
-                            onKeyDown={(event) => {
-                              if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault()
-                                toggleAccount()
-                              }
-                            }}
-                          >
-                            <AccountIcon value={a.icon} size={20} shape="rectangle" />
-                            <IonLabel>{a.name}</IonLabel>
-                          </IonChip>
-                        )
-                      })}
-                    </div>
-                  )}
-                </div>
-              </IonPopover>
             </div>
 
           </section>
