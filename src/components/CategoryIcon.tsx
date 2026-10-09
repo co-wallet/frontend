@@ -134,6 +134,7 @@ import type { CategoryType } from '@/api/categories'
 import {
   ACCOUNT_ICON_COLORS,
   accountIconStyle,
+  iconAppearanceChartColor,
   IconAppearanceControls,
   type AccountIconAppearance,
   type AccountIconBorderColorId,
@@ -400,8 +401,7 @@ export function categoryIconChartColor(
   value?: string | null,
   type?: CategoryType,
 ): string {
-  const { foreground } = resolveCategoryIcon(value, type)
-  return `var(--account-icon-color-${foreground})`
+  return iconAppearanceChartColor(resolveCategoryIcon(value, type))
 }
 
 export function CategoryIcon({
