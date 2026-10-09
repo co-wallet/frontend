@@ -6,6 +6,8 @@ import {
   IonItem,
   IonLabel,
   IonList,
+  IonSearchbar,
+  IonText,
 } from '@ionic/react'
 import { checkmarkCircle } from 'ionicons/icons'
 
@@ -33,6 +35,13 @@ export function CategorySelect({
   onChange,
 }: CategorySelectProps) {
   const [isOpen, setIsOpen] = useState(false)
+  const [search, setSearch] = useState('')
+  const query = search.trim().toLocaleLowerCase('ru')
+  const showUncategorized = 'без категории'.includes(query)
+  const filteredCategories = categories.filter((category) =>
+    (!category.hidden || category.id === value)
+    && category.name.toLocaleLowerCase('ru').includes(query),
+  )
   const selectedCategory = categories.find((category) => category.id === value)
   const selectedLabel = selectedCategory?.name ?? 'Без категории'
 
@@ -46,15 +55,25 @@ export function CategorySelect({
       <EntityFormPicker label={label} value={selectedLabel}
         icon={<CategoryIcon value={selectedCategory?.icon ?? UNCATEGORIZED_CATEGORY_ICON}
           type={type} size={24} ariaLabel={selectedLabel} />}
-        isOpen={isOpen} onOpen={() => setIsOpen(true)} />
+        isOpen={isOpen} onOpen={() => {
+          setSearch('')
+          setIsOpen(true)
+        }} />
 
       <EntitySelectModal
         title={label}
         isOpen={isOpen}
         onDismiss={() => setIsOpen(false)}
       >
+        <IonSearchbar
+          value={search}
+          placeholder="Поиск категорий"
+          aria-label="Поиск категорий"
+          debounce={0}
+          onIonInput={(event) => setSearch(event.detail.value ?? '')}
+        />
         <IonList inset className="category-select-modal__list">
-          <IonItem
+          {showUncategorized && <IonItem
             button
             detail={false}
             className="category-select-option"
@@ -74,9 +93,9 @@ export function CategorySelect({
             {!value && (
               <IonIcon slot="end" icon={checkmarkCircle} color="primary" aria-label="Выбрано" />
             )}
-          </IonItem>
+          </IonItem>}
 
-          {categories.filter((category) => !category.hidden || category.id === value).map((category) => {
+          {filteredCategories.map((category) => {
             const selected = category.id === value
             return (
               <IonItem
@@ -104,6 +123,11 @@ export function CategorySelect({
             )
           })}
         </IonList>
+        {!showUncategorized && filteredCategories.length === 0 && (
+          <IonText color="medium">
+            <p className="ion-padding-horizontal" role="status">Категории не найдены</p>
+          </IonText>
+        )}
       </EntitySelectModal>
     </>
   )
