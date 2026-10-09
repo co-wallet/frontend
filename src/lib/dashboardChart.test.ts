@@ -13,13 +13,13 @@ describe('dashboard chart data', () => {
     'uses the graphite %s icon border for both sectors and legend markers',
     (iconType) => {
       const { chartEntries, legendEntries } = prepareDashboardChart([
-        { name: 'Обводка', amount: -80, iconType, icon: 'preset:coins|graphite|orange' },
+        { name: 'Обводка', amount: 80, iconType, icon: 'preset:coins|graphite|orange' },
         { name: 'Без обводки', amount: 50, iconType, icon: 'preset:coins|graphite|none' },
       ])
       for (const entries of [chartEntries, legendEntries]) {
         expect(entries.map(dashboardEntryColor)).toEqual([
-          'var(--account-icon-color-graphite)',
           'var(--account-icon-color-orange)',
+          'var(--account-icon-color-graphite)',
         ])
       }
     },
@@ -45,14 +45,15 @@ describe('dashboard chart data', () => {
     ]
     const { chartEntries, legendEntries } = prepareDashboardChart(data)
     expect(chartEntries.map((entry) => dashboardEntryColor(entry))).toEqual([
-      'var(--account-icon-color-purple)', 'var(--account-icon-color-green)',
+      'var(--account-icon-color-purple)',
     ])
     for (const sector of chartEntries) {
       const legend = legendEntries.find((entry) => entry.name === sector.name)!
       expect(dashboardEntryColor(sector)).toBe(dashboardEntryColor(legend))
     }
     const filtered = prepareDashboardChart(data.filter((entry) => entry.name === 'Долг'))
-    expect(dashboardEntryColor(filtered.chartEntries[0])).toBe('var(--account-icon-color-green)')
+    expect(filtered.chartEntries).toEqual([])
+    expect(dashboardEntryColor(filtered.legendEntries[0])).toBe('var(--account-icon-color-green)')
   })
 
   it.each(['expense', 'income'] as const)('uses category colors for %s charts', (categoryType) => {
@@ -67,19 +68,17 @@ describe('dashboard chart data', () => {
       .toBe('var(--account-icon-color-green)')
   })
 
-  it('builds chart sectors when all account balances are negative', () => {
+  it('keeps negative and zero accounts in the legend without building sectors', () => {
     const result = prepareDashboardChart([
       { name: 'Личная', amount: -100 },
       { name: 'Кредитная', amount: 0 },
     ])
 
-    expect(result.chartEntries).toEqual([
-      { name: 'Личная', amount: -100, chartAmount: 100 },
-    ])
+    expect(result.chartEntries).toEqual([])
     expect(result.legendEntries.map((entry) => entry.name)).toEqual(['Личная', 'Кредитная'])
   })
 
-  it('sorts signed values while keeping positive chart sector sizes', () => {
+  it('sorts signed legend values while only charting positive balances', () => {
     const result = prepareDashboardChart([
       { name: 'Малый плюс', amount: 20 },
       { name: 'Большой минус', amount: -80 },
@@ -88,7 +87,24 @@ describe('dashboard chart data', () => {
     ])
 
     expect(result.legendEntries.map((entry) => entry.amount)).toEqual([50, 20, -80, -10])
-    expect(result.chartEntries.map((entry) => entry.chartAmount)).toEqual([50, 20, 80, 10])
+    expect(result.chartEntries.map((entry) => entry.chartAmount)).toEqual([50, 20])
+    expect(result.chartEntries.map((entry) => entry.name)).toEqual(['Большой плюс', 'Малый плюс'])
+  })
+
+  it('preserves positive sector data and negative account navigation without mutating inputs', () => {
+    const positive = { name: 'Актив', amount: 0.01, iconType: 'account' as const, transactionsHref: '/transactions?account_ids=asset' }
+    const negative = { name: 'Долг', amount: -10, iconType: 'account' as const, legendTransactionsHref: '/transactions?account_ids=debt' }
+    const data = [negative, positive]
+    const result = prepareDashboardChart(data)
+
+    expect(result.chartEntries).toEqual([{ ...positive, chartAmount: 0.01 }])
+    expect(result.legendEntries).toEqual([positive, negative])
+    expect(data).toEqual([negative, positive])
+    expect(positive).not.toHaveProperty('chartAmount')
+  })
+
+  it.each([{ data: [] }, { data: [{ name: 'Пустой', amount: 0 }] }])('returns no sectors for empty or zero balances: $data', ({ data }) => {
+    expect(prepareDashboardChart(data)).toEqual({ legendEntries: data, chartEntries: [] })
   })
 })
 

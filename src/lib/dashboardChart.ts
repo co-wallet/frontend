@@ -86,8 +86,6 @@ export function prepareDashboardChart(data: DashboardPieEntry[]): {
 
   return {
     legendEntries,
-    chartEntries: legendEntries
-      .filter((entry) => entry.amount !== 0)
-      .map((entry) => ({ ...entry, chartAmount: Math.abs(entry.amount) })),
+    chartEntries: positive.map((entry) => ({ ...entry, chartAmount: entry.amount })),
   }
 }
