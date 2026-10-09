@@ -87,12 +87,11 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   })
   const { data: tags = [] } = useQuery({ queryKey: ['tags'], queryFn: () => tagsApi.list() })
 
-  const allCategories: Category[] = [
-    ...expenseCategories,
-    ...incomeCategories,
+  const categoryGroups = [
+    { type: 'expense', title: 'Категории расходов', categories: expenseCategories },
+    { type: 'income', title: 'Категории доходов', categories: incomeCategories },
   ]
 
-  const hiddenCategories = allCategories.filter((category) => category.hidden)
   const hiddenTags = tags.filter((tag) => tag.hidden)
   const visibleAccounts = transactionFilterAccounts(accounts, {
     accountKinds,
@@ -272,20 +271,27 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
           )}
 
           {/* Categories */}
-          {allCategories.length > 0 && (
-            <section className="filter-sheet-section" aria-labelledby="filter-categories-title">
-              <IonNote id="filter-categories-title" className="filter-sheet-section__title">Категории</IonNote>
-              <div className="filter-sheet-options">
-                {allCategories.filter((category) => !category.hidden).map(categoryOption)}
-              </div>
-              {hiddenCategories.length > 0 && (
-                <details className="filter-sheet-hidden">
-                  <summary>Скрытые категории ({hiddenCategories.length}){categoryIds.some((id) => hiddenCategories.some((c) => c.id === id)) && ` · выбрано: ${hiddenCategories.filter((c) => categoryIds.includes(c.id)).length}`}</summary>
-                  <div className="filter-sheet-options">{hiddenCategories.map(categoryOption)}</div>
-                </details>
-              )}
-            </section>
-          )}
+          {categoryGroups.map(({ type, title, categories }) => {
+            if (categories.length === 0) return null
+            const visibleCategories = categories.filter((category) => !category.hidden)
+            const hiddenCategories = categories.filter((category) => category.hidden)
+            const selectedHiddenCount = hiddenCategories.filter((category) => categoryIds.includes(category.id)).length
+            const titleId = `filter-${type}-categories-title`
+            return (
+              <section key={type} className="filter-sheet-section" aria-labelledby={titleId}>
+                <IonNote id={titleId} className="filter-sheet-section__title">{title}</IonNote>
+                {visibleCategories.length > 0 && (
+                  <div className="filter-sheet-options">{visibleCategories.map(categoryOption)}</div>
+                )}
+                {hiddenCategories.length > 0 && (
+                  <details className="filter-sheet-hidden">
+                    <summary>Скрытые категории ({hiddenCategories.length}){selectedHiddenCount > 0 && ` · выбрано: ${selectedHiddenCount}`}</summary>
+                    <div className="filter-sheet-options">{hiddenCategories.map(categoryOption)}</div>
+                  </details>
+                )}
+              </section>
+            )
+          })}
 
           {/* Tags */}
           {tags.length > 0 && (
