@@ -1,8 +1,14 @@
 import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FilterSheet } from '@/components/FilterSheet'
+
+const categoryFixture = vi.hoisted(() => ({ emptyType: '', onlyHidden: false }))
+beforeEach(() => {
+  categoryFixture.emptyType = ''
+  categoryFixture.onlyHidden = false
+})
 
 vi.mock('@ionic/react', async (importOriginal) => ({
   ...await importOriginal<typeof import('@ionic/react')>(),
@@ -11,6 +17,7 @@ vi.mock('@ionic/react', async (importOriginal) => ({
 
 vi.mock('@tanstack/react-query', () => ({
   useQuery: ({ queryKey }: { queryKey: string[] }) => {
+    if (queryKey[0] === 'categories' && queryKey[1] === categoryFixture.emptyType) return { data: [] }
     if (queryKey[0] === 'accounts') {
       return { data: [{
         id: 'account-1', name: 'Личная', icon: null, kind: 'spending', accessMode: 'personal',
@@ -25,8 +32,14 @@ vi.mock('@tanstack/react-query', () => ({
           name: 'Продукты',
           icon: 'preset:groceries',
           type: 'expense',
-        }, { id: 'category-hidden', name: 'Архивная', icon: null, type: 'expense', hidden: true }],
+        }, { id: 'category-hidden', name: 'Архивная', icon: null, type: 'expense', hidden: true }].filter((category) => !categoryFixture.onlyHidden || category.hidden),
       }
+    }
+    if (queryKey[0] === 'categories' && queryKey[1] === 'income') {
+      return { data: [
+        { id: 'income-1', name: 'Зарплата', icon: null, type: 'income', hidden: false },
+        { id: 'income-hidden', name: 'Старая работа', icon: null, type: 'income', hidden: true },
+      ].filter((category) => !categoryFixture.onlyHidden || category.hidden) }
     }
     if (queryKey[0] === 'tags') {
       return { data: [{ id: 'tag-1', name: 'дом' }, { id: 'tag-hidden', name: 'архив', hidden: true }] }
@@ -103,17 +116,61 @@ it('counts the summary transaction type selection as a filter', () => {
 it('puts hidden categories and tags in separate closed disclosures', () => {
   const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
   const disclosures = markup.match(/<details[^>]*>.*?<\/details>/g) ?? []
-  expect(disclosures).toHaveLength(2)
+  expect(disclosures).toHaveLength(3)
   expect(disclosures[0]).toContain('Скрытые категории (1)')
   expect(disclosures[0]).toContain('Архивная')
-  expect(disclosures[1]).toContain('Скрытые теги (1)')
-  expect(disclosures[1]).toContain('#архив')
+  expect(disclosures[1]).toContain('Скрытые категории (1)')
+  expect(disclosures[1]).toContain('Старая работа')
+  expect(disclosures[2]).toContain('Скрытые теги (1)')
+  expect(disclosures[2]).toContain('#архив')
   expect(disclosures.join('')).not.toMatch(/<details[^>]* open/)
   const visibleMarkup = markup.replace(/<details[^>]*>.*?<\/details>/g, '')
   expect(visibleMarkup).toContain('Продукты')
+  expect(visibleMarkup).toContain('Зарплата')
+  expect(visibleMarkup).not.toContain('Старая работа')
   expect(visibleMarkup).toContain('#дом')
   expect(visibleMarkup).not.toContain('Архивная')
   expect(visibleMarkup).not.toContain('#архив')
+})
+
+it('separates expense and income options into labelled sections with a shared selection', () => {
+  const markup = renderToStaticMarkup(<FilterSheet value={{ categoryIds: ['category-1', 'income-1', 'income-hidden'] }} onChange={vi.fn()} />)
+  const expense = markup.match(/<section[^>]*aria-labelledby="filter-expense-categories-title".*?<\/section>/)?.[0] ?? ''
+  const income = markup.match(/<section[^>]*aria-labelledby="filter-income-categories-title".*?<\/section>/)?.[0] ?? ''
+  expect(expense).toContain('Категории расходов')
+  expect(expense).toContain('Продукты')
+  expect(expense).toContain('Архивная')
+  expect(expense).not.toContain('Зарплата')
+  expect(expense).not.toContain('Старая работа')
+  expect(expense).not.toContain('выбрано:')
+  expect(income).toContain('Категории доходов')
+  expect(income).toContain('Зарплата')
+  expect(income).toContain('Старая работа')
+  expect(income).not.toContain('Продукты')
+  expect(income).not.toContain('Архивная')
+  expect(income).toContain('Скрытые категории (1) · выбрано: 1')
+  expect(expense.match(/aria-pressed="true"/g)).toHaveLength(1)
+  expect(income.match(/aria-pressed="true"/g)).toHaveLength(2)
+  expect(markup).toContain('aria-label="Фильтры, активно: 1"')
+})
+
+it.each(['expense', 'income'])('omits an empty %s group', (type) => {
+  categoryFixture.emptyType = type
+  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
+  expect(markup).not.toContain(`filter-${type}-categories-title`)
+  expect(markup).toContain(`filter-${type === 'expense' ? 'income' : 'expense'}-categories-title`)
+})
+
+it('keeps groups with only hidden categories available', () => {
+  categoryFixture.onlyHidden = true
+  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
+  expect(markup).toContain('Категории расходов')
+  expect(markup).toContain('Категории доходов')
+  expect(markup).toContain('Архивная')
+  expect(markup).toContain('Старая работа')
+  expect(markup).not.toContain('<span>Продукты</span>')
+  expect(markup).not.toContain('<span>Зарплата</span>')
+  expect(markup).not.toMatch(/<details[^>]* open/)
 })
 
 it('announces selected hidden filters without expanding their lists', () => {
