@@ -14,6 +14,7 @@ function getSystemDark(): boolean {
 
 function applyTheme(mode: ThemeMode) {
   const isDark = mode === 'dark' || (mode === 'system' && getSystemDark())
+  document.documentElement.dataset.theme = isDark ? 'dark' : 'light'
   document.body.classList.toggle('dark', isDark)
   const iconPrefix = isDark ? '/icons/wallet-dark' : '/icons/wallet'
   document.querySelector('link[rel="icon"]')?.setAttribute('href', `${iconPrefix}-32.png`)

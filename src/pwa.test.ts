@@ -29,6 +29,10 @@ describe('iOS status bar', () => {
     expect(background).toBeDefined()
     expect(manifest.theme_color).toBe(color)
     expect(manifest.background_color).toBe(background)
+    const earlySelector = selector === ':root' ? 'html' : 'html[data-theme="dark"]'
+    const earlyBlock = html.slice(html.indexOf(`${earlySelector} {`)).split('}')[0]
+    expect(earlyBlock.match(/--app-status-bar-background:\s*([^;]+);/)?.[1]).toBe(color)
+    expect(earlyBlock.match(/--app-page-background:\s*([^;]+);/)?.[1]).toBe(background)
     if (selector === ':root') expect(meta('theme-color')).toBe(color)
   })
 })

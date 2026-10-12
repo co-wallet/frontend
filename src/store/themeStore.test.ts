@@ -17,12 +17,14 @@ describe('theme icons and system chrome', () => {
     let onSystemChange = () => {}
     const attributes = new Map<string, string>()
     const toggle = vi.fn()
+    const root = { dataset: { theme: '' } }
     const storage = {
       getItem: () => saved ? JSON.stringify({ state: { mode: saved }, version: 0 }) : null,
       setItem: vi.fn(),
       removeItem: vi.fn(),
     }
     vi.stubGlobal('document', {
+      documentElement: root,
       body: { classList: { toggle } },
       querySelector: (selector: string) => ({
         setAttribute: (_name: string, value: string) => attributes.set(selector, value),
@@ -37,6 +39,7 @@ describe('theme icons and system chrome', () => {
     })
     const { useThemeStore } = await import('./themeStore')
     const expectIcons = (dark: boolean) => {
+      expect(root.dataset.theme).toBe(dark ? 'dark' : 'light')
       expect(toggle).toHaveBeenLastCalledWith('dark', dark)
       const prefix = dark ? '/icons/wallet-dark' : '/icons/wallet'
       expect(attributes.get('link[rel="icon"]')).toBe(`${prefix}-32.png`)
@@ -73,6 +76,7 @@ describe('theme icons and system chrome', () => {
   it('applies the theme when optional head elements are absent', async () => {
     const toggle = vi.fn()
     vi.stubGlobal('document', {
+      documentElement: { dataset: { theme: '' } },
       body: { classList: { toggle } },
       querySelector: () => null,
     })
