@@ -60,3 +60,14 @@ it('saves transfer acceptance explicitly, including disabling it', async () => {
   await accountsApi.update('account-1', { acceptTransfers: false })
   expect(apiClient.patch).toHaveBeenCalledWith('/accounts/account-1', { acceptTransfers: false })
 })
+
+it('saves the complete account order without sending a user ID', async () => {
+  vi.mocked(apiClient.patch).mockResolvedValueOnce({})
+  await expect(accountsApi.setOrder(['b', 'a'])).resolves.toBeUndefined()
+  expect(apiClient.patch).toHaveBeenLastCalledWith('/accounts/order', { accountIds: ['b', 'a'] })
+})
+
+it('propagates account order errors so the editor can retry', async () => {
+  vi.mocked(apiClient.patch).mockRejectedValueOnce(new Error('offline'))
+  await expect(accountsApi.setOrder(['b', 'a'])).rejects.toThrow('offline')
+})

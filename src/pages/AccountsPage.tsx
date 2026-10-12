@@ -2,6 +2,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { EntityFormHeader, EntityFormSection, EntityFormSelect, EntityFormError } from '@/components/EntityForm'
 import { AppContent } from '@/components/layout/AppContent'
 import { useRef, useState } from 'react'
+import { DndContext, MouseSensor, TouchSensor, KeyboardSensor, closestCenter, useSensor, useSensors, type DragEndEvent, type Modifier } from '@dnd-kit/core'
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableAccountItem } from '@/components/SortableAccountItem'
 import { useHistory } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import axios from 'axios'
@@ -21,20 +24,13 @@ import {
   IonButton,
   IonSpinner,
   IonText,
-  IonItemSliding,
-  IonItemOptions,
-  IonItemOption,
   IonAlert,
-  IonRouterLink,
-  IonButtons,
 } from '@ionic/react'
 import {
   addOutline,
   walletOutline,
   trashOutline,
   peopleOutline,
-  personOutline,
-  createOutline,
 } from 'ionicons/icons'
 import {
   accountsApi,
@@ -53,35 +49,24 @@ import {
 } from '@/lib/decimal'
 import { ACCOUNT_CONFIGURATION_NOTE, buildAccountMembers, type MemberDraft } from '@/lib/accountMembers'
 import { AccountMembersFields } from '@/components/AccountMembersFields'
-import { accountKindShortLabel } from '@/lib/accountKind'
 import {
   hasAccountFormChanges,
   initialBalanceInputValue,
   type AccountFormState,
 } from '@/lib/accountForm'
 import {
-  AccountIcon,
-  DEFAULT_ACCOUNT_ICON,
   normalizeAccountIconValue,
 } from '@/components/AccountIcon'
 import { AccountIconSettings } from '@/components/AccountIconSettings'
 import { AccountKindField } from '@/components/AccountKindField'
 import { usePeriodStore } from '@/store/periodStore'
 import { accountTransactionsHref } from '@/lib/transactionNavigation'
+import { applyAccountOrder, moveAccount } from '@/lib/accountOrder'
+import { useDragClickGuard } from '@/lib/useDragClickGuard'
 
 import './AccountsPage.css'
 
-function fmtCurrency(amount: number, currency: string): string {
-  try {
-    return new Intl.NumberFormat(undefined, {
-      style: 'currency',
-      currency,
-      maximumFractionDigits: 2,
-    }).format(amount)
-  } catch {
-    return `${amount.toFixed(2)} ${currency}`
-  }
-}
+const verticalAccountDrag: Modifier = ({ transform }) => ({ ...transform, x: 0 })
 
 export function AccountFormModal({
   isOpen,
@@ -362,6 +347,14 @@ export function AccountsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null)
+  const [orderDraft, setOrderDraft] = useState<Account[] | null>(null)
+  const [dragging, setDragging] = useState(false)
+  const dragClickGuard = useDragClickGuard()
+  const sensors = useSensors(
+    useSensor(MouseSensor, { activationConstraint: { distance: { y: 8 } } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 350, tolerance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  )
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts', defaultCurrency],
@@ -396,6 +389,33 @@ export function AccountsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   })
 
+  const orderMutation = useMutation({
+    mutationFn: accountsApi.setOrder,
+    onSuccess: async (_, accountIds) => {
+      qc.setQueriesData<Account[]>({ queryKey: ['accounts'] }, (cached) =>
+        cached ? applyAccountOrder(cached, accountIds) : cached)
+      await qc.invalidateQueries({ queryKey: ['accounts'] })
+      setOrderDraft(null)
+    },
+    onError: () => {
+      setOrderDraft(null)
+      qc.invalidateQueries({ queryKey: ['accounts'] })
+    },
+  })
+
+  const displayedAccounts = orderDraft ?? accounts
+  const reorder = ({ active, over }: DragEndEvent) => {
+    setDragging(false)
+    if (!over || active.id === over.id || orderMutation.isPending) return
+    const from = displayedAccounts.findIndex((account) => account.id === active.id)
+    const to = displayedAccounts.findIndex((account) => account.id === over.id)
+    if (from < 0 || to < 0) return
+    const ordered = moveAccount(displayedAccounts, from, to)
+    setOrderDraft(ordered)
+    orderMutation.reset()
+    orderMutation.mutate(ordered.map((account) => account.id))
+  }
+
   const updateError = updateMutation.error
     ? axios.isAxiosError<{ error?: string }>(updateMutation.error) && updateMutation.error.response?.status === 409
       ? 'Совместный счёт можно сделать личным только без других участников и транзакций.'
@@ -410,7 +430,7 @@ export function AccountsPage() {
   return (
     <IonPage>
       <PageHeader title="Счета" />
-      <AppContent backHref="/dashboard" withFab
+      <AppContent backHref="/dashboard" withFab className="accounts-content" scrollY={false}
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton onClick={() => { setShowCreateModal(true); setEditingAccount(null) }}>
@@ -419,109 +439,56 @@ export function AccountsPage() {
           </IonFab>
         }
       >
-        {isLoading ? (
-          <div className="app-state">
-            <IonSpinner />
+        <div className="accounts-scroll ion-content-scroll-host">
+          <div className="accounts-scroll-inner">
+            {accounts.length > 1 && <div className="account-order-help">
+              <IonNote role={orderMutation.isPending ? 'status' : undefined}>
+                {orderMutation.isPending ? 'Сохраняем порядок…' : 'Удерживайте счёт, чтобы изменить порядок.'}
+              </IonNote>
+            </div>}
+            {orderMutation.error && <IonText color="danger"><p className="account-order-status" role="alert">
+              Не удалось сохранить порядок. Прежний порядок восстановлен. Повторите перетаскивание.
+            </p></IonText>}
+            {isLoading ? (
+              <div className="app-state">
+                <IonSpinner />
+              </div>
+            ) : accounts.length === 0 ? (
+              <div className="app-state">
+                <IonIcon icon={walletOutline} />
+                <IonText>
+                  <p>Нет счетов. Создайте первый!</p>
+                </IonText>
+              </div>
+            ) : (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} modifiers={[verticalAccountDrag]}
+                onDragStart={() => { setDragging(true); dragClickGuard.suppress.current = true }}
+                onDragEnd={reorder} onDragCancel={() => setDragging(false)}
+                accessibility={{
+                  screenReaderInstructions: { draggable: 'Чтобы переместить счёт, нажмите пробел. Используйте стрелки вверх и вниз. Нажмите пробел или Enter для сохранения, Escape для отмены.' },
+                  announcements: {
+                    onDragStart: () => 'Перемещение счёта.',
+                    onDragOver: ({ over }) => over ? `Позиция ${displayedAccounts.findIndex((a) => a.id === over.id) + 1}.` : undefined,
+                    onDragEnd: ({ over }) => over ? 'Перемещение завершено.' : 'Перемещение отменено.',
+                    onDragCancel: () => 'Перемещение отменено.',
+                  },
+                }}>
+                <SortableContext items={displayedAccounts.map((account) => account.id)} strategy={verticalListSortingStrategy}>
+                  <div ref={dragClickGuard.ref} onPointerDownCapture={dragClickGuard.reset}
+                    onKeyDownCapture={() => { if (!dragging) dragClickGuard.reset() }}>
+                  <IonList>
+                    {displayedAccounts.map((account) => (
+                      <SortableAccountItem key={account.id} account={account} isOwner={account.ownerId === user?.id}
+                        href={accountTransactionsHref(account, period)} disabled={orderMutation.isPending || accounts.length < 2}
+                        dragging={dragging} onEdit={() => openEditor(account)} onDelete={() => setDeleteAccountId(account.id)} />
+                    ))}
+                  </IonList>
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
           </div>
-        ) : accounts.length === 0 ? (
-          <div className="app-state">
-            <IonIcon icon={walletOutline} />
-            <IonText>
-              <p>Нет счетов. Создайте первый!</p>
-            </IonText>
-          </div>
-        ) : (
-          <IonList>
-            {accounts.map((account) => {
-              const isOwner = account.ownerId === user?.id
-              const kindLabel = accountKindShortLabel(account.kind)
-              return (
-                <IonItemSliding key={account.id}>
-                  <IonItem
-                    className="account-list-item"
-                    detail={false}
-                  >
-                    <IonRouterLink
-                      className="account-list-link"
-                      routerLink={accountTransactionsHref(account, period)}
-                      routerDirection="forward"
-                      aria-label={`Транзакции по счету ${account.name}`}
-                    >
-                      <span className="account-list-link-content">
-                        <span className="account-list-icon">
-                          <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
-                        </span>
-                        <IonLabel className="account-list-label">
-                          <h2 title={account.name}>{account.name}</h2>
-                          <div className="account-list-meta">
-                            <span
-                              className="account-list-access"
-                              role="img"
-                              aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                              title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                            >
-                              <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
-                            </span>
-                            <span className="account-list-meta-text" title={kindLabel}>
-                              {kindLabel}
-                            </span>
-                          </div>
-                        </IonLabel>
-                        {account.balance && (
-                          <IonNote className="account-list-balance">
-                            <div style={{ textAlign: 'right' }}>
-                              {fmtCurrency(account.balance.native, account.currency)}
-                              {account.balance.displayCurrency !== account.currency && (
-                                <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                                  ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
-                                </div>
-                              )}
-                              {account.accessMode === 'shared' && (
-                                <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                                  {fmtCurrency(account.balance.totalNative, account.currency)}
-                                </div>
-                              )}
-                            </div>
-                          </IonNote>
-                        )}
-                      </span>
-                    </IonRouterLink>
-                    <IonButtons slot="end" className="account-list-actions">
-                      <IonButton
-                        fill="clear"
-                        color="medium"
-                        title="Редактировать счёт"
-                        aria-label={`Редактировать счёт ${account.name}`}
-                        onClick={() => openEditor(account)}
-                      >
-                        <IonIcon slot="icon-only" icon={createOutline} />
-                      </IonButton>
-                    </IonButtons>
-                  </IonItem>
-                  <IonItemOptions side="end">
-                    {account.accessMode === 'shared' && (
-                      <IonItemOption
-                        color="tertiary"
-                        routerLink={`/accounts/${account.id}/members`}
-                      >
-                        <IonIcon slot="icon-only" icon={peopleOutline} />
-                      </IonItemOption>
-                    )}
-                    {isOwner && (
-                      <IonItemOption
-                        color="danger"
-                        onClick={() => setDeleteAccountId(account.id)}
-                      >
-                        <IonIcon slot="icon-only" icon={trashOutline} />
-                      </IonItemOption>
-                    )}
-                  </IonItemOptions>
-                </IonItemSliding>
-              )
-            })}
-          </IonList>
-        )}
-
+        </div>
 
         <AccountFormModal
           isOpen={showCreateModal}
