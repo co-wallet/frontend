@@ -4,6 +4,34 @@ import { describe, expect, it } from 'vitest'
 
 const root = resolve(import.meta.dirname, '..')
 const html = readFileSync(resolve(root, 'index.html'), 'utf8')
+const themeCSS = readFileSync(resolve(root, 'src/theme/variables.css'), 'utf8')
+
+function meta(name: string) {
+  return html.match(new RegExp(`<meta name="${name}" content="([^"]+)"`))?.[1]
+}
+
+describe('iOS status bar', () => {
+  it('enables a translucent standalone status bar and exposes safe area insets', () => {
+    expect(meta('apple-mobile-web-app-capable')).toBe('yes')
+    expect(meta('apple-mobile-web-app-status-bar-style')).toBe('black-translucent')
+    expect(meta('viewport')).toContain('viewport-fit=cover')
+  })
+
+  it.each([
+    ['manifest.webmanifest', ':root'],
+    ['manifest-dark.webmanifest', 'body.dark'],
+  ])('aligns %s with the status bar and page palette', (file, selector) => {
+    const manifest = JSON.parse(readFileSync(resolve(root, 'public', file), 'utf8'))
+    const block = themeCSS.slice(themeCSS.indexOf(`${selector} {`)).split('}')[0]
+    const color = block.match(/--app-status-bar-background:\s*([^;]+);/)?.[1]
+    const background = block.match(/--ion-background-color:\s*([^;]+);/)?.[1]
+    expect(color).toBeDefined()
+    expect(background).toBeDefined()
+    expect(manifest.theme_color).toBe(color)
+    expect(manifest.background_color).toBe(background)
+    if (selector === ':root') expect(meta('theme-color')).toBe(color)
+  })
+})
 
 describe('standalone navigation', () => {
   it.each(['manifest.webmanifest', 'manifest-dark.webmanifest'])(

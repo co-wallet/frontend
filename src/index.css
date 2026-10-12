@@ -7,6 +7,20 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* Ionic already reserves the top inset in the first toolbar. Paint only that
+   inset, above menus and modals too, without adding a second layout offset. */
+html.plt-ios.plt-pwa body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--ion-safe-area-top, env(safe-area-inset-top, 0px));
+  background: var(--app-status-bar-background);
+  z-index: 100000;
+  pointer-events: none;
+}
+
 /* Shared defaults also cover cards and notes in modals and public pages. */
 ion-card-title {
   --color: var(--ion-text-color);

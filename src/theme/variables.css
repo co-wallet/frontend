@@ -1,4 +1,6 @@
 :root {
+  /* black-translucent iOS status bars use light text, including in the light theme. */
+  --app-status-bar-background: #1d4ed8;
 
   /* Ionic surface and text ramps prevent light-theme fallbacks in components. */
   --ion-background-color-step-50: #f4f4f5;
@@ -139,6 +141,7 @@
 }
 
 body.dark {
+  --app-status-bar-background: #16213e;
 
   /* Ionic surface and text ramps prevent light-theme fallbacks in components. */
   --ion-background-color-step-50: #242437;
