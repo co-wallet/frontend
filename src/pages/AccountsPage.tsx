@@ -409,7 +409,7 @@ export function AccountsPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Счета" backHref="/dashboard" />
+      <PageHeader title="Счета" />
       <AppContent backHref="/dashboard" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">

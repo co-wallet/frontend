@@ -408,7 +408,7 @@ export function DashboardPage() {
 
   return (
     <IonPage>
-      <PageHeader title="co-wallet" backHref={false} />
+      <PageHeader title="co-wallet" />
 
       <AppContent fullscreen withFab
         className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}

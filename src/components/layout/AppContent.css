@@ -52,10 +52,6 @@ ion-content.app-content--with-fab {
   outline-offset: 3px;
 }
 
-.page-header-toolbar {
-  touch-action: pan-y;
-}
-
 /* Full-width toolbar background, controls aligned with the page column. */
 .ion-page > ion-header > ion-toolbar,
 ion-modal ion-header > ion-toolbar {

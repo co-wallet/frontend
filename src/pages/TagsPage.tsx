@@ -82,7 +82,7 @@ export function TagsPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Теги" backHref="/dashboard" />
+      <PageHeader title="Теги" />
       <AppContent backHref="/dashboard" withFab fixed={
         <IonFab vertical="bottom" horizontal="end" slot="fixed">
           <IonFabButton aria-label="Добавить тег" onClick={() => handleEditOpen('', '')}>

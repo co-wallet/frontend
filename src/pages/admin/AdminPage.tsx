@@ -13,7 +13,7 @@ import { peopleOutline, cashOutline, mailOutline } from 'ionicons/icons'
 export function AdminPage() {
   return (
     <IonPage>
-      <PageHeader title="Администрирование" backHref="/dashboard" />
+      <PageHeader title="Администрирование" />
       <AppContent backHref="/dashboard">
         <IonCard routerLink="/admin/users" button>
           <IonCardHeader>

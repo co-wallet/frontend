@@ -96,7 +96,7 @@ export function AdminUsersPage() {
   if (isLoading) {
     return (
       <IonPage>
-        <PageHeader title="Пользователи" backHref="/admin" />
+        <PageHeader title="Пользователи" />
         <AppContent backHref="/admin">
           <div className="app-state"><IonSpinner name="crescent" /></div>
         </AppContent>
@@ -106,7 +106,7 @@ export function AdminUsersPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Пользователи" backHref="/admin" />
+      <PageHeader title="Пользователи" />
       <AppContent backHref="/admin">
         <IonList>
           {users.map((u) => (

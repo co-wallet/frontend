@@ -132,7 +132,7 @@ export default function CategoriesPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Категории" backHref="/dashboard">
+      <PageHeader title="Категории">
         <IonToolbar>
           <IonSegment
             value={activeTab}

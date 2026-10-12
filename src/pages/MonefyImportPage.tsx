@@ -113,7 +113,7 @@ export function MonefyImportPage() {
   useIonViewWillEnter(() => { void controller.check() }, [controller])
   const busy = ['checking', 'previewing', 'configuring', 'confirming'].includes(state.phase)
   const applying = ['confirming', 'unknown', 'done'].includes(state.phase)
-  return <IonPage><PageHeader title="Импорт Monefy" backHref="/dashboard" /><AppContent backHref="/dashboard"><main className="monefy-import">
+  return <IonPage><PageHeader title="Импорт Monefy" /><AppContent backHref="/dashboard"><main className="monefy-import">
     <p id="import-file-format">Перенесите историю из одной резервной копии Monefy: файл базы SQLite с расширением .db (до 64 МБ). CSV, архивы и зашифрованные копии не подходят. Сначала файл проверяется без изменения ваших данных.</p>
     {busy && <div role="status"><IonSpinner /> {state.phase === 'confirming' ? 'Применяем импорт…' : 'Проверяем данные…'}</div>}
     {state.error && <IonText color="danger"><p role="alert">{state.error}</p></IonText>}

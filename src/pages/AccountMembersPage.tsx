@@ -15,7 +15,7 @@ export function AccountMembersPage() {
     queryKey: ['account-members', accountID], queryFn: () => accountsApi.getMembers(accountID),
   })
   return <IonPage>
-    <PageHeader title="Участники и доли" backHref="/accounts" />
+    <PageHeader title="Участники и доли" />
     <AppContent backHref="/accounts">
       {account && <h2>{account.name}</h2>}
       <IonNote className="entity-form-note">{ACCOUNT_CONFIGURATION_NOTE}</IonNote>

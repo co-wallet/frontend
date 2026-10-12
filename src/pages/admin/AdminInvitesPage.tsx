@@ -101,7 +101,7 @@ export function AdminInvitesPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Приглашения" backHref="/admin" />
+      <PageHeader title="Приглашения" />
       <AppContent backHref="/admin" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">

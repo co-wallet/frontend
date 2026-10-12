@@ -361,7 +361,7 @@ export function TransactionsPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Транзакции" backHref={isFilteredView ? '/transactions' : '/dashboard'} />
+      <PageHeader title="Транзакции" />
 
       <AppContent backHref={isFilteredView ? '/transactions' : '/dashboard'} fullscreen withFab
         fixed={
