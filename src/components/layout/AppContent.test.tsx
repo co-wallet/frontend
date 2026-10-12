@@ -1,7 +1,17 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
-import { IonFab, IonFabButton } from '@ionic/react'
+import type { ComponentProps } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+import { IonContent, IonFab, IonFabButton } from '@ionic/react'
 import { AppContent } from './AppContent'
+
+const state = vi.hoisted(() => ({ content: undefined as ComponentProps<typeof IonContent> | undefined }))
+vi.mock('@ionic/react', async importOriginal => {
+  const actual = await importOriginal<typeof import('@ionic/react')>()
+  return { ...actual, IonContent: (props: ComponentProps<typeof IonContent>) => {
+    state.content = props
+    return <actual.IonContent {...props} />
+  } }
+})
 
 describe('AppContent', () => {
   it('preserves Ionic scrolling and accessibility props', () => {
@@ -15,7 +25,8 @@ describe('AppContent', () => {
     expect(markup).toContain('scroll-y="false"')
     expect(markup).toContain('aria-label="Счета"')
     expect(markup).toContain('<p>Содержимое</p>')
-    expect(markup).not.toContain('app-content--with-fab')
+    expect(state.content?.className).not.toContain('app-content--with-fab')
+    expect(state.content?.className).toContain('custom-content')
   })
 
   it('keeps the FAB in the fixed slot without a scrolling wrapper', () => {
@@ -29,5 +40,14 @@ describe('AppContent', () => {
 
     expect(markup).not.toContain('withFab')
     expect(markup).toMatch(/<div class="app-content-body"><p>Последняя строка<\/p><\/div><ion-fab[^>]*slot="fixed"/)
+  })
+
+  it('reserves space for back navigation and places it before content for keyboard access', () => {
+    const markup = renderToStaticMarkup(<AppContent backHref="/accounts"><p>Последняя строка</p></AppContent>)
+    expect(state.content?.className).toContain('app-content--with-fab')
+    expect(markup).toContain('fixed-slot-placement="before"')
+    expect(markup).not.toContain('backHref')
+    expect(markup).toMatch(/<ion-fab[^>]*slot="fixed"[^>]*horizontal="start"[^]*<\/ion-fab><div class="app-content-body">/)
+    expect(markup).toContain('aria-label="Назад"')
   })
 })

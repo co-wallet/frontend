@@ -111,17 +111,16 @@ function renderPage(path: string) {
 describe('transaction navigation controls', () => {
   it('offers both back navigation and the main menu in a filtered list', () => {
     const markup = renderPage('/transactions/filtered/1?tag_ids=travel')
-    expect(markup).toContain('<ion-back-button')
-    expect(markup).toContain('text=""')
+    expect(markup).toContain('title="Назад"')
     expect(markup).toContain('aria-label="Назад"')
-    expect(markup).toMatch(/<ion-buttons slot="start"><ion-back-button[^>]*><\/ion-back-button><\/ion-buttons>/)
-    expect(markup).toMatch(/<ion-buttons slot="end"><ion-menu-button[^>]*aria-label="Главное меню"/)
+    expect(markup).toMatch(/<ion-fab[^>]*slot="fixed"[^>]*horizontal="start"/)
+    expect(markup).toMatch(/<ion-buttons slot="start"><ion-menu-button[^>]*aria-label="Главное меню"/)
   })
 
   it('offers back to the dashboard and the menu in the primary transaction list', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('<ion-menu-button')
-    expect(markup).toContain('<ion-back-button default-href="/dashboard"')
+    expect(markup).toContain('aria-label="Назад"')
   })
 
   it('offers separate quick actions for expense, income and transfer', () => {

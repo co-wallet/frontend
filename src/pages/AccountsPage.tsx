@@ -410,7 +410,7 @@ export function AccountsPage() {
   return (
     <IonPage>
       <PageHeader title="Счета" backHref="/dashboard" />
-      <AppContent withFab
+      <AppContent backHref="/dashboard" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton onClick={() => { setShowCreateModal(true); setEditingAccount(null) }}>

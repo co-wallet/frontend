@@ -363,7 +363,7 @@ export function TransactionsPage() {
     <IonPage>
       <PageHeader title="Транзакции" backHref={isFilteredView ? '/transactions' : '/dashboard'} />
 
-      <AppContent fullscreen withFab
+      <AppContent backHref={isFilteredView ? '/transactions' : '/dashboard'} fullscreen withFab
         fixed={
           <QuickTransactionFab onSelect={addTransaction} className="transactions-fab" />
         }

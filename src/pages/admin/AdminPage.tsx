@@ -14,7 +14,7 @@ export function AdminPage() {
   return (
     <IonPage>
       <PageHeader title="Администрирование" backHref="/dashboard" />
-      <AppContent>
+      <AppContent backHref="/dashboard">
         <IonCard routerLink="/admin/users" button>
           <IonCardHeader>
             <IonIcon icon={peopleOutline} style={{ fontSize: '2rem', color: 'var(--ion-color-primary)' }} />

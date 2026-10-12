@@ -148,7 +148,7 @@ export function AdminCurrenciesPage() {
         </IonButton>
       } />
 
-      <AppContent withFab
+      <AppContent backHref="/admin" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton onClick={() => setShowAdd(true)}>

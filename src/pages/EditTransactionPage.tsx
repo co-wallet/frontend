@@ -250,7 +250,7 @@ export function EditTransactionPage() {
     return (
       <IonPage>
         <PageHeader title="Редактирование" backHref="/transactions" />
-        <AppContent>
+        <AppContent backHref="/transactions">
           <div className="app-state">
             <IonSpinner name="crescent" />
           </div>
@@ -263,7 +263,7 @@ export function EditTransactionPage() {
     return (
       <IonPage>
         <PageHeader title="Редактирование" backHref="/transactions" />
-        <AppContent>
+        <AppContent backHref="/transactions">
           <div className="app-state">
             <IonText color="medium">Транзакция не найдена</IonText>
           </div>
@@ -274,7 +274,7 @@ export function EditTransactionPage() {
 
   if (tx.readOnly) {
     return <IonPage><PageHeader title="Входящий перевод" backHref="/transactions" />
-      <AppContent><IonList>
+      <AppContent backHref="/transactions"><IonList>
         <IonItem><IonLabel>{tx.accountName} → {tx.toAccountName}</IonLabel></IonItem>
         <IonItem><IonLabel>Всего поступило</IonLabel><IonNote slot="end">{tx.toAmount ?? tx.amount} {tx.toCurrency}</IonNote></IonItem>
         <IonItem><IonLabel>{tx.date.slice(0, 10)}</IonLabel></IonItem>
@@ -287,7 +287,7 @@ export function EditTransactionPage() {
     <IonPage>
       <PageHeader title="Редактирование" backHref="/transactions" />
 
-      <AppContent>
+      <AppContent backHref="/transactions">
         <div>
           <IonList>
             <AccountSelect

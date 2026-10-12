@@ -16,7 +16,7 @@ export function AccountMembersPage() {
   })
   return <IonPage>
     <PageHeader title="Участники и доли" backHref="/accounts" />
-    <AppContent>
+    <AppContent backHref="/accounts">
       {account && <h2>{account.name}</h2>}
       <IonNote className="entity-form-note">{ACCOUNT_CONFIGURATION_NOTE}</IonNote>
       {isLoading ? <div className="app-state"><IonSpinner /></div>

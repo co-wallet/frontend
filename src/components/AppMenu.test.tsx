@@ -28,5 +28,6 @@ describe('AppMenu', () => {
 
     expect(markup).toContain('swipe-gesture="false"')
     expect(markup).toContain('content-id="main-content"')
+    expect(markup).toContain('side="start"')
   })
 })
