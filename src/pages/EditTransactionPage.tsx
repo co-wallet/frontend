@@ -93,7 +93,7 @@ export function EditTransactionPage() {
     if (tx.toAmount != null) {
       setToAmountStr(String(tx.toAmount))
     }
-    if (tx.defaultCurrencyAmount != null) {
+    if (tx.defaultCurrency === userDefaultCurrency && tx.defaultCurrencyAmount != null) {
       setDefaultCurrencyAmountStr(String(tx.defaultCurrencyAmount))
     }
 
@@ -105,7 +105,7 @@ export function EditTransactionPage() {
       setShareAmounts(map)
     }
     setInitialized(true)
-  }, [tx, initialized])
+  }, [tx, initialized, userDefaultCurrency])
 
   useEffect(() => {
     if (!isShared || !members.length || customShares || !initialized) return
@@ -137,7 +137,6 @@ export function EditTransactionPage() {
   const needsDefaultCurrency = needsDefaultCurrencyAmount(
     tx?.type ?? 'expense',
     accountCurrency,
-    toAccountCurrency,
     userDefaultCurrency,
   )
 
@@ -155,7 +154,7 @@ export function EditTransactionPage() {
     if (id === tx?.accountId) {
       setCustomShares(tx.shares.some((share) => share.isCustom))
       setShareAmounts(Object.fromEntries(tx.shares.map((share) => [share.userId, String(share.amount)])))
-      setDefaultCurrencyAmountStr(tx.defaultCurrencyAmount == null ? '' : String(tx.defaultCurrencyAmount))
+      setDefaultCurrencyAmountStr(tx.defaultCurrency !== userDefaultCurrency || tx.defaultCurrencyAmount == null ? '' : String(tx.defaultCurrencyAmount))
       setToAmountStr(tx.toAmount == null ? '' : String(tx.toAmount))
     } else {
       setCustomShares(false)
@@ -204,7 +203,7 @@ export function EditTransactionPage() {
       description: description.trim() || null,
       date: date + 'T00:00:00Z',
       tags: allTags,
-      ...(needsDefaultCurrency
+      ...(needsDefaultCurrency && (tx?.defaultCurrency === userDefaultCurrency || dcaValue > 0)
         ? { defaultCurrency: userDefaultCurrency, defaultCurrencyAmount: dcaValue > 0 ? dcaValue : null }
         : {}),
     }
@@ -233,7 +232,7 @@ export function EditTransactionPage() {
         </IonNote>
       )
     }
-    if (accountCurrency === userDefaultCurrency) return null
+    if (!needsDefaultCurrency) return null
     const acctRate = currencies.find((c) => c.code === accountCurrency)?.rateToUsd ?? 0
     const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
     if (acctRate <= 0 || defRate <= 0) return null

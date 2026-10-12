@@ -100,6 +100,48 @@ describe('transaction list helpers', () => {
     expect(transactionDefaultCurrencyAmount(tx, sharedAccount, 'user-1', 'RUB')).toBe(2000)
   })
 
+  it.each([
+    { source: 'USD', target: 'EUR', sourceRate: undefined, targetRate: 0.9, saved: 8000, want: 22.5 },
+    { source: 'EUR', target: 'USD', sourceRate: 0.8, targetRate: undefined, saved: null, want: 31.25 },
+    { source: 'EUR', target: 'TRY', sourceRate: 0.8, targetRate: 40, saved: 8000, want: 1250 },
+    { source: 'USD', target: 'RUB', sourceRate: undefined, targetRate: 120, saved: null, want: 3000 },
+    { source: 'USD', target: 'RUB', sourceRate: undefined, targetRate: 120, saved: 8000, want: 2000 },
+    { source: 'USD', target: 'RUB', sourceRate: undefined, targetRate: undefined, saved: 8000, want: 2000 },
+    { source: 'EUR', target: 'EUR', sourceRate: undefined, targetRate: undefined, saved: 8000, want: 25 },
+    { source: 'EUR', target: 'USD', sourceRate: undefined, targetRate: undefined, saved: null, want: null },
+    { source: 'USD', target: 'EUR', sourceRate: undefined, targetRate: undefined, saved: 8000, want: null },
+    { source: 'EUR', target: 'TRY', sourceRate: 0, targetRate: 40, saved: null, want: null },
+    { source: 'EUR', target: 'TRY', sourceRate: 0.8, targetRate: -1, saved: null, want: null },
+    { source: 'EUR', target: 'TRY', sourceRate: Infinity, targetRate: 40, saved: null, want: null },
+    { source: 'EUR', target: 'TRY', sourceRate: 0.8, targetRate: NaN, saved: null, want: null },
+  ])('resolves $source → $target with saved amount $saved and current rates', ({ source, target, sourceRate, targetRate, saved, want }) => {
+    const tx = transaction({
+      currency: source, amount: 100, defaultCurrency: 'RUB', defaultCurrencyAmount: saved,
+      shares: [{ userId: 'user-1', amount: 25, isCustom: true }],
+    })
+    const rates = [
+      ...(sourceRate == null ? [] : [{ code: source, rateToUsd: sourceRate }]),
+      ...(targetRate == null ? [] : [{ code: target, rateToUsd: targetRate }]),
+    ]
+    expect(transactionDefaultCurrencyAmount(tx, sharedAccount, 'user-1', target, rates)).toBe(want)
+  })
+
+  it('recalculates daily totals after rates change without changing the saved amount', () => {
+    const tx = transaction({ currency: 'USD', amount: 100, defaultCurrencyAmount: 8000 })
+    for (const rateToUsd of [0.9, 1.1]) {
+      const groups = groupTransactionsByDate([tx], (item) => transactionDefaultCurrencyAmount(
+        item, personalAccount, 'user-1', 'EUR', [{ code: 'EUR', rateToUsd }],
+      ))
+      expect(groups[0].total).toBe(-100 * rateToUsd)
+      expect(tx.defaultCurrencyAmount).toBe(8000)
+    }
+  })
+
+  it('does not need a current rate for a zero historical share', () => {
+    const tx = transaction({ currency: 'EUR', shares: [{ userId: 'user-1', amount: 0, isCustom: true }] })
+    expect(transactionDefaultCurrencyAmount(tx, sharedAccount, 'user-1', 'USD')).toBe(0)
+  })
+
   it('uses relative labels for today and yesterday and a weekday otherwise', () => {
     const now = new Date(2026, 8, 2, 12)
 

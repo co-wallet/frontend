@@ -5,6 +5,7 @@ import {
   IonItem, IonLabel, IonList, IonSkeletonText,
 } from '@ionic/react'
 import type { Account } from '@/api/accounts'
+import type { Currency } from '@/api/currencies'
 import { categoriesApi } from '@/api/categories'
 import { transactionsApi, type TransactionFilter } from '@/api/transactions'
 import { useRecentTransactionsFit } from '@/lib/useRecentTransactionsFit'
@@ -19,12 +20,13 @@ interface RecentTransactionsProps {
   accountsError?: boolean
   currentUserId?: string
   defaultCurrency: string
+  currencies?: Currency[]
   filter?: TransactionFilter
   fullListHref?: string
 }
 
 export function RecentTransactions({
-  accounts, accountIds, accountsLoading, accountsError, currentUserId, defaultCurrency,
+  accounts, accountIds, accountsLoading, accountsError, currentUserId, defaultCurrency, currencies,
   filter: additionalFilter = {}, fullListHref = '/transactions',
 }: RecentTransactionsProps) {
   const history = useHistory()
@@ -101,6 +103,7 @@ export function RecentTransactions({
                   category={categories.find((category) => category.id === tx.categoryId)}
                   currentUserId={currentUserId}
                   defaultCurrency={defaultCurrency}
+                  currencies={currencies}
                   showTags={false}
                   onEdit={(id) => history.push(`/transactions/${id}/edit`)}
                 />

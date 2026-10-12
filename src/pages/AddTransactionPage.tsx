@@ -136,7 +136,6 @@ export function AddTransactionPage() {
   const needsDefaultCurrency = needsDefaultCurrencyAmount(
     type,
     accountCurrency,
-    toAccountCurrency,
     userDefaultCurrency,
   )
 
@@ -243,7 +242,7 @@ export function AddTransactionPage() {
         </div>
       )
     }
-    if (selectedAccount.currency === userDefaultCurrency) return null
+    if (!needsDefaultCurrency) return null
     const acctRate = currencies.find((c) => c.code === selectedAccount.currency)?.rateToUsd ?? 0
     const defRate = currencies.find((c) => c.code === userDefaultCurrency)?.rateToUsd ?? 0
     if (acctRate <= 0 || defRate <= 0) return null

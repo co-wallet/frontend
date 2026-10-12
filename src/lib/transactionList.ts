@@ -1,5 +1,6 @@
 import type { Account } from '@/api/accounts'
 import type { AnalyticsParams } from '@/api/analytics'
+import type { Currency } from '@/api/currencies'
 import type { Transaction, TransactionFilter, TransactionType } from '@/api/transactions'
 import type { Period } from '@/store/periodStore'
 
@@ -97,12 +98,21 @@ export function transactionDefaultCurrencyAmount(
   account: Account | undefined,
   currentUserId: string | undefined,
   defaultCurrency: string,
+  currencies: readonly Pick<Currency, 'code' | 'rateToUsd'>[] = [],
 ): number | null {
   const userAmount = transactionUserAmount(tx, account, currentUserId)
   if (tx.currency === defaultCurrency) return userAmount
-  if (tx.defaultCurrency !== defaultCurrency || tx.defaultCurrencyAmount == null) return null
-  if (tx.amount === 0) return tx.defaultCurrencyAmount
-  return tx.defaultCurrencyAmount * (userAmount / tx.amount)
+  if (tx.defaultCurrency === defaultCurrency && tx.defaultCurrencyAmount != null) {
+    if (tx.amount === 0) return tx.defaultCurrencyAmount
+    return tx.defaultCurrencyAmount * (userAmount / tx.amount)
+  }
+  if (userAmount === 0) return 0
+  const sourceRate = tx.currency === 'USD' ? 1 : currencies.find((c) => c.code === tx.currency)?.rateToUsd
+  const targetRate = defaultCurrency === 'USD' ? 1 : currencies.find((c) => c.code === defaultCurrency)?.rateToUsd
+  if (sourceRate == null || targetRate == null
+    || !Number.isFinite(sourceRate) || !Number.isFinite(targetRate)
+    || sourceRate <= 0 || targetRate <= 0) return null
+  return userAmount * targetRate / sourceRate
 }
 
 export function formatTransactionDate(dateKey: string, now = new Date()): string {

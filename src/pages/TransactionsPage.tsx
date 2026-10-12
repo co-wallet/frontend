@@ -41,6 +41,7 @@ import {
 import { accountsApi } from '@/api/accounts'
 import { analyticsApi } from '@/api/analytics'
 import { categoriesApi } from '@/api/categories'
+import { currenciesApi } from '@/api/currencies'
 import { tagsApi } from '@/api/tags'
 import { transactionsApi, type TransactionFilter, type TransactionType } from '@/api/transactions'
 import {
@@ -209,6 +210,16 @@ export function TransactionsPage() {
   const transactionsQuery = useInfiniteQuery(
     transactionPaginationOptions(effectiveFilter, hasEffectiveAccounts),
   )
+  const currencyCodes = [...new Set([
+    defaultCurrency,
+    ...accounts.map((account) => account.currency),
+    ...(transactionsQuery.data?.pages.flat().map((tx) => tx.currency) ?? []),
+  ])].filter(Boolean).sort()
+  const currenciesQuery = useQuery({
+    queryKey: ['currencies', currencyCodes],
+    queryFn: () => currenciesApi.list(currencyCodes),
+    staleTime: 60_000,
+  })
 
   const deleteMutation = useMutation({
     mutationFn: transactionsApi.delete,
@@ -240,8 +251,9 @@ export function TransactionsPage() {
       accountsById.get(tx.accountId),
       currentUserId,
       defaultCurrency,
+      currenciesQuery.data,
     ),
-  ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data])
+  ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data, currenciesQuery.data])
 
   const categoryChartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
   const chartQuery = chartGrouping === 'categories' ? categoryChartQuery : tagAnalyticsQuery
@@ -395,7 +407,7 @@ export function TransactionsPage() {
           </div>
 
           {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
-        <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций не заполнена сумма в {defaultCurrency}. Укажите её в транзакциях.</p></IonText>}
+        <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {defaultCurrency}.</p></IonText>}
           <section className="transactions-summary" aria-label="Сводка за период">
             <button
               type="button"
@@ -683,6 +695,7 @@ export function TransactionsPage() {
                       category={tx.categoryId ? categoriesById.get(tx.categoryId) : undefined}
                       currentUserId={currentUserId}
                       defaultCurrency={defaultCurrency}
+                      currencies={currenciesQuery.data}
                       selectedAccountIds={filteredAccountIds}
                       onEdit={(id) => history.push(`/transactions/${id}/edit`)}
                       onDelete={(id) => setDeleteAlertTxId(id)}
