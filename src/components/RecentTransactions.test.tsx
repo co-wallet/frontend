@@ -87,9 +87,15 @@ describe('RecentTransactions', () => {
     expect(state.queries.every((query) => !query.enabled)).toBe(true)
   })
 
-  it('shows an empty state and access to the full list', () => {
-    const markup = render()
-    expect(markup).toContain('По выбранным счетам пока нет транзакций')
+  it.each([
+    { accountIds: ['selected'] },
+    { accountIds: [] },
+  ])('shows an empty list without explanatory text and keeps access to the full list: %j', (props) => {
+    const markup = render(props)
+    expect(markup).toContain('Последние транзакции')
+    expect(markup).toMatch(/<ion-list aria-label="Последние транзакции"><\/ion-list>/)
+    expect(markup).not.toContain('По выбранным счетам пока нет транзакций')
+    expect(markup).not.toContain('recent-transactions__message')
     expect(markup).toContain('href="/transactions"')
     expect(markup).toContain('Все транзакции')
   })
