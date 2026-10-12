@@ -1,5 +1,9 @@
 import type { Account, TransferAccount } from '@/api/accounts'
 
+export function transferAccountLabel(name: string, ownerUsername?: string): string {
+  return `${name}${ownerUsername ? ` · @${ownerUsername}` : ''}`
+}
+
 export function transferSourceAccounts(accounts: Account[], external: TransferAccount[]): TransferAccount[] {
   return [...accounts, ...external.filter((a) => !accounts.some((own) => own.id === a.id))]
 }

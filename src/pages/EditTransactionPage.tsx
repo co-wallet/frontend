@@ -20,6 +20,7 @@ import { TransactionDescriptionInput } from '@/components/TransactionDescription
 import { useAuthStore } from '@/store/authStore'
 import { parseDecimal, filterDecimalInput, isValidDecimal } from '@/lib/decimal'
 import { needsDefaultCurrencyAmount } from '@/lib/transactionAmounts'
+import { transferAccountLabel, transferDestinationAccounts } from '@/lib/transferAccounts'
 
 function roundCents(v: number): number {
   return Math.round(v * 100) / 100
@@ -57,8 +58,16 @@ export function EditTransactionPage() {
     queryFn: () => accountsApi.list(),
   })
 
+  const externalAccountsQuery = useQuery({
+    queryKey: ['transfer-accounts'],
+    queryFn: () => accountsApi.transferAccounts(),
+    enabled: tx?.type === 'transfer' && !tx.readOnly,
+    retry: false,
+  })
+  const externalAccounts = externalAccountsQuery.data ?? []
+
   const accountCurrencyCodes = accounts.map((a) => a.currency)
-  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes, ...(tx?.toCurrency ? [tx.toCurrency] : [])])]
+  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes, ...externalAccounts.map((a) => a.currency), ...(tx?.toCurrency ? [tx.toCurrency] : [])])]
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', extraCodes.sort().join(',')],
     queryFn: () => currenciesApi.list(extraCodes),
@@ -131,7 +140,15 @@ export function EditTransactionPage() {
   const sharesValid = !isShared || members.length <= 1 || Math.abs(sharesSum - totalAmount) <= 0.01
 
   const accountCurrency = selectedAccount?.currency ?? tx?.currency ?? ''
-  const toAccount = accounts.find((a) => a.id === toAccountId)
+  const sourceId = accountId || tx?.accountId || ''
+  const availableDestinations = transferDestinationAccounts(accounts, externalAccounts, sourceId)
+  const destinationAccounts = [
+    ...availableDestinations,
+    ...(tx?.toAccountId && sourceId === tx.accountId && !availableDestinations.some((a) => a.id === tx.toAccountId)
+      ? [{ id: tx.toAccountId, name: tx.toAccountName ?? 'Текущий счёт назначения', currency: tx.toCurrency ?? '', icon: null, ownerUsername: tx.toAccountOwnerUsername }]
+      : []),
+  ].filter((a) => a.id !== sourceId)
+  const toAccount = destinationAccounts.find((a) => a.id === toAccountId)
   const toAccountCurrency = toAccount?.currency ?? (toAccountId === tx?.toAccountId ? tx?.toCurrency : '') ?? ''
   const isCrossCurrencyTransfer = tx?.type === 'transfer' && !!accountCurrency && !!toAccountCurrency && toAccountCurrency !== accountCurrency
   const needsDefaultCurrency = needsDefaultCurrencyAmount(
@@ -140,7 +157,7 @@ export function EditTransactionPage() {
     userDefaultCurrency,
   )
 
-  const accountsValid = !!accountId && (tx?.type !== 'transfer' || (!!toAccountId && toAccountId !== accountId))
+  const accountsValid = !!accountId && (tx?.type !== 'transfer' || !!toAccount)
   const transferAmountValid = !isCrossCurrencyTransfer || (isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0)
 
   function changeAccount(id: string) {
@@ -151,6 +168,10 @@ export function EditTransactionPage() {
       setToAmountStr('')
     }
     setAccountId(id)
+    if (tx?.type === 'transfer' && !transferDestinationAccounts(accounts, externalAccounts, id).some((a) => a.id === toAccountId)) {
+      setToAccountId('')
+      setToAmountStr('')
+    }
     if (id === tx?.accountId) {
       setCustomShares(tx.shares.some((share) => share.isCustom))
       setShareAmounts(Object.fromEntries(tx.shares.map((share) => [share.userId, String(share.amount)])))
@@ -275,7 +296,7 @@ export function EditTransactionPage() {
   if (tx.readOnly) {
     return <IonPage><PageHeader title="Входящий перевод" />
       <AppContent backHref="/transactions"><IonList>
-        <IonItem><IonLabel>{tx.accountName} → {tx.toAccountName}</IonLabel></IonItem>
+        <IonItem><IonLabel>{transferAccountLabel(tx.accountName ?? 'Счёт', tx.accountOwnerUsername)} → {transferAccountLabel(tx.toAccountName ?? 'Счёт', accounts.some((a) => a.id === tx.toAccountId) ? undefined : tx.toAccountOwnerUsername)}</IonLabel></IonItem>
         <IonItem><IonLabel>Всего поступило</IonLabel><IonNote slot="end">{tx.toAmount ?? tx.amount} {tx.toCurrency}</IonNote></IonItem>
         <IonItem><IonLabel>{tx.date.slice(0, 10)}</IonLabel></IonItem>
         {tx.description && <IonItem><IonLabel>{tx.description}</IonLabel></IonItem>}
@@ -302,16 +323,18 @@ export function EditTransactionPage() {
             {tx.type === 'transfer' && <AccountSelect
               label="На счёт"
               value={toAccountId}
-              accounts={[
-                ...(tx.toAccountId && !accounts.some((a) => a.id === tx.toAccountId) && tx.toAccountId !== accountId ? [{ id: tx.toAccountId, name: tx.toAccountName ?? 'Текущий счёт назначения', currency: tx.toCurrency ?? '', icon: '' }] : []),
-                ...accounts.filter((a) => a.id !== accountId),
-              ]}
+              accounts={destinationAccounts}
               onChange={(id) => {
                 if (id === toAccountId) return
                 setToAccountId(id)
                 setToAmountStr('')
               }}
             />}
+            {tx.type === 'transfer' && externalAccountsQuery.isError && <IonText color="danger">
+              <p role="alert">Не удалось загрузить чужие счета.
+                <IonButton fill="clear" onClick={() => void externalAccountsQuery.refetch()}>Повторить</IonButton>
+              </p>
+            </IonText>}
             {accountId && accountCurrency !== tx.currency && <IonNote className="entity-form-note">Валюта счёта изменилась. Проверьте сумму: автоматическая конвертация не выполняется.</IonNote>}
             {accountId && accountId !== tx.accountId && <IonNote className="entity-form-note">Доли будут распределены между участниками выбранного счёта.</IonNote>}
             {/* Amount */}

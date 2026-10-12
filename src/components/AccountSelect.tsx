@@ -47,7 +47,8 @@ export function AccountSelect({
   return (
     <>
       <EntityFormPicker label={label}
-        value={selectedAccount ? `${selectedName} · ${selectedAccount.currency}` : 'Выберите счёт'}
+        value={selectedAccount ? `${selectedAccount.name} · ${selectedAccount.currency}` : 'Выберите счёт'}
+        secondaryValue={selectedAccount?.ownerUsername ? `@${selectedAccount.ownerUsername}` : undefined}
         accessibleValue={selectedName ?? 'не выбран'}
         icon={selectedAccount && <AccountIcon value={selectedAccount.icon} size={24} />}
         isOpen={isOpen} onOpen={() => {

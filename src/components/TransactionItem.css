@@ -160,3 +160,7 @@
   text-underline-offset: 3px;
   overflow-wrap: anywhere;
 }
+.transaction-item__label p.transaction-item__transfer-accounts {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

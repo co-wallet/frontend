@@ -80,6 +80,25 @@
 }
 .entity-form-picker__value > ion-icon { flex-shrink: 0; }
 
+.entity-form-picker__text {
+  display: grid;
+  min-width: 0;
+  gap: 3px;
+}
+
+.entity-form-picker__text > span:first-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.entity-form-picker__secondary {
+  color: var(--transaction-secondary-text);
+  font-size: 13px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .entity-form-field-label {
   display: block;
   margin-bottom: 8px;

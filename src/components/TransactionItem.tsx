@@ -19,6 +19,7 @@ import type { Account } from '@/api/accounts'
 import type { Category } from '@/api/categories'
 import type { Currency } from '@/api/currencies'
 import type { Transaction } from '@/api/transactions'
+import { transferAccountLabel } from '@/lib/transferAccounts'
 import {
   CategoryIcon,
   UNCATEGORIZED_CATEGORY_ICON,
@@ -69,7 +70,7 @@ export function TransactionItem({
   const title = description
     || (tx.type === 'transfer' ? TRANSACTION_TYPE_LABELS.transfer : categoryName)
   const accountLabel = tx.type === 'transfer'
-    ? `${account?.name ?? tx.accountName ?? 'Счёт'} → ${toAccount?.name ?? tx.toAccountName ?? 'Счёт'}`
+    ? `${transferAccountLabel(account?.name ?? tx.accountName ?? 'Счёт', account ? undefined : tx.accountOwnerUsername)} → ${transferAccountLabel(toAccount?.name ?? tx.toAccountName ?? 'Счёт', toAccount ? undefined : tx.toAccountOwnerUsername)}`
     : account?.name ?? tx.accountName ?? 'Счёт'
   const meta = description && tx.type !== 'transfer'
     ? `${categoryName} · ${accountLabel}`
@@ -158,7 +159,7 @@ export function TransactionItem({
 
         <IonLabel className="transaction-item__label">
           <h2>{title}</h2>
-          <p>{meta}</p>
+          <p className={tx.type === 'transfer' ? 'transaction-item__transfer-accounts' : undefined}>{meta}</p>
           {showTags && !!tx.tags?.length && (
             <p className="transaction-item__tags">
               {tx.tags.map((tag) => tagHref ? (

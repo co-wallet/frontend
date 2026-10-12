@@ -56,6 +56,20 @@ function transaction(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 describe('TransactionItem', () => {
+  it('labels an external destination with its owner username', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer',
+      toAccountId: 'external', accountOwnerUsername: 'me', toAccountName: 'Карта', toAccountOwnerUsername: 'wallet_demo' })}
+      account={account} defaultCurrency="RUB" onEdit={vi.fn()} />)
+    expect(markup).toContain('Личная → Карта · @wallet_demo')
+    expect(markup).not.toContain('@me')
+  })
+  it('labels an external source in an incoming transfer', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer', readOnly: true,
+      accountName: 'Карта', accountOwnerUsername: 'wallet_demo', toAccountOwnerUsername: 'me' })}
+      toAccount={account} defaultCurrency="RUB" onEdit={vi.fn()} />)
+    expect(markup).toContain('Карта · @wallet_demo → Личная')
+    expect(markup).not.toContain('@me')
+  })
   it('can leave horizontal gestures to the page while retaining tap-to-open and tags', () => {
     const markup = renderToStaticMarkup(<TransactionItem tx={transaction()} defaultCurrency="RUB"
       onEdit={vi.fn()} onDelete={vi.fn()} swipeActions={false}

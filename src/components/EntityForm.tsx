@@ -47,10 +47,11 @@ export function EntityFormError({ children }: { children?: ReactNode }) {
   return children ? <IonText color="danger"><p className="entity-form-error" role="alert">{children}</p></IonText> : null
 }
 
-export function EntityFormPicker({ label, value, icon, accessibleValue = value, isOpen, onOpen }: {
+export function EntityFormPicker({ label, value, icon, secondaryValue, accessibleValue = value, isOpen, onOpen }: {
   label: string
   value: string
   icon?: ReactNode
+  secondaryValue?: string
   accessibleValue?: string
   isOpen: boolean
   onOpen: () => void
@@ -61,7 +62,10 @@ export function EntityFormPicker({ label, value, icon, accessibleValue = value, 
       <IonLabel>{label}</IonLabel>
       <div slot="end" className="entity-form-picker__value">
         {icon}
-        <span>{value}</span>
+        {secondaryValue ? <div className="entity-form-picker__text">
+          <span>{value}</span>
+          <span className="entity-form-picker__secondary">{secondaryValue}</span>
+        </div> : <span>{value}</span>}
         <IonIcon icon={chevronExpandOutline} color="medium" aria-hidden="true" />
       </div>
     </IonItem>

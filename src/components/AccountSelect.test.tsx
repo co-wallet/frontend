@@ -47,7 +47,8 @@ describe('AccountSelect', () => {
     expect(markup).toContain('aria-label="Карта, @alice, USD"')
     expect(markup).toContain('aria-label="Карта, @bob, USD"')
     expect(markup).toContain('Со счёта: Карта · @alice')
-    expect(markup).toContain('Карта · @alice · USD')
+    expect(markup).toContain('Карта · USD')
+    expect(markup).toContain('class="entity-form-picker__secondary">@alice')
   })
   it('preserves the saved account order in the transaction picker', () => {
     const markup = renderToStaticMarkup(<AccountSelect label="Счёт" accounts={[accounts[1], accounts[0]]} value="" onChange={vi.fn()} />)
