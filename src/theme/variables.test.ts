@@ -61,4 +61,9 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (theme) => {
     expect(contrast(palette['--ion-color-success'], palette['--ion-background-color-step-50']))
       .toBeGreaterThanOrEqual(4.5)
   })
+
+  it('keeps light iOS status bar symbols readable on the safe area', () => {
+    expect(contrast('#ffffff', palette['--app-status-bar-background']))
+      .toBeGreaterThanOrEqual(4.5)
+  })
 })
