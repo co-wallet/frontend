@@ -1,23 +1,21 @@
 .amount-mode-control {
-  display: grid;
-  gap: 6px;
-  padding-block: 8px;
-}
-
-.amount-mode-control > ion-label {
-  color: var(--ion-color-medium);
-  font-size: 0.75rem;
-}
-
-.amount-mode-control ion-segment {
+  --size: 18px;
+  --border-radius: 5px;
+  --border-width: 1.5px;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
   min-height: 44px;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 400;
 }
 
-.amount-mode-control ion-segment-button {
-  --padding-start: 4px;
-  --padding-end: 4px;
-  min-width: 0;
-  min-height: 44px;
-  font-size: 0.8125rem;
-  text-transform: none;
+.amount-mode-control::part(container) {
+  margin-inline-end: 8px;
+}
+
+.amount-mode-control::part(label) {
+  margin: 0;
+  white-space: normal;
 }

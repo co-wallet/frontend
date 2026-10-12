@@ -1,4 +1,4 @@
-import { IonLabel, IonSegment, IonSegmentButton } from '@ionic/react'
+import { IonCheckbox } from '@ionic/react'
 import type { AmountMode } from '@/api/analytics'
 import './AmountModeControl.css'
 
@@ -12,14 +12,14 @@ export function AmountModeControl({ value, onChange }: {
   onChange: (mode: AmountMode) => void
 }) {
   return (
-    <div className="amount-mode-control">
-      <IonLabel>Расчёт сумм</IonLabel>
-      <IonSegment value={value} aria-label="Расчёт сумм" onIonChange={(event) => {
-        if (event.detail.value === 'share' || event.detail.value === 'total') onChange(event.detail.value)
-      }}>
-        <IonSegmentButton value="share"><IonLabel>Моя доля</IonLabel></IonSegmentButton>
-        <IonSegmentButton value="total"><IonLabel>Полные суммы</IonLabel></IonSegmentButton>
-      </IonSegment>
-    </div>
+    <IonCheckbox
+      className="amount-mode-control"
+      labelPlacement="end"
+      justify="start"
+      checked={value === 'total'}
+      onIonChange={(event) => onChange(event.detail.checked ? 'total' : 'share')}
+    >
+      Показывать полные суммы
+    </IonCheckbox>
   )
 }

@@ -213,7 +213,7 @@ it('places the amount preference beside the account scope without counting it as
   const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()}
     amountMode="total" onAmountModeChange={vi.fn()} />)
   const scope = markup.match(/<section[^>]*aria-labelledby="filter-account-kinds-title".*?<\/section>/)?.[0]
-  expect(scope).toMatch(/Доступ к счёту[^]*Расчёт сумм[^]*Моя доля[^]*Полные суммы/)
+  expect(scope).toMatch(/Доступ к счёту[^]*ion-checkbox[^]*Показывать полные суммы/)
   expect(markup).toContain('aria-label="Фильтры"')
   expect(markup).not.toContain('Фильтры, активно:')
 })
