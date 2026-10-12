@@ -33,6 +33,25 @@ ion-content.app-content--with-fab {
   margin-inline: 0;
 }
 
+.app-content > .page-back-fab {
+  left: max(var(--app-content-inset), env(safe-area-inset-left));
+  margin-inline: 0;
+  margin-bottom: env(safe-area-inset-bottom);
+}
+
+.page-back-fab ion-fab-button {
+  --background: var(--ion-toolbar-background, var(--ion-background-color));
+  --color: var(--ion-text-color);
+  --border-color: var(--ion-color-step-300);
+  --border-style: solid;
+  --border-width: 1px;
+}
+
+.page-back-fab ion-fab-button:focus-visible {
+  outline: 3px solid var(--ion-color-primary);
+  outline-offset: 3px;
+}
+
 /* Full-width toolbar background, controls aligned with the page column. */
 .ion-page > ion-header > ion-toolbar,
 ion-modal ion-header > ion-toolbar {

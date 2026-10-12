@@ -56,6 +56,15 @@ function transaction(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 describe('TransactionItem', () => {
+  it('can leave horizontal gestures to the page while retaining tap-to-open and tags', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction()} defaultCurrency="RUB"
+      onEdit={vi.fn()} onDelete={vi.fn()} swipeActions={false}
+      tagHref={(id) => `/transactions/filtered/1?tag_ids=${id}`} />)
+    expect(markup).not.toContain('ion-item-sliding')
+    expect(markup).not.toContain('ion-item-option')
+    expect(markup).toContain('<button type="button"')
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-1"')
+  })
   it('shows the current equivalent in a third currency and preserves the historical share', () => {
     const markup = renderToStaticMarkup(
       <TransactionItem tx={transaction({ currency: 'USD', amount: 100,

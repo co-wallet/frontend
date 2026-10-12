@@ -13,8 +13,8 @@ import { peopleOutline, cashOutline, mailOutline } from 'ionicons/icons'
 export function AdminPage() {
   return (
     <IonPage>
-      <PageHeader title="Администрирование" backHref="/dashboard" />
-      <AppContent>
+      <PageHeader title="Администрирование" />
+      <AppContent backHref="/dashboard">
         <IonCard routerLink="/admin/users" button>
           <IonCardHeader>
             <IonIcon icon={peopleOutline} style={{ fontSize: '2rem', color: 'var(--ion-color-primary)' }} />

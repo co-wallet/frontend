@@ -1,8 +1,9 @@
 import { ImportAccountAccess } from '@/components/ImportAccountAccess'
 import { useEffect, useMemo, useSyncExternalStore } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
-import { IonButton, IonCheckbox, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonContent, IonItem, IonInput, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
+import { IonButton, IonCheckbox, IonCard, IonCardContent, IonCardHeader, IonCardTitle, IonItem, IonInput, IonPage, IonSelect, IonSelectOption, IonSpinner, IonText, useIonViewWillEnter } from '@ionic/react'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { AppContent } from '@/components/layout/AppContent'
 import { useAuthStore } from '@/store/authStore'
 import { canConfirmImport, importReasons, MonefyImport, type ImportState } from '@/lib/monefyImport'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
@@ -112,7 +113,7 @@ export function MonefyImportPage() {
   useIonViewWillEnter(() => { void controller.check() }, [controller])
   const busy = ['checking', 'previewing', 'configuring', 'confirming'].includes(state.phase)
   const applying = ['confirming', 'unknown', 'done'].includes(state.phase)
-  return <IonPage><PageHeader title="Импорт Monefy" backHref="/dashboard" /><IonContent><main className="monefy-import ion-padding">
+  return <IonPage><PageHeader title="Импорт Monefy" /><AppContent backHref="/dashboard"><main className="monefy-import">
     <p id="import-file-format">Перенесите историю из одной резервной копии Monefy: файл базы SQLite с расширением .db (до 64 МБ). CSV, архивы и зашифрованные копии не подходят. Сначала файл проверяется без изменения ваших данных.</p>
     {busy && <div role="status"><IonSpinner /> {state.phase === 'confirming' ? 'Применяем импорт…' : 'Проверяем данные…'}</div>}
     {state.error && <IonText color="danger"><p role="alert">{state.error}</p></IonText>}
@@ -129,5 +130,5 @@ export function MonefyImportPage() {
     </>}
     {state.phase === 'unknown' && <IonCard><IonCardHeader><IonCardTitle>Результат пока неизвестен</IonCardTitle></IonCardHeader><IonCardContent><p>Сервер мог завершить импорт. Не загружайте базу заново. Проверка использует прежнее подтверждение и не создаёт дубликаты. Если запрос ещё не применён, сервер завершит его.</p><IonButton expand="block" onClick={() => void controller.recover()}>Проверить результат импорта</IonButton></IonCardContent></IonCard>}
     {state.result && <IonCard><IonCardHeader><IonCardTitle>Импорт завершён</IonCardTitle></IonCardHeader><IonCardContent><p>Счета: {state.result.accounts}. Новые категории: {state.result.categories}, переиспользованы: {state.result.reused_categories}. Операции: {state.result.transactions}, переводы: {state.result.transfers}.</p><IonButton routerLink="/accounts">Открыть счета</IonButton><IonButton fill="outline" routerLink="/transactions">История операций</IonButton></IonCardContent></IonCard>}
-  </main></IonContent></IonPage>
+  </main></AppContent></IonPage>
 }

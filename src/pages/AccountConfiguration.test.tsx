@@ -51,7 +51,8 @@ describe('account configuration UI', () => {
     expect(markup).toContain('66.67%')
     expect(markup).toContain('Владелец')
     expect(markup).toContain('создайте новый счёт')
-    expect(markup).not.toMatch(/ion-input|ion-fab|ion-item-option|Добавить участника|Сохранить/)
+    expect(markup).not.toMatch(/ion-input|ion-item-option|Добавить участника|Сохранить/)
+    expect(markup).toContain('aria-label="Назад"')
   })
   it('shows a load failure instead of empty membership', () => {
     state.error = true

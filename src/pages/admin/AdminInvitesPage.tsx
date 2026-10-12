@@ -101,8 +101,8 @@ export function AdminInvitesPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Приглашения" backHref="/admin" />
-      <AppContent withFab
+      <PageHeader title="Приглашения" />
+      <AppContent backHref="/admin" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton onClick={() => { setShowForm(true); setLastInviteURL(null); setApiError('') }}>

@@ -1,33 +1,39 @@
 import { renderToStaticMarkup } from 'react-dom/server'
+import type { ComponentProps } from 'react'
 import { IonButton, IonToolbar } from '@ionic/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { PageHeader } from './PageHeader'
 
+const state = vi.hoisted(() => ({
+  toolbar: undefined as ComponentProps<typeof IonToolbar> | undefined,
+}))
+vi.mock('@ionic/react', async importOriginal => {
+  const actual = await importOriginal<typeof import('@ionic/react')>()
+  return {
+    ...actual,
+    IonToolbar: (props: ComponentProps<typeof IonToolbar>) => {
+      state.toolbar = props
+      return <actual.IonToolbar {...props} />
+    },
+  }
+})
 describe('PageHeader', () => {
-  it('places back navigation on the left and the menu on the right', () => {
-    const html = renderToStaticMarkup(<PageHeader title="Счета" />)
-    expect(html).toMatch(/slot="start"><ion-back-button default-href="\/dashboard"/)
-    expect(html).toMatch(/<ion-title>Счета<\/ion-title><ion-buttons slot="end"><ion-menu-button/)
-  })
-
-  it.each(['/accounts', '/transactions', '/admin'])('uses %s as the parent when opened directly', (backHref) => {
-    const html = renderToStaticMarkup(<PageHeader title="Раздел" backHref={backHref} />)
-    expect(html).toContain(`default-href="${backHref}"`)
-    expect(html).toContain('text=""')
-    expect(html).toContain('aria-label="Назад"')
-  })
-
-  it('hides back only on the dashboard and keeps actions before the menu', () => {
-    const html = renderToStaticMarkup(
-      <PageHeader title="co-wallet" backHref={false} actions={<IonButton>Валюта</IonButton>} />,
-    )
+  it('places the menu on the left and leaves extra actions on the right', () => {
+    const html = renderToStaticMarkup(<PageHeader title="Счета" actions={<IonButton>Обновить</IonButton>} />)
+    expect(html).toMatch(/slot="start"><ion-menu-button[^>]*aria-label="Главное меню"/)
+    expect(html).toMatch(/<ion-title>Счета<\/ion-title><ion-buttons slot="end">[^]*Обновить/)
     expect(html).not.toContain('ion-back-button')
-    expect(html).not.toContain('slot="start"')
-    expect(html).toContain('text-align:start;padding-inline:20px')
-    expect(html).toMatch(/slot="end">[^]*Валюта[^]*<ion-menu-button aria-label="Главное меню"/)
   })
 
-  it('preserves a secondary toolbar for page controls', () => {
+  it('leaves back gestures to the existing Ionic router', () => {
+    renderToStaticMarkup(<PageHeader title="Счета" />)
+    expect(state.toolbar?.onTouchStart).toBeUndefined()
+    expect(state.toolbar?.onTouchMove).toBeUndefined()
+    expect(state.toolbar?.onTouchEnd).toBeUndefined()
+    expect(state.toolbar?.onTouchCancel).toBeUndefined()
+  })
+
+  it('preserves secondary controls', () => {
     const html = renderToStaticMarkup(<PageHeader title="Категории"><IonToolbar>Расходы и доходы</IonToolbar></PageHeader>)
     expect(html).toContain('</ion-toolbar><ion-toolbar>Расходы и доходы</ion-toolbar>')
   })

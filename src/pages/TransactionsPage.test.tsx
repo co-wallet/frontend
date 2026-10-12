@@ -1,11 +1,26 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import type { ReactNode } from 'react'
-import { MemoryRouter, Route } from 'react-router-dom'
+import { MemoryRouter, Route, Router } from 'react-router-dom'
+import { createMemoryHistory } from 'history'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
 import type { Currency } from '@/api/currencies'
 import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
+import type { TransactionPeriod } from '@/lib/transactionNavigation'
+import { usePeriodStore } from '@/store/periodStore'
+
+const swipe = vi.hoisted(() => ({
+  value: undefined as TransactionPeriod | undefined,
+  onChange: undefined as ((value: Partial<TransactionPeriod>) => void) | undefined,
+  enabled: false,
+}))
+vi.mock('@/lib/usePeriodSwipe', () => ({
+  usePeriodSwipe: (value: TransactionPeriod, onChange: typeof swipe.onChange, enabled: boolean) => {
+    Object.assign(swipe, { value, onChange, enabled })
+    return { current: null }
+  },
+}))
 
 vi.mock('@ionic/react', async (importOriginal) => ({
   ...await importOriginal<typeof import('@ionic/react')>(),
@@ -109,19 +124,62 @@ function renderPage(path: string) {
 }
 
 describe('transaction navigation controls', () => {
+  it('applies content swipes to the primary list period store', () => {
+    const previous = usePeriodStore.getState()
+    try {
+      usePeriodStore.setState({ period: 'month', periodOffset: 0 })
+      renderPage('/transactions?tag_ids=t1')
+      expect(swipe.enabled).toBe(true)
+      expect(swipe.value?.periodOffset).toBe(0)
+      swipe.onChange!({ periodOffset: -1 })
+      expect(usePeriodStore.getState().periodOffset).toBe(-1)
+    } finally {
+      usePeriodStore.setState(previous)
+    }
+  })
+
+  it('updates the filtered period in the URL without changing filters, route, or global period', () => {
+    const previous = usePeriodStore.getState()
+    const history = createMemoryHistory({ initialEntries: [
+      '/transactions/filtered/2?tag_ids=t1&account_ids=a1&period=month&offset=-1&include_shared=true',
+    ] })
+    renderToStaticMarkup(<Router history={history}><Route exact path="/transactions/filtered/:depth"><TransactionsPage /></Route></Router>)
+    expect(swipe.enabled).toBe(true)
+    swipe.onChange!({ periodOffset: -2 })
+    const params = new URLSearchParams(history.location.search)
+    expect(history.location.pathname).toBe('/transactions/filtered/2')
+    expect(params.get('period')).toBe('month')
+    expect(params.get('offset')).toBe('-2')
+    expect(params.get('tag_ids')).toBe('t1')
+    expect(params.get('account_ids')).toBe('a1')
+    expect(params.get('include_shared')).toBe('true')
+    expect(usePeriodStore.getState()).toEqual(previous)
+    expect(history.length).toBe(1)
+  })
+
+  it('leaves transaction row gestures to period navigation while retaining tap-to-open', () => {
+    pagination.data = { pages: [[{
+      id: 'swipe-row', accountId: 'a1', type: 'expense', amount: 10, currency: 'USD',
+      date: '2026-10-01', tags: [], shares: [],
+    } as unknown as Transaction]] }
+    const markup = renderPage('/transactions')
+    expect(markup).not.toContain('ion-item-sliding')
+    expect(markup).not.toContain('ion-item-option')
+    expect(markup).toContain('class="transaction-item__open"')
+  })
+
   it('offers both back navigation and the main menu in a filtered list', () => {
     const markup = renderPage('/transactions/filtered/1?tag_ids=travel')
-    expect(markup).toContain('<ion-back-button')
-    expect(markup).toContain('text=""')
+    expect(markup).toContain('title="Назад"')
     expect(markup).toContain('aria-label="Назад"')
-    expect(markup).toMatch(/<ion-buttons slot="start"><ion-back-button[^>]*><\/ion-back-button><\/ion-buttons>/)
-    expect(markup).toMatch(/<ion-buttons slot="end"><ion-menu-button[^>]*aria-label="Главное меню"/)
+    expect(markup).toMatch(/<ion-fab[^>]*slot="fixed"[^>]*horizontal="start"/)
+    expect(markup).toMatch(/<ion-buttons slot="start"><ion-menu-button[^>]*aria-label="Главное меню"/)
   })
 
   it('offers back to the dashboard and the menu in the primary transaction list', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('<ion-menu-button')
-    expect(markup).toContain('<ion-back-button default-href="/dashboard"')
+    expect(markup).toContain('aria-label="Назад"')
   })
 
   it('offers separate quick actions for expense, income and transfer', () => {

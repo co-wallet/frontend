@@ -132,7 +132,7 @@ export default function CategoriesPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Категории" backHref="/dashboard">
+      <PageHeader title="Категории">
         <IonToolbar>
           <IonSegment
             value={activeTab}
@@ -143,7 +143,7 @@ export default function CategoriesPage() {
           </IonSegment>
         </IonToolbar>
       </PageHeader>
-      <AppContent withFab
+      <AppContent backHref="/dashboard" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton aria-label="Добавить категорию" onClick={() => handleCreate()}>

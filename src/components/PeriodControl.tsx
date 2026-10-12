@@ -18,6 +18,7 @@ import {
 } from '@/store/periodStore'
 import { formatPeriodControlLabel } from '@/lib/transactionList'
 import type { TransactionPeriod } from '@/lib/transactionNavigation'
+import { shiftPeriod } from '@/lib/periodNavigation'
 import './PeriodControl.css'
 
 type SimplePeriod = Extract<Period, 'day' | 'month' | 'year'>
@@ -120,13 +121,18 @@ export function PeriodControl({ value, onChange, trailingControl }: {
     setPickerOpen(false)
   }
 
+  function movePeriod(direction: -1 | 1) {
+    const next = shiftPeriod(value, direction)
+    if (next) onChange(next)
+  }
+
   return (
     <div className="period-control">
       <div className={`period-control__row${trailingControl ? ' period-control__row--trailing' : ''}`} aria-label="Период и фильтры">
         <IonButton
           fill="clear"
           className="period-control-arrow"
-          onClick={() => onChange({ periodOffset: periodOffset - 1 })}
+          onClick={() => movePeriod(-1)}
           disabled={isCustomPeriod}
           aria-label="Предыдущий период"
         >
@@ -140,7 +146,7 @@ export function PeriodControl({ value, onChange, trailingControl }: {
           aria-label={`Выбрать период. Сейчас: ${formatPeriodControlLabel(period, dateFrom, dateTo)}`}
         >
           <IonIcon slot="start" icon={calendarOutline} />
-          <span className="period-control-selector__label">
+          <span className="period-control-selector__label" aria-live="polite" aria-atomic="true">
             {formatPeriodControlLabel(period, dateFrom, dateTo)}
           </span>
           <IonIcon slot="end" icon={chevronDownOutline} />
@@ -149,7 +155,7 @@ export function PeriodControl({ value, onChange, trailingControl }: {
         <IonButton
           fill="clear"
           className="period-control-arrow"
-          onClick={() => onChange({ periodOffset: periodOffset + 1 })}
+          onClick={() => movePeriod(1)}
           disabled={isCustomPeriod || periodOffset >= 0}
           aria-label="Следующий период"
         >

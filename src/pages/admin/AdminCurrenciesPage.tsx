@@ -142,13 +142,13 @@ export function AdminCurrenciesPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Валюты" backHref="/admin" actions={
+      <PageHeader title="Валюты" actions={
         <IonButton onClick={() => refresh.mutate()} disabled={refresh.isPending}>
           {refresh.isPending ? <IonSpinner name="crescent" /> : <IonIcon icon={refreshOutline} />}
         </IonButton>
       } />
 
-      <AppContent withFab
+      <AppContent backHref="/admin" withFab
         fixed={
           <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton onClick={() => setShowAdd(true)}>
