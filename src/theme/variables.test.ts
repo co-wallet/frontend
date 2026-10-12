@@ -56,4 +56,9 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (theme) => {
     expect(contrast(palette[`--ion-color-${color}-contrast`], palette[`--ion-color-${color}`]))
       .toBeGreaterThanOrEqual(4.5)
   })
+
+  it('keeps invitation success text readable on the notice surface', () => {
+    expect(contrast(palette['--ion-color-success'], palette['--ion-background-color-step-50']))
+      .toBeGreaterThanOrEqual(4.5)
+  })
 })
