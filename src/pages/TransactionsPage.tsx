@@ -1,6 +1,8 @@
 import { PeriodControl } from '@/components/PeriodControl'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
+import { AmountModeControl, AMOUNT_MODE_LABELS } from '@/components/AmountModeControl'
+import { useAmountMode } from '@/store/amountModeStore'
 import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -119,6 +121,7 @@ export function TransactionsPage() {
     history.replace({ ...location, search: filterToParams(nextFilter, new URLSearchParams(location.search)).toString() })
   }, [history, location])
   const currentUserId = useAuthStore((state) => state.user?.id)
+  const { mode: amountMode, setMode: setAmountMode } = useAmountMode()
   const defaultCurrency = useAuthStore((state) => state.user?.defaultCurrency ?? 'USD')
   const storedPeriod = usePeriodStore()
   const isFilteredView = location.pathname.startsWith('/transactions/filtered/')
@@ -172,6 +175,7 @@ export function TransactionsPage() {
     dateFrom,
     dateTo,
     defaultCurrency,
+    amountMode,
   )
 
   const expenseAnalyticsQuery = useQuery({
@@ -254,8 +258,9 @@ export function TransactionsPage() {
       currentUserId,
       defaultCurrency,
       currenciesQuery.data,
+      amountMode,
     ),
-  ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data, currenciesQuery.data])
+  ), [accountsById, currentUserId, defaultCurrency, transactionsQuery.data, currenciesQuery.data, amountMode])
 
   const categoryChartQuery = chartMode === 'expenses' ? expenseAnalyticsQuery : incomeAnalyticsQuery
   const chartQuery = chartGrouping === 'categories' ? categoryChartQuery : tagAnalyticsQuery
@@ -408,6 +413,7 @@ export function TransactionsPage() {
             </div>
           </div>
 
+          <IonNote className="transactions-amount-mode-label">{AMOUNT_MODE_LABELS[amountMode]}</IonNote>
           {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
         <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {defaultCurrency}.</p></IonText>}
           <section className="transactions-summary" aria-label="Сводка за период">
@@ -630,6 +636,7 @@ export function TransactionsPage() {
               >
                 Отображать переводы
               </IonCheckbox>
+              <AmountModeControl value={amountMode} onChange={setAmountMode} />
             </div>
           </IonPopover>
 

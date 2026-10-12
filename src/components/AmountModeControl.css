@@ -1,0 +1,21 @@
+.amount-mode-control {
+  --size: 18px;
+  --border-radius: 5px;
+  --border-width: 1.5px;
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  min-height: 44px;
+  color: var(--ion-text-color);
+  font-size: 0.875rem;
+  font-weight: 400;
+}
+
+.amount-mode-control::part(container) {
+  margin-inline-end: 8px;
+}
+
+.amount-mode-control::part(label) {
+  margin: 0;
+  white-space: normal;
+}

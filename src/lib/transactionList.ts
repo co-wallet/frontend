@@ -1,5 +1,5 @@
 import type { Account } from '@/api/accounts'
-import type { AnalyticsParams } from '@/api/analytics'
+import type { AmountMode, AnalyticsParams } from '@/api/analytics'
 import type { Currency } from '@/api/currencies'
 import type { Transaction, TransactionFilter, TransactionType } from '@/api/transactions'
 import type { Period } from '@/store/periodStore'
@@ -99,8 +99,9 @@ export function transactionDefaultCurrencyAmount(
   currentUserId: string | undefined,
   defaultCurrency: string,
   currencies: readonly Pick<Currency, 'code' | 'rateToUsd'>[] = [],
+  amountMode: AmountMode = 'share',
 ): number | null {
-  const userAmount = transactionUserAmount(tx, account, currentUserId)
+  const userAmount = amountMode === 'total' ? tx.amount : transactionUserAmount(tx, account, currentUserId)
   if (tx.currency === defaultCurrency) return userAmount
   if (tx.defaultCurrency === defaultCurrency && tx.defaultCurrencyAmount != null) {
     if (tx.amount === 0) return tx.defaultCurrencyAmount
@@ -199,8 +200,10 @@ export function buildTransactionAnalyticsParams(
   dateFrom: string,
   dateTo: string,
   currency: string,
+  amountMode: AmountMode = 'share',
 ): AnalyticsParams {
   return {
+    amount_mode: amountMode,
     date_from: dateFrom,
     date_to: dateTo,
     currency,

@@ -208,3 +208,11 @@ it.each([true, false])('supports externally controlled open state: %s', (isOpen)
   expect(markup).toContain('aria-label="Фильтры, активно: 2"')
   expect(markup.match(/aria-pressed="true"/g)).toHaveLength(3)
 })
+
+it('keeps display preferences outside the filter sheet', () => {
+  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
+  expect(markup).not.toContain('Показывать полные суммы')
+  expect(markup).not.toContain('Отображать переводы')
+  expect(markup).toContain('aria-label="Фильтры"')
+  expect(markup).not.toContain('Фильтры, активно:')
+})

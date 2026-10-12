@@ -24,6 +24,7 @@ vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}
 const queryState = vi.hoisted(() => ({
   selectedKinds: ['spending'] as string[],
   includeShared: false,
+  amountMode: 'share' as 'share' | 'total',
   accountsLoading: false,
   accountsError: false,
   onlyShared: false,
@@ -66,9 +67,10 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useMutation: (options: { mutationFn: (code: string) => unknown }) => ({ mutate: (code: string) => options.mutationFn(code) }),
 }))
+vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: queryState.amountMode, setMode: vi.fn() }) }))
 const initialPeriod = { ...queryState.period }
 afterEach(() => { useAuthStore.setState({ user: null }); vi.clearAllMocks() })
-afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
+afterEach(() => { queryState.amountMode = 'share'; queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 
 describe('Dashboard period visibility', () => {
@@ -288,4 +290,19 @@ it('filters all matching accounts by kind without a specific-account selector', 
     expect(query.params.account_kinds).toBe('spending,savings_account')
   }
   expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(['spending', 'shared', 'shared-savings-account'])
+})
+
+
+it.each(['balance', 'expenses', 'income'] as const)('uses total amounts in %s without changing the selected accounts', (mode) => {
+  queryState.amountMode = 'total'
+  queryState.chartMode = mode
+  queryState.includeShared = true
+  queryState.selectedKinds = ['savings_account']
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  for (const query of queryState.analyticsQueries) expect(query.params).toMatchObject({
+    amount_mode: 'total', account_ids: 'shared-savings-account',
+  })
+  expect(markup).toContain('Полные суммы')
+  if (mode === 'balance') expect(markup).toContain('240')
+  expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(['shared-savings-account'])
 })
