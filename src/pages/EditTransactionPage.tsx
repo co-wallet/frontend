@@ -287,7 +287,7 @@ export function EditTransactionPage() {
     <IonPage>
       <PageHeader title="Редактирование" />
 
-      <AppContent backHref="/transactions">
+      <AppContent backHref="/transactions" className="transaction-form-content">
         <div>
           <IonList>
             <AccountSelect
@@ -423,7 +423,7 @@ export function EditTransactionPage() {
 
           {/* Tags */}
           <div style={{ padding: '8px 0' }}>
-            <IonLabel style={{ fontSize: '0.875rem', fontWeight: 500, paddingLeft: 16, display: 'block', marginBottom: 4 }}>
+            <IonLabel style={{ fontSize: '0.875rem', fontWeight: 500, display: 'block', marginBottom: 4 }}>
               Теги
             </IonLabel>
             <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />

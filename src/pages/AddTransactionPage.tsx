@@ -268,7 +268,7 @@ export function AddTransactionPage() {
         disabled={!amountValid || !sharesValid || !selectedAccount || (type === 'transfer' && (!toAccount || (isCrossCurrencyTransfer && !(isValidDecimal(toAmountStr) && parseDecimal(toAmountStr) > 0))))}
       />
 
-      <AppContent>
+      <AppContent className="transaction-form-content">
         <div>
           <EntityFormSection title="Основное">
             <IonItem>

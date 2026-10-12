@@ -16,7 +16,7 @@ export const AppContent = forwardRef<HTMLIonContentElement, AppContentProps>(
       <IonContent
         {...props}
         ref={ref}
-        fixedSlotPlacement={backHref ? 'before' : props.fixedSlotPlacement}
+        fixedSlotPlacement={backHref ? 'before' : (props.fixedSlotPlacement ?? 'after')}
         className={['app-content', (withFab || backHref) && 'app-content--with-fab', className].filter(Boolean).join(' ')}
       >
         {backHref && <PageBackFab backHref={backHref} />}

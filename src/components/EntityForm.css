@@ -85,3 +85,23 @@
   margin-bottom: 8px;
   font-size: 13px;
 }
+
+/* AppContent already supplies the page gutter; transaction fields use that same edge. */
+.transaction-form-content .app-content-body ion-list > ion-item {
+  --padding-start: 0;
+  --inner-padding-end: 0;
+}
+
+.transaction-form-content .entity-form-section__header {
+  padding-inline: 0;
+}
+
+.transaction-form-content .entity-form-tags {
+  padding-inline: 0;
+}
+
+.transaction-form-content .entity-form-note,
+.transaction-form-content .entity-form-rate,
+.transaction-form-content .entity-form-error {
+  margin-inline: 0;
+}

@@ -35,7 +35,6 @@ import { isMenuPathActive } from '@/lib/navigation'
 import './AppMenu.css'
 
 const mainItems = [
-  { label: 'Импорт Monefy', icon: downloadOutline, path: '/imports/monefy' },
   { label: 'Главная', icon: homeOutline, path: '/dashboard' },
   { label: 'Счета', icon: walletOutline, path: '/accounts' },
   { label: 'Транзакции', icon: swapHorizontalOutline, path: '/transactions' },
@@ -132,13 +131,21 @@ export function AppMenu() {
           </>
         )}
 
-        <IonList lines="none" className="ion-margin-top">
-          <IonItem button onClick={cycleTheme} detail={false}>
+        <IonList lines="none" className="app-menu-settings">
+          <IonMenuToggle autoHide={false}>
+            <IonItem routerLink="/imports/monefy" routerDirection="root" detail={false}
+              className={`app-menu-item${isMenuPathActive(location.pathname, '/imports/monefy') ? ' app-menu-item--active' : ''}`}
+              aria-current={isMenuPathActive(location.pathname, '/imports/monefy') ? 'page' : undefined}>
+              <IonIcon slot="start" icon={downloadOutline} />
+              <IonLabel>Импорт Monefy</IonLabel>
+            </IonItem>
+          </IonMenuToggle>
+          <IonItem button onClick={cycleTheme} detail={false} className="app-menu-item">
             <IonIcon slot="start" icon={currentTheme.icon} />
             <IonLabel>Тема: {currentTheme.label}</IonLabel>
           </IonItem>
           <IonMenuToggle autoHide={false}>
-            <IonItem button onClick={handleLogout} detail={false}>
+            <IonItem button onClick={handleLogout} detail={false} className="app-menu-item app-menu-item--logout">
               <IonIcon slot="start" icon={logOutOutline} color="danger" />
               <IonLabel color="danger">Выйти</IonLabel>
             </IonItem>

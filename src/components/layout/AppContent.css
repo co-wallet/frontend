@@ -33,10 +33,14 @@ ion-content.app-content--with-fab {
   margin-inline: 0;
 }
 
+.app-content > ion-fab[vertical='bottom'] {
+  bottom: calc(var(--app-page-gutter) + env(safe-area-inset-bottom));
+  margin-bottom: 0;
+}
+
 .app-content > .page-back-fab {
   left: max(var(--app-content-inset), env(safe-area-inset-left));
   margin-inline: 0;
-  margin-bottom: env(safe-area-inset-bottom);
 }
 
 .page-back-fab ion-fab-button {

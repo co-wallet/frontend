@@ -376,9 +376,6 @@
   height: 16px;
 }
 
-.transactions-fab {
-  margin-bottom: env(safe-area-inset-bottom);
-}
 
 @media (max-width: 420px) {
   .transactions-summary__item {

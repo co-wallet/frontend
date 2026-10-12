@@ -80,6 +80,8 @@ body.dark .dashboard-chart-card {
 
 .dashboard-kind-trigger {
   --border-color: var(--ion-border-color, var(--ion-color-light-shade));
+  --border-width: 1px;
+  --background: var(--ion-item-background, var(--ion-background-color));
   --border-radius: 12px;
   --padding-start: 12px;
   --padding-end: 12px;

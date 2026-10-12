@@ -22,6 +22,14 @@ vi.mock('@tanstack/react-query', () => ({
 describe('AdminInvitesPage creation notice', () => {
   beforeEach(() => { state.inviteUrl = null })
 
+  it('provides labelled invitation creation in the header and only back navigation at the bottom', () => {
+    const markup = renderToStaticMarkup(<MemoryRouter><AdminInvitesPage /></MemoryRouter>)
+    expect(markup).toMatch(/<ion-buttons slot="end"><ion-button[^>]*aria-label="Создать приглашение"/)
+    expect(markup).toContain('aria-label="Назад"')
+    expect(markup).not.toContain('horizontal="end"')
+    expect(markup).not.toContain('Добавить транзакцию')
+  })
+
   it('only shows the notice after creating an invitation', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><AdminInvitesPage /></MemoryRouter>)
     expect(markup).not.toContain('Приглашение создано!')
