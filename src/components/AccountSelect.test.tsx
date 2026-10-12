@@ -5,6 +5,10 @@ import type { Account } from '@/api/accounts'
 
 import { AccountSelect } from './AccountSelect'
 
+vi.mock('./EntitySelectModal', () => ({
+  EntitySelectModal: ({ children }: { children: import('react').ReactNode }) => <div>{children}</div>,
+}))
+
 const accounts: Account[] = [
   {
     id: 'account-1',
@@ -35,6 +39,10 @@ const accounts: Account[] = [
 ]
 
 describe('AccountSelect', () => {
+  it('preserves the saved account order in the transaction picker', () => {
+    const markup = renderToStaticMarkup(<AccountSelect label="Счёт" accounts={[accounts[1], accounts[0]]} value="" onChange={vi.fn()} />)
+    expect(markup.indexOf('aria-label="Кредитная карта, RUB"')).toBeLessThan(markup.indexOf('aria-label="TBank, RUB"'))
+  })
   it('renders the selected account with its visual icon instead of the storage value', () => {
     const markup = renderToStaticMarkup(
       <AccountSelect

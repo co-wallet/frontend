@@ -27,6 +27,9 @@ import {
   IonAlert,
   IonRouterLink,
   IonButtons,
+  IonReorderGroup,
+  IonReorder,
+  type ReorderEndCustomEvent,
 } from '@ionic/react'
 import {
   addOutline,
@@ -35,6 +38,8 @@ import {
   peopleOutline,
   personOutline,
   createOutline,
+  arrowUpOutline,
+  arrowDownOutline,
 } from 'ionicons/icons'
 import {
   accountsApi,
@@ -68,6 +73,7 @@ import { AccountIconSettings } from '@/components/AccountIconSettings'
 import { AccountKindField } from '@/components/AccountKindField'
 import { usePeriodStore } from '@/store/periodStore'
 import { accountTransactionsHref } from '@/lib/transactionNavigation'
+import { applyAccountOrder, moveAccount } from '@/lib/accountOrder'
 
 import './AccountsPage.css'
 
@@ -362,6 +368,7 @@ export function AccountsPage() {
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [editingAccount, setEditingAccount] = useState<Account | null>(null)
   const [deleteAccountId, setDeleteAccountId] = useState<string | null>(null)
+  const [orderDraft, setOrderDraft] = useState<Account[] | null>(null)
 
   const { data: accounts = [], isLoading } = useQuery({
     queryKey: ['accounts', defaultCurrency],
@@ -396,6 +403,28 @@ export function AccountsPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
   })
 
+  const orderMutation = useMutation({
+    mutationFn: accountsApi.setOrder,
+    onSuccess: async (_, accountIds) => {
+      qc.setQueriesData<Account[]>({ queryKey: ['accounts'] }, (cached) =>
+        cached ? applyAccountOrder(cached, accountIds) : cached)
+      await qc.invalidateQueries({ queryKey: ['accounts'] })
+      setOrderDraft(null)
+    },
+    onError: () => qc.invalidateQueries({ queryKey: ['accounts'] }),
+  })
+
+  const isOrdering = orderDraft !== null
+  const displayedAccounts = orderDraft ?? accounts
+  const orderChanged = isOrdering && orderDraft.some((account, index) => account.id !== accounts[index]?.id)
+  const move = (from: number, to: number) => {
+    if (!orderMutation.isPending) setOrderDraft(moveAccount(displayedAccounts, from, to))
+  }
+  const reorder = (event: ReorderEndCustomEvent) => {
+    event.detail.complete(false)
+    move(event.detail.from, event.detail.to)
+  }
+
   const updateError = updateMutation.error
     ? axios.isAxiosError<{ error?: string }>(updateMutation.error) && updateMutation.error.response?.status === 409
       ? 'Совместный счёт можно сделать личным только без других участников и транзакций.'
@@ -409,16 +438,31 @@ export function AccountsPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Счета" />
+      <PageHeader title="Счета" actions={isOrdering ? <>
+        <IonButton disabled={orderMutation.isPending} onClick={() => setOrderDraft(null)}>Отмена</IonButton>
+        <IonButton disabled={!orderChanged || orderMutation.isPending}
+          onClick={() => orderMutation.mutate(displayedAccounts.map((account) => account.id))}>
+          {orderMutation.isPending ? <IonSpinner name="crescent" /> : 'Сохранить'}
+        </IonButton>
+      </> : accounts.length > 1 && (
+        <IonButton onClick={() => { orderMutation.reset(); setOrderDraft([...accounts]) }}>Порядок</IonButton>
+      )} />
       <AppContent backHref="/dashboard" withFab
         fixed={
-          <IonFab vertical="bottom" horizontal="end" slot="fixed">
+          !isOrdering && <IonFab vertical="bottom" horizontal="end" slot="fixed">
             <IonFabButton onClick={() => { setShowCreateModal(true); setEditingAccount(null) }}>
               <IonIcon icon={addOutline} />
             </IonFabButton>
           </IonFab>
         }
       >
+        {isOrdering && <div className="account-order-help">
+          <IonNote>Перетащите счета за значок справа или используйте стрелки.</IonNote>
+          {orderMutation.error && <IonText color="danger"><p role="alert">
+            Не удалось сохранить порядок. Проверьте соединение и попробуйте снова.
+            Если список счетов изменился, отмените сортировку и повторите её.
+          </p></IonText>}
+        </div>}
         {isLoading ? (
           <div className="app-state">
             <IonSpinner />
@@ -432,93 +476,107 @@ export function AccountsPage() {
           </div>
         ) : (
           <IonList>
-            {accounts.map((account) => {
-              const isOwner = account.ownerId === user?.id
-              const kindLabel = accountKindShortLabel(account.kind)
-              return (
-                <IonItemSliding key={account.id}>
-                  <IonItem
-                    className="account-list-item"
-                    detail={false}
-                  >
-                    <IonRouterLink
-                      className="account-list-link"
-                      routerLink={accountTransactionsHref(account, period)}
-                      routerDirection="forward"
-                      aria-label={`Транзакции по счету ${account.name}`}
+            <IonReorderGroup disabled={!isOrdering || orderMutation.isPending} onIonReorderEnd={reorder}>
+              {displayedAccounts.map((account, index) => {
+                const isOwner = account.ownerId === user?.id
+                const kindLabel = accountKindShortLabel(account.kind)
+                return (
+                  <IonItemSliding key={account.id} disabled={isOrdering}>
+                    <IonItem
+                      className="account-list-item"
+                      detail={false}
                     >
-                      <span className="account-list-link-content">
-                        <span className="account-list-icon">
-                          <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
-                        </span>
-                        <IonLabel className="account-list-label">
-                          <h2 title={account.name}>{account.name}</h2>
-                          <div className="account-list-meta">
-                            <span
-                              className="account-list-access"
-                              role="img"
-                              aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                              title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
-                            >
-                              <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
-                            </span>
-                            <span className="account-list-meta-text" title={kindLabel}>
-                              {kindLabel}
-                            </span>
-                          </div>
-                        </IonLabel>
-                        {account.balance && (
-                          <IonNote className="account-list-balance">
-                            <div style={{ textAlign: 'right' }}>
-                              {fmtCurrency(account.balance.native, account.currency)}
-                              {account.balance.displayCurrency !== account.currency && (
-                                <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                                  ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
-                                </div>
-                              )}
-                              {account.accessMode === 'shared' && (
-                                <div style={{ fontSize: '11px', opacity: 0.7 }}>
-                                  {fmtCurrency(account.balance.totalNative, account.currency)}
-                                </div>
-                              )}
+                      <IonRouterLink
+                        className="account-list-link"
+                        routerLink={isOrdering ? undefined : accountTransactionsHref(account, period)}
+                        routerDirection="forward"
+                        aria-label={isOrdering ? account.name : `Транзакции по счету ${account.name}`}
+                      >
+                        <span className="account-list-link-content">
+                          <span className="account-list-icon">
+                            <AccountIcon value={account.icon ?? DEFAULT_ACCOUNT_ICON} />
+                          </span>
+                          <IonLabel className="account-list-label">
+                            <h2 title={account.name}>{account.name}</h2>
+                            <div className="account-list-meta">
+                              <span
+                                className="account-list-access"
+                                role="img"
+                                aria-label={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                                title={account.accessMode === 'shared' ? 'Совместный счёт' : 'Личный счёт'}
+                              >
+                                <IonIcon aria-hidden="true" icon={account.accessMode === 'shared' ? peopleOutline : personOutline} />
+                              </span>
+                              <span className="account-list-meta-text" title={kindLabel}>
+                                {kindLabel}
+                              </span>
                             </div>
-                          </IonNote>
-                        )}
-                      </span>
-                    </IonRouterLink>
-                    <IonButtons slot="end" className="account-list-actions">
-                      <IonButton
-                        fill="clear"
-                        color="medium"
-                        title="Редактировать счёт"
-                        aria-label={`Редактировать счёт ${account.name}`}
-                        onClick={() => openEditor(account)}
-                      >
-                        <IonIcon slot="icon-only" icon={createOutline} />
-                      </IonButton>
-                    </IonButtons>
-                  </IonItem>
-                  <IonItemOptions side="end">
-                    {account.accessMode === 'shared' && (
-                      <IonItemOption
-                        color="tertiary"
-                        routerLink={`/accounts/${account.id}/members`}
-                      >
-                        <IonIcon slot="icon-only" icon={peopleOutline} />
-                      </IonItemOption>
-                    )}
-                    {isOwner && (
-                      <IonItemOption
-                        color="danger"
-                        onClick={() => setDeleteAccountId(account.id)}
-                      >
-                        <IonIcon slot="icon-only" icon={trashOutline} />
-                      </IonItemOption>
-                    )}
-                  </IonItemOptions>
-                </IonItemSliding>
-              )
-            })}
+                          </IonLabel>
+                          {account.balance && !isOrdering && (
+                            <IonNote className="account-list-balance">
+                              <div style={{ textAlign: 'right' }}>
+                                {fmtCurrency(account.balance.native, account.currency)}
+                                {account.balance.displayCurrency !== account.currency && (
+                                  <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                                    ≈ {fmtCurrency(account.balance.display, account.balance.displayCurrency)}
+                                  </div>
+                                )}
+                                {account.accessMode === 'shared' && (
+                                  <div style={{ fontSize: '11px', opacity: 0.7 }}>
+                                    {fmtCurrency(account.balance.totalNative, account.currency)}
+                                  </div>
+                                )}
+                              </div>
+                            </IonNote>
+                          )}
+                        </span>
+                      </IonRouterLink>
+                      <IonButtons slot="end" className={`account-list-actions${isOrdering ? ' account-order-actions' : ''}`}>
+                        {isOrdering ? <>
+                          <IonButton aria-label={`Поднять счёт ${account.name}`}
+                            disabled={index === 0 || orderMutation.isPending} onClick={() => move(index, index - 1)}>
+                            <IonIcon slot="icon-only" icon={arrowUpOutline} />
+                          </IonButton>
+                          <IonButton aria-label={`Опустить счёт ${account.name}`}
+                            disabled={index === displayedAccounts.length - 1 || orderMutation.isPending} onClick={() => move(index, index + 1)}>
+                            <IonIcon slot="icon-only" icon={arrowDownOutline} />
+                          </IonButton>
+                        </> :
+                        <IonButton
+                          fill="clear"
+                          color="medium"
+                          title="Редактировать счёт"
+                          aria-label={`Редактировать счёт ${account.name}`}
+                          onClick={() => openEditor(account)}
+                        >
+                          <IonIcon slot="icon-only" icon={createOutline} />
+                        </IonButton>
+                        }
+                      </IonButtons>
+                      {isOrdering && <IonReorder slot="end" aria-label={`Переместить счёт ${account.name}`} />}
+                    </IonItem>
+                    <IonItemOptions side="end">
+                      {account.accessMode === 'shared' && (
+                        <IonItemOption
+                          color="tertiary"
+                          routerLink={`/accounts/${account.id}/members`}
+                        >
+                          <IonIcon slot="icon-only" icon={peopleOutline} />
+                        </IonItemOption>
+                      )}
+                      {isOwner && (
+                        <IonItemOption
+                          color="danger"
+                          onClick={() => setDeleteAccountId(account.id)}
+                        >
+                          <IonIcon slot="icon-only" icon={trashOutline} />
+                        </IonItemOption>
+                      )}
+                    </IonItemOptions>
+                  </IonItemSliding>
+                )
+              })}
+            </IonReorderGroup>
           </IonList>
         )}
 

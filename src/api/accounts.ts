@@ -63,6 +63,9 @@ export interface UpdateAccountDto {
 export type TransferAccount = Pick<Account, 'id' | 'name' | 'icon' | 'currency'>
 
 export const accountsApi = {
+  setOrder: async (accountIds: string[]): Promise<void> => {
+    await apiClient.patch('/accounts/order', { accountIds })
+  },
   transferAccounts: async (username: string): Promise<TransferAccount[]> => {
     const { data } = await apiClient.get<TransferAccount[]>('/transfer-accounts', { params: { username } })
     return data
