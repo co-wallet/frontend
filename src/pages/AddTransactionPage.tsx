@@ -294,8 +294,6 @@ export function AddTransactionPage() {
               }}
             />
 
-            {incomingTransfer && <IonNote className="entity-form-note">Перевод создаётся сразу. Владелец счёта списания может удалить его.</IonNote>}
-
             {/* To account (transfer) */}
             {type === 'transfer' && (<>
               <AccountSelect

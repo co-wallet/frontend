@@ -104,7 +104,10 @@ describe('transfer selectors without username search', () => {
       expect(controls.header!.disabled).toBe(true)
       input('Сумма на счёт (EUR)', '80.4321')
     }
-    expect(render()).not.toContain('Теги')
+    const markup = render()
+    expect(markup).not.toContain('Теги')
+    expect(markup).not.toContain('Перевод создаётся сразу')
+    expect(markup).not.toContain('Владелец счёта списания может удалить его')
     expect(controls.header!.disabled).toBe(false)
     controls.header!.onSubmit()
     expect(controls.mutate).toHaveBeenCalledWith(expect.objectContaining({
