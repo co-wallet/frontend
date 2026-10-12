@@ -84,8 +84,6 @@ export function RecentTransactions({
               }
             }}>Повторить</IonButton>
           </IonCardContent>
-        ) : items.length === 0 ? (
-          <IonCardContent className="recent-transactions__message">По выбранным счетам пока нет транзакций.</IonCardContent>
         ) : (
           <IonList aria-label="Последние транзакции">
             {items.map((tx, index) => (

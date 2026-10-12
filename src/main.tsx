@@ -19,7 +19,7 @@ import './index.css'
 import './store/themeStore'
 import App from './App'
 
-setupIonicReact({ swipeBackEnabled: true })
+setupIonicReact({ swipeBackEnabled: true, focusManagerPriority: ['content'] })
 
 const queryClient = new QueryClient({
   defaultOptions: {
