@@ -3,6 +3,21 @@ import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DashboardPage } from './DashboardPage'
 import type { TransactionPeriod } from '@/lib/transactionNavigation'
+import type { ComponentProps } from 'react'
+import { authApi } from '@/api/auth'
+import { useAuthStore } from '@/store/authStore'
+
+vi.mock('@/api/auth', () => ({ authApi: { updateMe: vi.fn() } }))
+vi.mock('@ionic/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ionic/react')>()
+  return {
+    ...actual,
+    IonSelect: (props: ComponentProps<typeof actual.IonSelect>) => {
+      if (props['aria-label'] === 'Валюта') queryState.onCurrencyChange = props.onIonChange
+      return <actual.IonSelect {...props} />
+    },
+  }
+})
 
 vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}, legendColor: 'black' }) }))
 
@@ -16,6 +31,7 @@ const queryState = vi.hoisted(() => ({
   transactionQueries: [] as { filter: Record<string, unknown>; enabled: boolean }[],
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
+  onCurrencyChange: undefined as ComponentProps<typeof import('@ionic/react').IonSelect>['onIonChange'],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
 vi.mock('react', async (importOriginal) => {
@@ -48,13 +64,26 @@ vi.mock('@tanstack/react-query', () => ({
     return { data: [] }
   },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
-  useMutation: () => ({ mutate: vi.fn() }),
+  useMutation: (options: { mutationFn: (code: string) => unknown }) => ({ mutate: (code: string) => options.mutationFn(code) }),
 }))
 const initialPeriod = { ...queryState.period }
+afterEach(() => { useAuthStore.setState({ user: null }); vi.clearAllMocks() })
 afterEach(() => { queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 
 describe('Dashboard period visibility', () => {
+  it('keeps the base profile currency when selecting another display currency', () => {
+    useAuthStore.setState({ user: {
+      id: 'user', username: 'user', email: 'user@example.test', defaultCurrency: 'RUB',
+      isAdmin: false, isActive: true, createdAt: '', updatedAt: '',
+    } })
+    renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(queryState.onCurrencyChange).toBeTypeOf('function')
+    queryState.onCurrencyChange?.({ detail: { value: 'EUR' } } as Parameters<NonNullable<typeof queryState.onCurrencyChange>>[0])
+    expect(authApi.updateMe).not.toHaveBeenCalled()
+    expect(useAuthStore.getState().user?.defaultCurrency).toBe('RUB')
+  })
+
   it('hides period controls in the initial balance view', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).toContain('Баланс по счетам')

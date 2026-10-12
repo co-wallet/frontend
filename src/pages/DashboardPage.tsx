@@ -6,7 +6,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
 import { useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   IonPage,
@@ -37,7 +37,6 @@ import { analyticsApi, type AnalyticsParams } from '@/api/analytics'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import type { TransactionFilter, TransactionType } from '@/api/transactions'
 import { currenciesApi, type Currency } from '@/api/currencies'
-import { authApi } from '@/api/auth'
 import { AccountIcon, accountIconStyle } from '@/components/AccountIcon'
 import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/CategoryIcon'
 import { QuickTransactionFab } from '@/components/QuickTransactionFab'
@@ -251,7 +250,6 @@ export function DashboardPage() {
   const history = useHistory()
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
-  const updateUser = useAuthStore((s) => s.updateUser)
 
   const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
@@ -260,10 +258,6 @@ export function DashboardPage() {
   const [includeShared, setIncludeShared] = useState(false)
   const [selectedKinds, setSelectedKinds] = useState<AccountKind[]>(['spending'])
 
-  const saveCurrency = useMutation({
-    mutationFn: (code: string) => authApi.updateMe(code),
-    onSuccess: (updatedUser) => updateUser(updatedUser),
-  })
   const { data: accounts = [], isLoading: accountsLoading, isError: accountsError } = useQuery({
     queryKey: ['accounts', displayCurrency],
     queryFn: () => accountsApi.list(displayCurrency),
@@ -479,7 +473,6 @@ export function DashboardPage() {
                   const code = e.detail.value as string
                   if (code && code !== displayCurrency) {
                     setDisplayCurrency(code)
-                    saveCurrency.mutate(code)
                   }
                 }}
                 selectedText={displayCurrency}

@@ -44,12 +44,12 @@ describe('AddTransactionPage creation defaults', () => {
     expect(markup).toContain('value="expense"')
   })
 
-  it('marks a transfer exchange rate for platform-aligned spacing', () => {
+  it('does not show a rate to the profile currency before choosing the transfer destination', () => {
     route.search = '?type=transfer&account_id=account-1'
     const markup = renderToStaticMarkup(<AddTransactionPage />)
 
-    expect(markup).toContain('class="entity-form-rate"')
+    expect(markup).not.toContain('class="entity-form-rate"')
     expect(markup).toContain('RUB')
-    expect(markup).toContain('USD')
+    expect(markup).not.toContain('Сумма в USD')
   })
 })
