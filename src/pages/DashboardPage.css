@@ -74,6 +74,10 @@ body.dark .dashboard-chart-card {
   background: var(--ion-item-background, var(--ion-background-color));
 }
 
+.dashboard-currency-select::part(wrapper) {
+  justify-content: center;
+}
+
 .dashboard-kind-trigger {
   --border-color: var(--ion-border-color, var(--ion-color-light-shade));
   --border-radius: 12px;
