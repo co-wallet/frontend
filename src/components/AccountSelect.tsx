@@ -21,12 +21,13 @@ export function AccountSelect({
   onChange,
 }: {
   label: string
-  accounts: (Pick<Account, 'id' | 'name' | 'icon' | 'currency'> & Partial<Pick<Account, 'accessMode'>>)[]
+  accounts: (Pick<Account, 'id' | 'name' | 'icon' | 'currency'> & Partial<Pick<Account, 'accessMode'>> & { ownerUsername?: string })[]
   value: string
   onChange: (accountId: string) => void
 }) {
   const [isOpen, setIsOpen] = useState(false)
   const selectedAccount = accounts.find((account) => account.id === value)
+  const selectedName = selectedAccount && `${selectedAccount.name}${selectedAccount.ownerUsername ? ` · @${selectedAccount.ownerUsername}` : ''}`
 
   const selectAccount = (accountId: string) => {
     onChange(accountId)
@@ -36,8 +37,8 @@ export function AccountSelect({
   return (
     <>
       <EntityFormPicker label={label}
-        value={selectedAccount ? `${selectedAccount.name} · ${selectedAccount.currency}` : 'Выберите счёт'}
-        accessibleValue={selectedAccount?.name ?? 'не выбран'}
+        value={selectedAccount ? `${selectedName} · ${selectedAccount.currency}` : 'Выберите счёт'}
+        accessibleValue={selectedName ?? 'не выбран'}
         icon={selectedAccount && <AccountIcon value={selectedAccount.icon} size={24} />}
         isOpen={isOpen} onOpen={() => setIsOpen(true)} />
 
@@ -58,7 +59,7 @@ export function AccountSelect({
                   detail={false}
                   key={account.id}
                   className="account-select-option"
-                  aria-label={`${account.name}, ${account.currency}`}
+                  aria-label={`${account.name}${account.ownerUsername ? `, @${account.ownerUsername}` : ''}, ${account.currency}`}
                   aria-current={selected ? 'true' : undefined}
                   onClick={() => selectAccount(account.id)}
                 >
@@ -68,6 +69,7 @@ export function AccountSelect({
                   <IonLabel>
                     <h2>{account.name}</h2>
                     <p>
+                      {account.ownerUsername && `@${account.ownerUsername} · `}
                       {account.accessMode ? `${account.accessMode === 'shared' ? 'Совместный' : 'Личный'} · ` : ''}{account.currency}
                     </p>
                   </IonLabel>

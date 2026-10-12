@@ -51,6 +51,12 @@ it('looks up transfer destinations by exact username using a separate endpoint',
   await expect(accountsApi.transferAccounts('alice')).resolves.toEqual([destination])
   expect(apiClient.get).toHaveBeenCalledWith('/transfer-accounts', { params: { username: 'alice' } })
 })
+it('loads all available foreign accounts without a username', async () => {
+  const destination = { id: 'dest', name: 'Карта', currency: 'EUR', icon: null, ownerUsername: 'alice' }
+  vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [destination] })
+  await expect(accountsApi.transferAccounts()).resolves.toEqual([destination])
+  expect(apiClient.get).toHaveBeenCalledWith('/transfer-accounts', { params: {} })
+})
 it('propagates transfer lookup errors', async () => {
   vi.mocked(apiClient.get).mockRejectedValueOnce(new Error('offline'))
   await expect(accountsApi.transferAccounts('alice')).rejects.toThrow('offline')

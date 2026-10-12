@@ -39,6 +39,16 @@ const accounts: Account[] = [
 ]
 
 describe('AccountSelect', () => {
+  it('distinguishes foreign accounts by owner in the selector and selected value', () => {
+    const markup = renderToStaticMarkup(<AccountSelect label="Со счёта" accounts={[
+      { id: 'foreign', name: 'Карта', currency: 'USD', icon: null, ownerUsername: 'alice' },
+      { id: 'other', name: 'Карта', currency: 'USD', icon: null, ownerUsername: 'bob' },
+    ]} value="foreign" onChange={vi.fn()} />)
+    expect(markup).toContain('aria-label="Карта, @alice, USD"')
+    expect(markup).toContain('aria-label="Карта, @bob, USD"')
+    expect(markup).toContain('Со счёта: Карта · @alice')
+    expect(markup).toContain('Карта · @alice · USD')
+  })
   it('preserves the saved account order in the transaction picker', () => {
     const markup = renderToStaticMarkup(<AccountSelect label="Счёт" accounts={[accounts[1], accounts[0]]} value="" onChange={vi.fn()} />)
     expect(markup.indexOf('aria-label="Кредитная карта, RUB"')).toBeLessThan(markup.indexOf('aria-label="TBank, RUB"'))

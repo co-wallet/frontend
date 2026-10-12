@@ -3,20 +3,19 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { IonInput } from '@ionic/react'
 import type { AccountSelect } from '@/components/AccountSelect'
-import type { EntityFormHeader, EntityFormSelect } from '@/components/EntityForm'
+import type { EntityFormHeader } from '@/components/EntityForm'
 import { AddTransactionPage } from './AddTransactionPage'
 
 const controls = vi.hoisted(() => ({
   state: [] as unknown[], cursor: 0,
   fields: new Map<string, ComponentProps<typeof IonInput>>(),
   pickers: new Map<string, ComponentProps<typeof AccountSelect>>(),
-  mode: undefined as ComponentProps<typeof EntityFormSelect> | undefined,
   header: undefined as ComponentProps<typeof EntityFormHeader> | undefined,
-  search: undefined as (() => void) | undefined,
+  retry: undefined as (() => void) | undefined,
   query: undefined as { enabled: boolean; queryKey: string[]; queryFn: () => unknown } | undefined,
-  results: [{ id: 'foreign', name: 'Чужой', currency: 'USD', icon: null }],
+  results: [{ id: 'foreign', name: 'Чужой', currency: 'USD', icon: null, ownerUsername: 'alice' }],
   fetching: false, error: false,
-  mutate: vi.fn(), lookup: vi.fn(),
+  mutate: vi.fn(), lookup: vi.fn(), refetch: vi.fn(),
 }))
 
 vi.mock('react', async (importOriginal) => ({
@@ -42,7 +41,7 @@ vi.mock('@tanstack/react-query', () => ({
       ] : options.queryKey[0] === 'transfer-accounts' ? controls.results : [],
       isFetching: options.queryKey[0] === 'transfer-accounts' && controls.fetching,
       isError: options.queryKey[0] === 'transfer-accounts' && controls.error,
-      refetch: vi.fn(),
+      refetch: controls.refetch,
     }
   },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -55,16 +54,12 @@ vi.mock('@/components/AccountSelect', () => ({ AccountSelect: (props: ComponentP
 vi.mock('@/components/EntityForm', async (importOriginal) => ({
   ...await importOriginal<typeof import('@/components/EntityForm')>(),
   EntityFormHeader: (props: ComponentProps<typeof EntityFormHeader>) => { controls.header = props; return <div>{props.title}</div> },
-  EntityFormSelect: (props: ComponentProps<typeof EntityFormSelect>) => {
-    if (props.label === 'Направление') controls.mode = props
-    return <div>{props.children}</div>
-  },
 }))
 vi.mock('@ionic/react', async (importOriginal) => ({
   ...await importOriginal<typeof import('@ionic/react')>(),
   IonInput: (props: ComponentProps<typeof IonInput>) => { controls.fields.set(props.label!, props); return <div>{props.label}</div> },
   IonButton: (props: { children: unknown; onClick: () => void }) => {
-    if (props.children === 'Найти') controls.search = props.onClick
+    if (props.children === 'Повторить') controls.retry = props.onClick
     return <div />
   },
 }))
@@ -75,10 +70,6 @@ function render() {
   controls.pickers.clear()
   return renderToStaticMarkup(<AddTransactionPage />)
 }
-function mode(value: string) {
-  controls.mode!.onIonChange!({ detail: { value } } as never)
-  return render()
-}
 function input(label: string, value: string) {
   controls.fields.get(label)!.onIonInput!({ detail: { value } } as never)
   return render()
@@ -87,35 +78,25 @@ function choose(label: string, value: string) {
   controls.pickers.get(label)!.onChange(value)
   return render()
 }
-function findSource() {
-  mode('fromOther')
-  input('Логин владельца счёта', ' alice ')
-  controls.search!()
-  render()
-}
-
 beforeEach(() => {
   vi.clearAllMocks()
   controls.state = []
-  controls.results = [{ id: 'foreign', name: 'Чужой', currency: 'USD', icon: null }]
+  controls.results = [{ id: 'foreign', name: 'Чужой', currency: 'USD', icon: null, ownerUsername: 'alice' }]
   controls.fetching = false
   controls.error = false
   render()
 })
 
-describe('external account topups', () => {
-  it('finds the source by exact username and offers personal and shared destinations', async () => {
-    findSource()
+describe('transfer selectors without username search', () => {
+  it('loads foreign accounts automatically and offers them beside own sources', async () => {
     expect(controls.query!.enabled).toBe(true)
     await controls.query!.queryFn()
-    expect(controls.lookup).toHaveBeenCalledWith('alice')
-    expect(controls.pickers.get('Со счёта')!.accounts.map(a => a.id)).toEqual(['foreign'])
-    expect(controls.pickers.get('На счёт')!.accounts.map(a => a.id)).toEqual(['personal', 'shared'])
-    expect(render()).not.toContain('Теги')
+    expect(controls.lookup).toHaveBeenCalledWith()
+    expect(controls.pickers.get('Со счёта')!.accounts.map(a => a.id)).toEqual(['personal', 'shared', 'foreign'])
+    expect(render()).not.toMatch(/Логин|Направление|Найти/)
   })
 
   it.each(['personal', 'shared'])('creates an immediate topup to %s with source currency and converted amount', (destination) => {
-    findSource()
     choose('Со счёта', 'foreign')
     choose('На счёт', destination)
     input('Сумма (USD)', '100.1234')
@@ -123,6 +104,7 @@ describe('external account topups', () => {
       expect(controls.header!.disabled).toBe(true)
       input('Сумма на счёт (EUR)', '80.4321')
     }
+    expect(render()).not.toContain('Теги')
     expect(controls.header!.disabled).toBe(false)
     controls.header!.onSubmit()
     expect(controls.mutate).toHaveBeenCalledWith(expect.objectContaining({
@@ -135,41 +117,50 @@ describe('external account topups', () => {
     expect(dto).not.toHaveProperty('defaultCurrencyAmount')
   })
 
-  it('clears an old source when the username changes and requires a new search', () => {
-    findSource()
+  it('does not submit an account removed from the available catalog', () => {
     choose('Со счёта', 'foreign')
     choose('На счёт', 'personal')
     input('Сумма (USD)', '100')
-    input('Логин владельца счёта', 'bob')
-    expect(controls.query!.enabled).toBe(false)
-    expect(controls.pickers.get('Со счёта')!.accounts).toEqual([])
-    expect(controls.pickers.get('Со счёта')!.value).toBe('')
-    expect(controls.header!.disabled).toBe(true)
-    controls.header!.onSubmit()
-    expect(controls.mutate).not.toHaveBeenCalled()
-  })
-
-  it('clears selected accounts across direction changes and retains personal-only outgoing sources', () => {
-    findSource()
-    choose('Со счёта', 'foreign')
-    choose('На счёт', 'shared')
-    mode('other')
-    expect(controls.pickers.get('Со счёта')!.accounts.map(a => a.id)).toEqual(['personal'])
-    expect(controls.pickers.get('Со счёта')!.value).toBe('')
-    expect(controls.pickers.get('На счёт')!.accounts).toEqual([])
-    expect(controls.header!.disabled).toBe(true)
-    mode('own')
-    expect(controls.pickers.get('Со счёта')!.accounts.map(a => a.id)).toEqual(['personal', 'shared'])
-  })
-
-  it('shows search failures and empty results without permitting creation', () => {
-    findSource()
     controls.results = []
-    expect(render()).toContain('Нет доступных счетов')
+    render()
     expect(controls.header!.disabled).toBe(true)
-    controls.error = true
-    expect(render()).toContain('Не удалось найти счета')
     controls.header!.onSubmit()
     expect(controls.mutate).not.toHaveBeenCalled()
+  })
+
+  it('clears a foreign destination after choosing a foreign source', () => {
+    choose('Со счёта', 'personal')
+    expect(controls.pickers.get('На счёт')!.accounts.map(a => a.id)).toEqual(['shared', 'foreign'])
+    choose('На счёт', 'foreign')
+    choose('Со счёта', 'foreign')
+    expect(controls.pickers.get('На счёт')!.value).toBe('')
+    expect(controls.pickers.get('На счёт')!.accounts.map(a => a.id)).toEqual(['personal', 'shared'])
+    expect(controls.header!.disabled).toBe(true)
+  })
+
+  it('preserves outgoing transfers through the same selectors', () => {
+    choose('Со счёта', 'personal')
+    choose('На счёт', 'foreign')
+    input('Сумма (USD)', '100')
+    expect(render()).toContain('Теги')
+    expect(controls.header!.disabled).toBe(false)
+    controls.header!.onSubmit()
+    expect(controls.mutate).toHaveBeenCalledWith(expect.objectContaining({ accountId: 'personal', toAccountId: 'foreign', amount: 100 }))
+  })
+
+  it('shows loading and retry while preserving own account transfers', () => {
+    controls.fetching = true
+    expect(render()).toContain('ion-spinner')
+    controls.fetching = false
+    controls.error = true
+    controls.results = []
+    expect(render()).toContain('Не удалось загрузить чужие счета')
+    controls.retry!()
+    expect(controls.refetch).toHaveBeenCalled()
+    choose('Со счёта', 'personal')
+    choose('На счёт', 'shared')
+    input('Сумма (USD)', '100')
+    input('Сумма на счёт (EUR)', '80')
+    expect(controls.header!.disabled).toBe(false)
   })
 })
