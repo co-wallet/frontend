@@ -1,9 +1,42 @@
+.app-content.accounts-content {
+  --padding-start: 0;
+  --padding-end: 0;
+  --padding-top: 0;
+  --padding-bottom: 0;
+}
+
+.accounts-content .app-content-body {
+  height: 100%;
+  max-width: none;
+}
+
+.accounts-content::part(scroll) {
+  scrollbar-gutter: auto;
+}
+
+/* Keep the scroll ancestor in the DOM so drag sensors can track and auto-scroll it. */
+.accounts-scroll {
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+  padding: var(--app-page-gutter) max(var(--app-page-gutter), env(safe-area-inset-right))
+    calc(104px + env(safe-area-inset-bottom)) max(var(--app-page-gutter), env(safe-area-inset-left));
+}
+
+.accounts-scroll-inner {
+  max-width: var(--app-content-width);
+  margin-inline: auto;
+}
+
 .account-list-link {
   flex: 1;
   min-width: 0;
   align-self: stretch;
   color: inherit;
   text-decoration: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  cursor: grab;
 }
 
 .account-order-help {
@@ -12,13 +45,22 @@
   line-height: 1.5;
 }
 
-.account-order-help p {
-  margin-bottom: 0;
+.account-order-status {
+  padding: 0 16px;
+  font-size: 14px;
 }
 
-.account-order-actions ion-button {
-  width: 44px;
-  min-width: 44px;
+.account-sortable-row--dragging {
+  z-index: 2;
+  box-shadow: 0 6px 20px rgba(var(--ion-text-color-rgb), 0.18);
+}
+
+.account-sortable-row--dragging .account-list-link {
+  cursor: grabbing;
+}
+
+.account-sortable-row--dragging ion-item {
+  --background: var(--ion-color-light);
 }
 
 .account-list-link-content {

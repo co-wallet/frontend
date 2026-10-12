@@ -2,17 +2,20 @@ import type { ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Account } from '@/api/accounts'
+import { MouseSensor, TouchSensor } from '@dnd-kit/core'
 import { AccountsPage } from './AccountsPage'
 
 const controls = vi.hoisted(() => ({
   state: [] as unknown[], cursor: 0,
-  buttons: new Map<string, { disabled?: boolean; onClick: () => void }>(),
-  reorder: undefined as undefined | ((event: { detail: { from: number; to: number; complete: (value: boolean) => void } }) => void),
-  accounts: [] as Account[],
-  pending: false, error: null as Error | null,
+  accounts: [] as Account[], pending: false, error: null as Error | null,
   mutate: vi.fn(), reset: vi.fn(), invalidate: vi.fn(), setQueriesData: vi.fn(),
   success: undefined as undefined | ((data: undefined, ids: string[]) => Promise<void>),
   failure: undefined as undefined | (() => void),
+  start: undefined as undefined | (() => void),
+  end: undefined as undefined | ((event: { active: { id: string }; over: { id: string } | null }) => void),
+  cancel: undefined as undefined | (() => void),
+  sensors: [] as { sensor: unknown; options: unknown }[],
+  sortable: new Map<string, { disabled: boolean }>(),
 }))
 
 vi.mock('react', async (importOriginal) => ({
@@ -34,31 +37,40 @@ vi.mock('@tanstack/react-query', () => ({
   },
 }))
 
-vi.mock('@ionic/react', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@ionic/react')>(),
-  IonButton: ({ children, onClick, disabled, 'aria-label': label }: {
-    children: ReactNode; onClick: () => void; disabled?: boolean; 'aria-label'?: string
+vi.mock('@dnd-kit/core', () => ({
+  MouseSensor: 'mouse', TouchSensor: 'touch', KeyboardSensor: 'keyboard', closestCenter: vi.fn(),
+  useSensor: (sensor: unknown, options: unknown) => ({ sensor, options }),
+  useSensors: (...sensors: typeof controls.sensors) => sensors,
+  DndContext: ({ children, onDragStart, onDragEnd, onDragCancel, sensors }: {
+    children: ReactNode; onDragStart: typeof controls.start; onDragEnd: typeof controls.end;
+    onDragCancel: typeof controls.cancel; sensors: typeof controls.sensors
   }) => {
-    if (label || typeof children === 'string') controls.buttons.set(label ?? String(children), { onClick, disabled })
-    return <button disabled={disabled} aria-label={label}>{children}</button>
-  },
-  IonReorderGroup: ({ children, onIonReorderEnd }: { children: ReactNode; onIonReorderEnd: typeof controls.reorder }) => {
-    controls.reorder = onIonReorderEnd
+    controls.start = onDragStart
+    controls.end = onDragEnd
+    controls.cancel = onDragCancel
+    controls.sensors = sensors
     return <div>{children}</div>
+  },
+}))
+
+vi.mock('@dnd-kit/sortable', () => ({
+  SortableContext: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  sortableKeyboardCoordinates: vi.fn(), verticalListSortingStrategy: vi.fn(),
+  useSortable: ({ id, disabled }: { id: string; disabled: boolean }) => {
+    controls.sortable.set(id, { disabled })
+    return { attributes: {}, listeners: {}, setNodeRef: vi.fn(), setActivatorNodeRef: vi.fn(), transform: null, isDragging: false }
   },
 }))
 
 function render() {
   controls.cursor = 0
-  controls.buttons.clear()
   return renderToStaticMarkup(<AccountsPage />)
 }
 
-function click(name: string) {
-  const button = controls.buttons.get(name)!
-  expect(button).toBeDefined()
-  expect(button.disabled).not.toBe(true)
-  button.onClick()
+function drop(from: string, to: string | null) {
+  controls.start!()
+  render()
+  controls.end!({ active: { id: from }, over: to === null ? null : { id: to } })
   return render()
 }
 
@@ -67,71 +79,83 @@ beforeEach(() => {
   controls.state = []
   controls.pending = false
   controls.error = null
+  controls.sortable.clear()
   controls.accounts = ['Первый', 'Второй', 'Третий'].map((name, index) => ({
     id: String(index), name, ownerId: 'owner', accessMode: 'personal', kind: 'spending', currency: 'RUB', icon: null,
     initialBalance: 0, initialBalanceDate: '2026-10-12', createdAt: '', updatedAt: '',
   }))
 })
 
-describe('AccountsPage ordering', () => {
-  it('moves accounts with arrows and cancels without saving', () => {
-    render()
-    click('Порядок')
-    expect(controls.buttons.get('Поднять счёт Первый')?.disabled).toBe(true)
-    expect(controls.buttons.get('Опустить счёт Третий')?.disabled).toBe(true)
-    expect(controls.buttons.get('Сохранить')?.disabled).toBe(true)
-    const changed = click('Поднять счёт Второй')
-    expect(changed.indexOf('Второй')).toBeLessThan(changed.indexOf('Первый'))
-    expect(changed).not.toContain('Редактировать счёт')
-    const cancelled = click('Отмена')
-    expect(cancelled.indexOf('Первый')).toBeLessThan(cancelled.indexOf('Второй'))
-    expect(controls.mutate).not.toHaveBeenCalled()
+describe('AccountsPage direct ordering', () => {
+  it('uses delayed touch and mouse movement while preserving normal links and edit actions', () => {
+    const markup = render()
+    expect(controls.sensors).toContainEqual({ sensor: MouseSensor, options: { activationConstraint: { distance: { y: 8 } } } })
+    expect(controls.sensors).toContainEqual({ sensor: TouchSensor, options: { activationConstraint: { delay: 350, tolerance: 8 } } })
+    expect(markup).toContain('Удерживайте счёт')
+    expect(markup).not.toContain('ion-reorder')
+    expect(markup).not.toContain('Поднять счёт')
+    expect(markup).not.toContain('Опустить счёт')
+    expect(markup).not.toContain('>Порядок<')
+    expect(markup).toContain('aria-label="Транзакции по счету Первый"')
+    expect(markup).toContain('aria-label="Редактировать счёт Первый"')
   })
 
-  it('completes Ionic drag without DOM mutation and saves the new order', async () => {
+  it('updates the list on drop and immediately saves without another action', async () => {
     render()
-    click('Порядок')
-    const complete = vi.fn()
-    controls.reorder!({ detail: { from: 2, to: 0, complete } })
-    render()
-    expect(complete).toHaveBeenCalledWith(false)
-    click('Сохранить')
+    const markup = drop('2', '0')
+    expect(markup.indexOf('Третий')).toBeLessThan(markup.indexOf('Первый'))
     expect(controls.mutate).toHaveBeenCalledWith(['2', '0', '1'])
     await controls.success!(undefined, ['2', '0', '1'])
-    expect(controls.setQueriesData).toHaveBeenCalledWith({ queryKey: ['accounts'] }, expect.any(Function))
     const update = controls.setQueriesData.mock.calls[0][1]
     expect(update(controls.accounts).map((a: Account) => a.id)).toEqual(['2', '0', '1'])
     expect(update(undefined)).toBeUndefined()
     expect(controls.invalidate).toHaveBeenCalledWith({ queryKey: ['accounts'] })
-    expect(render()).toContain('Порядок')
   })
 
-  it('keeps the draft after an error and lets the user retry', () => {
+  it.each([['0', '0'], ['0', null], ['missing', '0'], ['0', 'missing']])('ignores unchanged or invalid drops %s to %s', (from, to) => {
     render()
-    click('Порядок')
-    click('Опустить счёт Первый')
+    drop(from!, to)
+    expect(controls.mutate).not.toHaveBeenCalled()
+  })
+
+  it('cancels a drag without saving or changing the order', () => {
+    render()
+    controls.start!()
+    render()
+    controls.cancel!()
+    const markup = render()
+    expect(markup.indexOf('Первый')).toBeLessThan(markup.indexOf('Второй'))
+    expect(controls.mutate).not.toHaveBeenCalled()
+  })
+
+  it('restores the saved order after an API error and permits another drag', () => {
+    render()
+    drop('0', '1')
     controls.error = new Error('offline')
     controls.failure!()
     expect(controls.invalidate).toHaveBeenCalledWith({ queryKey: ['accounts'] })
     const markup = render()
-    expect(markup).toContain('Не удалось сохранить порядок')
-    expect(markup.indexOf('Второй')).toBeLessThan(markup.indexOf('Первый'))
-    click('Сохранить')
-    expect(controls.mutate).toHaveBeenCalledWith(['1', '0', '2'])
+    expect(markup).toContain('Прежний порядок восстановлен')
+    expect(markup.indexOf('Первый')).toBeLessThan(markup.indexOf('Второй'))
+    drop('0', '2')
+    expect(controls.reset).toHaveBeenCalled()
+    expect(controls.mutate).toHaveBeenLastCalledWith(['1', '2', '0'])
   })
 
-  it('disables movement and cancellation while saving', () => {
+  it('blocks a second reorder while saving and announces pending state', () => {
     render()
-    click('Порядок')
+    drop('0', '1')
     controls.pending = true
-    render()
-    expect(controls.buttons.get('Отмена')?.disabled).toBe(true)
-    expect(controls.buttons.get('Опустить счёт Первый')?.disabled).toBe(true)
+    expect(render()).toContain('Сохраняем порядок')
+    expect([...controls.sortable.values()].every((row) => row.disabled)).toBe(true)
+    controls.mutate.mockClear()
+    drop('0', '2')
+    expect(controls.mutate).not.toHaveBeenCalled()
   })
 
-  it('does not offer ordering for a single account', () => {
+  it('disables dragging for a single account', () => {
     controls.accounts = controls.accounts.slice(0, 1)
-    render()
-    expect(controls.buttons.has('Порядок')).toBe(false)
+    expect(render()).not.toContain('Удерживайте счёт')
+    expect(controls.sortable.get('0')?.disabled).toBe(true)
   })
 })
