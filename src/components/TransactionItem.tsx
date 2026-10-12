@@ -17,6 +17,7 @@ import {
 
 import type { Account } from '@/api/accounts'
 import type { Category } from '@/api/categories'
+import type { Currency } from '@/api/currencies'
 import type { Transaction } from '@/api/transactions'
 import {
   CategoryIcon,
@@ -39,6 +40,7 @@ interface TransactionItemProps {
   category?: Category
   currentUserId?: string
   defaultCurrency: string
+  currencies?: Currency[]
   selectedAccountIds?: string[]
   tagHref?: (id: string) => string
   onEdit: (id: string) => void
@@ -53,6 +55,7 @@ export function TransactionItem({
   category,
   currentUserId,
   defaultCurrency,
+  currencies,
   selectedAccountIds,
   onEdit,
   onDelete,
@@ -80,12 +83,14 @@ export function TransactionItem({
     undefined,
     undefined,
     defaultCurrency,
+    currencies,
   )
   const convertedUserAmount = transactionDefaultCurrencyAmount(
     tx,
     account,
     currentUserId,
     defaultCurrency,
+    currencies,
   )
   const showConvertedAmount = !tx.readOnly && convertedAmount != null && tx.currency !== defaultCurrency
   const destinationCurrency = tx.toCurrency || toAccount?.currency
@@ -183,7 +188,7 @@ export function TransactionItem({
           ))}
           {!tx.readOnly && tx.type !== 'transfer' && tx.currency !== defaultCurrency && convertedAmount == null && (
             <span className="transaction-item__amount-meta">
-              Нет суммы в {defaultCurrency}
+              Нет курса для пересчёта в {defaultCurrency}
             </span>
           )}
         </IonNote>

@@ -303,9 +303,10 @@ export function DashboardPage() {
     }))
   }
 
+  const currencyCodes = [...new Set([displayCurrency, ...accounts.map((account) => account.currency)])].sort()
   const { data: currencies = [] } = useQuery({
-    queryKey: ['currencies', displayCurrency],
-    queryFn: () => currenciesApi.list([displayCurrency]),
+    queryKey: ['currencies', currencyCodes],
+    queryFn: () => currenciesApi.list(currencyCodes),
     staleTime: 60_000,
   })
 
@@ -495,7 +496,7 @@ export function DashboardPage() {
           </section>
 
           {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
-            <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций не заполнена сумма в {displayCurrency}. Укажите её в транзакциях.</p></IonText>}
+            <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {displayCurrency}.</p></IonText>}
           {/* Summary cards */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
             {summaryCards.map((card) => (
@@ -600,6 +601,7 @@ export function DashboardPage() {
             accountsError={accountsError}
             currentUserId={user?.id}
             defaultCurrency={displayCurrency}
+            currencies={currencies}
             filter={recentTransactionFilter}
             fullListHref={allTransactionsHref}
           />

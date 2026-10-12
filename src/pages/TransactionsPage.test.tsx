@@ -4,6 +4,7 @@ import { MemoryRouter, Route } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
+import type { Currency } from '@/api/currencies'
 import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
 
 vi.mock('@ionic/react', async (importOriginal) => ({
@@ -33,6 +34,8 @@ const pagination = vi.hoisted(() => ({
   options: undefined as undefined | { queryKey: unknown[]; enabled: boolean },
   analyticsQueries: [] as { queryKey: unknown[]; enabled?: boolean }[],
   chartGrouping: 'categories' as 'categories' | 'tags',
+  currencies: [] as Currency[],
+  missingAmounts: 0,
 }))
 beforeEach(() => {
   pagination.data = { pages: [[]] }
@@ -42,6 +45,8 @@ beforeEach(() => {
   pagination.options = undefined
   pagination.analyticsQueries = []
   pagination.chartGrouping = 'categories'
+  pagination.currencies = []
+  pagination.missingAmounts = 0
 })
 
 vi.mock('react', async (importOriginal) => {
@@ -83,6 +88,10 @@ vi.mock('@tanstack/react-query', () => ({
         ? [{ id: 'c1', name: 'Продукты' }, { id: 'c2', name: 'Кафе' }]
         : queryKey[0] === 'tags'
           ? [{ id: 't1', name: 'путешествия' }, { id: 't2', name: 'япония' }]
+          : queryKey[0] === 'currencies'
+            ? pagination.currencies
+            : queryKey[0] === 'analytics' && queryKey[1] === 'summary'
+              ? { expensesMissingAmounts: pagination.missingAmounts, incomeMissingAmounts: 0 }
           : [],
     isLoading: false,
     })
@@ -303,6 +312,27 @@ describe('active filter summary', () => {
 
 
 describe('paginated transaction list', () => {
+  it('uses current rates for both rows and daily totals when the saved currency differs', () => {
+    pagination.data.pages = [[{
+      id: 'converted', accountId: 'a1', type: 'expense', amount: 80, currency: 'EUR',
+      defaultCurrency: 'RUB', defaultCurrencyAmount: 8000,
+      date: '2026-08-21', shares: [], tags: [],
+    } as unknown as Transaction]]
+    pagination.currencies = [{ code: 'EUR', name: 'Euro', isActive: false, rateToUsd: 0.8 }]
+    const markup = renderPage('/transactions')
+    expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−100 $</span>')
+    const divider = markup.match(/<ion-item-divider[^>]*>([\s\S]*?)<\/ion-item-divider>/)?.[1]
+    expect(divider).toContain('<ion-note slot="end">−100 $</ion-note>')
+    expect(markup).not.toContain('Нет курса')
+  })
+
+  it('explains incomplete totals as a missing exchange rate', () => {
+    pagination.missingAmounts = 1
+    const markup = renderPage('/transactions')
+    expect(markup).toContain('для 1 операций нет курса для пересчёта в USD')
+    expect(markup).not.toContain('Укажите её в транзакциях')
+  })
+
   function transaction(id: string): Transaction {
     return {
       id, accountId: 'a1', type: 'expense', amount: 10, currency: 'USD',

@@ -56,6 +56,31 @@ function transaction(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 describe('TransactionItem', () => {
+  it('shows the current equivalent in a third currency and preserves the historical share', () => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ currency: 'USD', amount: 100,
+        defaultCurrency: 'RUB', defaultCurrencyAmount: 8000,
+        shares: [{ userId: 'user-1', amount: 25, isCustom: true }] })}
+        account={{ ...account, accessMode: 'shared' }} currentUserId="user-1"
+        defaultCurrency="EUR" currencies={[{ code: 'EUR', name: 'Euro', isActive: true, rateToUsd: 0.9 }]}
+        onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−90 €</span>')
+    expect(markup).toContain('−22,50 €')
+    expect(markup).toContain('−100 $')
+    expect(markup).not.toContain('Нет курса')
+    expect(markup).not.toContain('8 000')
+  })
+
+  it('reports an unavailable exchange rate instead of requiring an additional amount', () => {
+    const markup = renderToStaticMarkup(
+      <TransactionItem tx={transaction({ currency: 'USD', amount: 100 })}
+        defaultCurrency="EUR" onEdit={vi.fn()} />,
+    )
+    expect(markup).toContain('Нет курса для пересчёта в EUR')
+    expect(markup).not.toContain('Нет суммы')
+  })
+
   it('prioritizes description and category over the generic transaction type', () => {
     const markup = renderToStaticMarkup(
       <TransactionItem

@@ -41,6 +41,18 @@ afterEach(() => {
 })
 
 describe('RecentTransactions', () => {
+  it('passes current rates to recent rows when the saved currency differs', () => {
+    state.items = [{
+      id: 'converted', accountId: 'selected', type: 'expense', amount: 100, currency: 'USD',
+      defaultCurrency: 'RUB', defaultCurrencyAmount: 8000,
+      date: '2026-09-02', shares: [], tags: [],
+    } as unknown as Transaction]
+    const markup = render({ defaultCurrency: 'EUR',
+      currencies: [{ code: 'EUR', name: 'Euro', isActive: true, rateToUsd: 0.9 }] })
+    expect(markup).toContain('−90 €')
+    expect(markup).not.toContain('Нет курса')
+  })
+
   it('requests a bounded batch of transactions for the selected accounts', async () => {
     render()
     const query = state.queries.find((query) => query.queryKey[0] === 'transactions')!
