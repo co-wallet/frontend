@@ -48,6 +48,7 @@ const pagination = vi.hoisted(() => ({
   hasNextPage: false,
   options: undefined as undefined | { queryKey: unknown[]; enabled: boolean },
   analyticsQueries: [] as { queryKey: unknown[]; enabled?: boolean }[],
+  amountMode: 'share' as 'share' | 'total',
   chartGrouping: 'categories' as 'categories' | 'tags',
   currencies: [] as Currency[],
   missingAmounts: 0,
@@ -59,6 +60,7 @@ beforeEach(() => {
   pagination.hasNextPage = false
   pagination.options = undefined
   pagination.analyticsQueries = []
+  pagination.amountMode = 'share'
   pagination.chartGrouping = 'categories'
   pagination.currencies = []
   pagination.missingAmounts = 0
@@ -114,6 +116,8 @@ vi.mock('@tanstack/react-query', () => ({
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }))
+
+vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: pagination.amountMode, setMode: vi.fn() }) }))
 
 function renderPage(path: string) {
   return renderToStaticMarkup(
@@ -432,4 +436,21 @@ it('passes the effective account selection to transfer amount presentation', () 
   const source = renderPage('/transactions?account_ids=a1')
   expect(source).toContain('<span class="transaction-item__amount transaction-item__amount--transfer">100 $</span>')
   expect(source).toContain('<span class="transaction-item__amount-meta">90 €</span>')
+})
+
+
+it('uses the saved total mode for all analytics and daily totals without changing transaction rows', () => {
+  pagination.amountMode = 'total'
+  pagination.data.pages = [[{
+    id: 'shared-expense', accountId: 'a2', type: 'expense', amount: 100, currency: 'USD',
+    date: '2026-10-01', shares: [{ userId: 'u1', amount: 25 }], tags: [],
+  } as unknown as Transaction]]
+  const markup = renderPage('/transactions?include_shared=true')
+  for (const query of pagination.analyticsQueries) expect(query.queryKey[query.queryKey.length - 1]).toMatchObject({
+    amount_mode: 'total', account_ids: 'a1,a2',
+  })
+  expect(markup).toContain('Полные суммы')
+  const divider = markup.match(/<ion-item-divider[^>]*>([\s\S]*?)<\/ion-item-divider>/)?.[1]
+  expect(divider).toContain('−100 $')
+  expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−100 $</span>')
 })

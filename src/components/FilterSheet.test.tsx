@@ -208,3 +208,12 @@ it.each([true, false])('supports externally controlled open state: %s', (isOpen)
   expect(markup).toContain('aria-label="Фильтры, активно: 2"')
   expect(markup.match(/aria-pressed="true"/g)).toHaveLength(3)
 })
+
+it('places the amount preference beside the account scope without counting it as a filter', () => {
+  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()}
+    amountMode="total" onAmountModeChange={vi.fn()} />)
+  const scope = markup.match(/<section[^>]*aria-labelledby="filter-account-kinds-title".*?<\/section>/)?.[0]
+  expect(scope).toMatch(/Доступ к счёту[^]*Расчёт сумм[^]*Моя доля[^]*Полные суммы/)
+  expect(markup).toContain('aria-label="Фильтры"')
+  expect(markup).not.toContain('Фильтры, активно:')
+})

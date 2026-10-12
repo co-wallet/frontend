@@ -4,6 +4,8 @@ import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
+import { AmountModeControl, AMOUNT_MODE_LABELS } from '@/components/AmountModeControl'
+import { useAmountMode } from '@/store/amountModeStore'
 import { useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
@@ -250,6 +252,7 @@ export function DashboardPage() {
   const history = useHistory()
   const location = useLocation()
   const user = useAuthStore((s) => s.user)
+  const { mode: amountMode, setMode: setAmountMode } = useAmountMode()
 
   const { period, periodOffset, customFrom, customTo, setPeriod, setPeriodOffset, setCustomFrom, setCustomTo } = usePeriodStore()
   const [displayCurrency, setDisplayCurrency] = useState(user?.defaultCurrency ?? 'USD')
@@ -270,6 +273,7 @@ export function DashboardPage() {
 
   const { dateFrom, dateTo } = computeDateRange(period, periodOffset, customFrom, customTo)
   const params: AnalyticsParams = {
+    amount_mode: amountMode,
     include_transfer_expenses: transferVisibility.expenses,
     include_transfer_income: transferVisibility.income,
     date_from: dateFrom,
@@ -339,7 +343,7 @@ export function DashboardPage() {
         legendTransactionsHref: transactionsHref,
         icon: a.icon ?? undefined,
         iconType: 'account' as const,
-        amount: a.balance!.display,
+        amount: amountMode === 'total' ? a.balance!.totalDisplay : a.balance!.display,
       }
     })
 
@@ -528,7 +532,10 @@ export function DashboardPage() {
           <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
             <IonCardHeader className="dashboard-chart-header">
               <div className="dashboard-chart-heading">
-                <IonCardTitle style={{ fontSize: '0.875rem' }}>{chartTitles[chartMode]}</IonCardTitle>
+                <IonCardTitle style={{ fontSize: '0.875rem' }}>
+                  {chartTitles[chartMode]}
+                  <span className="dashboard-amount-mode-label">{AMOUNT_MODE_LABELS[amountMode]}</span>
+                </IonCardTitle>
                 <IonButton
                   id="dashboard-chart-settings"
                   className="dashboard-chart-settings"
@@ -571,6 +578,7 @@ export function DashboardPage() {
               >
                 Учитывать общие счета
               </IonCheckbox>
+              <AmountModeControl value={amountMode} onChange={setAmountMode} />
               {chartMode !== 'balance' && (
                 <IonCheckbox
                   className="dashboard-transfer-checkbox"

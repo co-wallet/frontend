@@ -188,6 +188,7 @@ describe('transaction list helpers', () => {
     }, '2026-09-01', '2026-09-02', 'RUB')
 
     expect(params).toEqual({
+      amount_mode: 'share',
       date_from: '2026-09-01',
       date_to: '2026-09-02',
       currency: 'RUB',
@@ -233,5 +234,28 @@ describe('transaction list helpers', () => {
     expect(isTransactionTypeFilterActive({ types: ['transfer', 'income'] }, 'income', true)).toBe(true)
     expect(isTransactionTypeFilterActive({ types: ['income'] }, 'income', true)).toBe(false)
     expect(isTransactionTypeFilterActive({}, 'expenses', false)).toBe(false)
+  })
+})
+
+
+describe('amount modes', () => {
+  it.each([
+    ['share', 'USD', 25], ['total', 'USD', 100],
+    ['share', 'RUB', 2000], ['total', 'RUB', 8000],
+    ['share', 'EUR', 20], ['total', 'EUR', 80],
+  ] as const)('uses %s amounts in %s for daily totals', (mode, currency, want) => {
+    const tx = transaction({ amount: 100, currency: 'USD', defaultCurrency: 'RUB', defaultCurrencyAmount: 8000,
+      shares: [{ userId: 'user-1', amount: 25, isCustom: true }] as Transaction['shares'] })
+    const amount = (item: Transaction) => transactionDefaultCurrencyAmount(item, sharedAccount, 'user-1', currency,
+      [{ code: 'EUR', rateToUsd: 0.8 }], mode)
+    expect(amount(tx)).toBe(want)
+    expect(groupTransactionsByDate([tx], amount)[0].total).toBe(-want)
+  })
+
+  it('passes the mode alongside category, tag and account filters', () => {
+    expect(buildTransactionAnalyticsParams({ accountIds: ['a'], tagIds: ['t'], categoryIds: ['c'] },
+      '2026-10-01', '2026-10-12', 'USD', 'total')).toMatchObject({
+      amount_mode: 'total', account_ids: 'a', tag_ids: 't', category_ids: 'c',
+    })
   })
 })

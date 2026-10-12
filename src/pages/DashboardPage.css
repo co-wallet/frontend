@@ -122,8 +122,16 @@ body.dark .dashboard-chart-card {
 }
 
 .dashboard-chart-popover {
-  --width: 264px;
+  --width: 288px;
   --max-width: calc(100vw - 32px);
+}
+
+.dashboard-amount-mode-label {
+  display: block;
+  margin-top: 4px;
+  color: var(--ion-color-medium);
+  font-size: 0.75rem;
+  font-weight: 400;
 }
 
 .dashboard-chart-popover-content {

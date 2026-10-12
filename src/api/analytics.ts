@@ -1,5 +1,7 @@
 import { apiClient as api } from './client'
 
+export type AmountMode = 'share' | 'total'
+
 export interface AnalyticsSummary {
   expensesMissingAmounts?: number
   incomeMissingAmounts?: number
@@ -24,6 +26,7 @@ export interface TagStat {
 }
 
 export interface AnalyticsParams {
+  amount_mode?: AmountMode
   include_transfer_expenses?: boolean
   include_transfer_income?: boolean
   date_from?: string
