@@ -46,6 +46,7 @@ interface TransactionItemProps {
   onEdit: (id: string) => void
   onDelete?: (id: string) => void
   showTags?: boolean
+  swipeActions?: boolean
 }
 
 export function TransactionItem({
@@ -61,6 +62,7 @@ export function TransactionItem({
   onDelete,
   tagHref,
   showTags = true,
+  swipeActions = true,
 }: TransactionItemProps) {
   const description = tx.description?.trim()
   const categoryName = category?.name ?? 'Без категории'
@@ -123,8 +125,7 @@ export function TransactionItem({
   )
   const amountClass = `transaction-item__amount transaction-item__amount--${tx.type}`
 
-  return (
-    <IonItemSliding>
+  const item = (
       <IonItem
         detail={false}
         lines="full"
@@ -193,6 +194,13 @@ export function TransactionItem({
           )}
         </IonNote>
       </IonItem>
+  )
+
+  if (!swipeActions) return item
+
+  return (
+    <IonItemSliding>
+      {item}
 
       {!tx.readOnly && onDelete && <IonItemOptions side="end">
         <IonItemOption

@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { transactionPaginationOptions } from '@/lib/transactionPagination'
+import { usePeriodSwipe } from '@/lib/usePeriodSwipe'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
@@ -133,6 +134,7 @@ export function TransactionsPage() {
     if (next.customFrom !== undefined) storedPeriod.setCustomFrom(next.customFrom)
     if (next.customTo !== undefined) storedPeriod.setCustomTo(next.customTo)
   }
+  const periodSwipeRef = usePeriodSwipe(navigationPeriod, updatePeriod, isCurrentPage)
   const [showFilters, setShowFilters] = useState(false)
   const [showChart, setShowChart] = useState(false)
   const initialChartMode: ChartMode = filter.types?.includes('income') && !filter.types.includes('expense')
@@ -363,7 +365,7 @@ export function TransactionsPage() {
     <IonPage>
       <PageHeader title="Транзакции" />
 
-      <AppContent backHref={isFilteredView ? '/transactions' : '/dashboard'} fullscreen withFab
+      <AppContent ref={periodSwipeRef} backHref={isFilteredView ? '/transactions' : '/dashboard'} fullscreen withFab
         fixed={
           <QuickTransactionFab onSelect={addTransaction} className="transactions-fab" />
         }
@@ -685,6 +687,7 @@ export function TransactionsPage() {
                   </IonItemDivider>
                   {items.map((tx) => (
                     <TransactionItem
+                      swipeActions={false}
                       key={tx.id}
                       tagHref={(tagId) => filteredTransactionsHref(
                         { ...filter, tagIds: [tagId], tagMode: 'or' }, navigationPeriod, location.pathname,
