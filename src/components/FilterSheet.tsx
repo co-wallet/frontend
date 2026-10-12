@@ -17,9 +17,10 @@ import {
   IonFooter,
   IonPage,
 } from '@ionic/react'
-import { checkmarkCircleOutline, closeOutline, funnelOutline } from 'ionicons/icons'
+import { closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
+import { FilterOptionList } from '@/components/FilterOptionList'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type Category } from '@/api/categories'
 import { tagsApi, type Tag } from '@/api/tags'
@@ -92,11 +93,14 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     { type: 'income', title: 'Категории доходов', categories: incomeCategories },
   ]
 
-  const hiddenTags = tags.filter((tag) => tag.hidden)
   const visibleAccounts = transactionFilterAccounts(accounts, {
     accountKinds,
     ...transactionAccountScopeFilter(accountScope),
   })
+
+  const accountOptions = accounts.filter((account) =>
+    accountIds.includes(account.id) || visibleAccounts.some((visible) => visible.id === account.id),
+  )
 
   function categoryOption(c: Category) {
     const selected = categoryIds.includes(c.id)
@@ -106,7 +110,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
         <span className="filter-sheet-option__content">
           <CategoryIcon value={c.icon} type={c.type} size={22} />
           <span>{c.name}</span>
-          {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
         </span>
       </IonButton>
     )
@@ -119,7 +122,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
         onClick={() => setTagIds((prev) => toggle(prev, tag.id))} aria-pressed={selected}>
         <span className="filter-sheet-option__content">
           <span>#{tag.name}</span>
-          {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
         </span>
       </IonButton>
     )
@@ -219,7 +221,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                   >
                     <span className="filter-sheet-option__content">
                       <span>{option.shortLabel}</span>
-                      {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
                     </span>
                   </IonButton>
                 )
@@ -242,13 +243,13 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
           </section>
 
           {/* Accounts */}
-          {visibleAccounts.length > 0 && (
+          {accountOptions.length > 0 && (
             <section className="filter-sheet-section" aria-labelledby="filter-accounts-title">
               <IonNote id="filter-accounts-title" className="filter-sheet-section__title">
                 Конкретные счета
               </IonNote>
-              <div className="filter-sheet-options">
-                {visibleAccounts.map((a) => {
+              <FilterOptionList id="filter-accounts" options={accountOptions} selectedIds={accountIds}
+                searchLabel="Поиск счетов" renderOption={(a) => {
                   const selected = accountIds.includes(a.id)
                   return (
                     <IonButton
@@ -261,34 +262,23 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                       <span className="filter-sheet-option__content">
                         <AccountIcon value={a.icon} size={22} />
                         <span>{a.name}</span>
-                        {selected && <IonIcon className="filter-sheet-option__check" icon={checkmarkCircleOutline} />}
                       </span>
                     </IonButton>
                   )
-                })}
-              </div>
+                }} />
             </section>
           )}
 
           {/* Categories */}
           {categoryGroups.map(({ type, title, categories }) => {
             if (categories.length === 0) return null
-            const visibleCategories = categories.filter((category) => !category.hidden)
-            const hiddenCategories = categories.filter((category) => category.hidden)
-            const selectedHiddenCount = hiddenCategories.filter((category) => categoryIds.includes(category.id)).length
             const titleId = `filter-${type}-categories-title`
             return (
               <section key={type} className="filter-sheet-section" aria-labelledby={titleId}>
                 <IonNote id={titleId} className="filter-sheet-section__title">{title}</IonNote>
-                {visibleCategories.length > 0 && (
-                  <div className="filter-sheet-options">{visibleCategories.map(categoryOption)}</div>
-                )}
-                {hiddenCategories.length > 0 && (
-                  <details className="filter-sheet-hidden">
-                    <summary>Скрытые категории ({hiddenCategories.length}){selectedHiddenCount > 0 && ` · выбрано: ${selectedHiddenCount}`}</summary>
-                    <div className="filter-sheet-options">{hiddenCategories.map(categoryOption)}</div>
-                  </details>
-                )}
+                <FilterOptionList id={`filter-${type}-categories`} options={categories}
+                  selectedIds={categoryIds} searchLabel={`Поиск категорий ${type === 'expense' ? 'расходов' : 'доходов'}`}
+                  hiddenLabel="Скрытые категории" renderOption={categoryOption} />
               </section>
             )
           })}
@@ -315,15 +305,8 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                   </IonSegment>
                 </div>
               </div>
-              <div className="filter-sheet-options">
-                {tags.filter((tag) => !tag.hidden).map(tagOption)}
-              </div>
-              {hiddenTags.length > 0 && (
-                <details className="filter-sheet-hidden">
-                  <summary>Скрытые теги ({hiddenTags.length}){tagIds.some((id) => hiddenTags.some((tag) => tag.id === id)) && ` · выбрано: ${hiddenTags.filter((tag) => tagIds.includes(tag.id)).length}`}</summary>
-                  <div className="filter-sheet-options">{hiddenTags.map(tagOption)}</div>
-                </details>
-              )}
+              <FilterOptionList id="filter-tags" options={tags} selectedIds={tagIds}
+                searchLabel="Поиск тегов" hiddenLabel="Скрытые теги" renderOption={tagOption} />
             </section>
           )}
 

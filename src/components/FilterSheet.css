@@ -132,9 +132,21 @@
   gap: 8px;
 }
 
-.filter-sheet-option__check {
-  flex: 0 0 auto;
-  font-size: 18px;
+.filter-sheet-search {
+  padding: 8px 0 0;
+}
+
+.filter-sheet-expand {
+  min-height: 44px;
+  margin: 4px 0 0;
+  text-transform: none;
+  --padding-start: 0;
+  --padding-end: 8px;
+}
+
+.filter-sheet-empty {
+  display: block;
+  margin-top: 12px;
 }
 
 .filter-sheet-tag-mode-control {

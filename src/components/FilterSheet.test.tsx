@@ -148,7 +148,7 @@ it('separates expense and income options into labelled sections with a shared se
   expect(income).toContain('Старая работа')
   expect(income).not.toContain('Продукты')
   expect(income).not.toContain('Архивная')
-  expect(income).toContain('Скрытые категории (1) · выбрано: 1')
+  expect(income).not.toContain('<details')
   expect(expense.match(/aria-pressed="true"/g)).toHaveLength(1)
   expect(income.match(/aria-pressed="true"/g)).toHaveLength(2)
   expect(markup).toContain('aria-label="Фильтры, активно: 1"')
@@ -173,11 +173,29 @@ it('keeps groups with only hidden categories available', () => {
   expect(markup).not.toMatch(/<details[^>]* open/)
 })
 
-it('announces selected hidden filters without expanding their lists', () => {
+it('shows selected hidden filters outside closed disclosures without duplicate options or checkmarks', () => {
   const markup = renderToStaticMarkup(<FilterSheet value={{ categoryIds: ['category-hidden'], tagIds: ['tag-hidden'] }} onChange={vi.fn()} />)
-  expect(markup).toContain('Скрытые категории (1) · выбрано: 1')
-  expect(markup).toContain('Скрытые теги (1) · выбрано: 1')
+  const visibleMarkup = markup.replace(/<details[^>]*>.*?<\/details>/g, '')
+  expect(visibleMarkup).toContain('<span>Архивная</span>')
+  expect(visibleMarkup).toContain('<span>#архив</span>')
+  expect(markup.match(/<span>Архивная<\/span>/g)).toHaveLength(1)
+  expect(markup.match(/<span>#архив<\/span>/g)).toHaveLength(1)
+  expect(markup).not.toContain('filter-sheet-option__check')
   expect(markup).not.toMatch(/<details[^>]* open/)
+})
+
+it('keeps a selected concrete account visible outside the current account scope', () => {
+  const markup = renderToStaticMarkup(<FilterSheet value={{ accountIds: ['account-shared'] }} onChange={vi.fn()} />)
+  expect(markup).toContain('<span>Общая</span>')
+  expect(markup).toContain('<span>Личная</span>')
+  expect(markup.match(/aria-pressed="true"/g)).toHaveLength(2)
+})
+
+it('provides an independent search field for each option list', () => {
+  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
+  for (const label of ['Поиск счетов', 'Поиск категорий расходов', 'Поиск категорий доходов', 'Поиск тегов']) {
+    expect(markup).toContain(`aria-label="${label}"`)
+  }
 })
 
 
