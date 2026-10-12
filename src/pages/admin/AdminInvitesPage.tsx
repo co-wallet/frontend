@@ -112,7 +112,7 @@ export function AdminInvitesPage() {
         }
       >
         {lastInviteURL && (
-          <div className="ion-padding" style={{ background: 'var(--ion-color-success-tint)', borderBottom: '1px solid var(--ion-color-success-shade)' }}>
+          <div className="ion-padding" style={{ background: 'var(--ion-background-color-step-50)', borderBottom: '1px solid var(--ion-color-success-shade)' }}>
             <IonText color="success">
               <h3 style={{ margin: '0 0 4px' }}>Приглашение создано!</h3>
               <p style={{ margin: '0 0 8px', fontSize: '0.85rem' }}>Отправьте эту ссылку пользователю:</p>
