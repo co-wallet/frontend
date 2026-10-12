@@ -428,7 +428,6 @@ export function DashboardPage() {
                 id="dashboard-kind-filter"
                 className="dashboard-kind-trigger"
                 fill="outline"
-                color="medium"
                 aria-label="Тип средств"
                 aria-haspopup="dialog"
               >

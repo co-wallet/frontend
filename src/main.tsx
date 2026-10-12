@@ -18,8 +18,9 @@ import './theme/variables.css'
 import './index.css'
 import './store/themeStore'
 import App from './App'
+import { ionicNavigationConfig } from './lib/ionicNavigation'
 
-setupIonicReact({ swipeBackEnabled: true, focusManagerPriority: ['content'] })
+setupIonicReact({ ...ionicNavigationConfig(), focusManagerPriority: ['content'] })
 
 const queryClient = new QueryClient({
   defaultOptions: {

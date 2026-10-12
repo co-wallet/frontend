@@ -39,7 +39,16 @@ describe('AppContent', () => {
     )
 
     expect(markup).not.toContain('withFab')
+    expect(state.content?.fixedSlotPlacement).toBe('after')
+    expect(markup).toContain('fixed-slot-placement="after"')
     expect(markup).toMatch(/<div class="app-content-body"><p>Последняя строка<\/p><\/div><ion-fab[^>]*slot="fixed"/)
+  })
+
+  it('always provides a valid fixed-slot placement and preserves an explicit choice', () => {
+    renderToStaticMarkup(<AppContent />)
+    expect(state.content?.fixedSlotPlacement).toBe('after')
+    renderToStaticMarkup(<AppContent fixedSlotPlacement="before" />)
+    expect(state.content?.fixedSlotPlacement).toBe('before')
   })
 
   it('reserves space for back navigation and places it before content for keyboard access', () => {

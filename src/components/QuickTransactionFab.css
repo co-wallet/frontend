@@ -1,7 +1,3 @@
-.quick-transaction-fab {
-  margin-bottom: env(safe-area-inset-bottom);
-}
-
 .quick-transaction-fab__actions {
   position: absolute;
   right: 4px;

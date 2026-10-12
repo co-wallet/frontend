@@ -2,8 +2,18 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import { AddTransactionPage } from './AddTransactionPage'
 import { EditTransactionPage } from './EditTransactionPage'
+import type { ComponentProps } from 'react'
+import type { IonContent } from '@ionic/react'
 
-const viewState = vi.hoisted(() => ({ readOnly: false, type: 'expense' }))
+const viewState = vi.hoisted(() => ({ readOnly: false, type: 'expense', contentClass: '' }))
+
+vi.mock('@ionic/react', async importOriginal => {
+  const actual = await importOriginal<typeof import('@ionic/react')>()
+  return { ...actual, IonContent: (props: ComponentProps<typeof IonContent>) => {
+    viewState.contentClass = props.className ?? ''
+    return <actual.IonContent {...props} />
+  } }
+})
 
 vi.mock('react-router-dom', () => ({
   useHistory: () => ({ push: vi.fn(), goBack: vi.fn() }),
@@ -36,6 +46,7 @@ describe.each([AddTransactionPage, EditTransactionPage])('%s', (Page) => {
     const markup = renderToStaticMarkup(<Page />)
 
     expect(markup).toContain('class="tag-input"')
+    expect(viewState.contentClass).toContain('transaction-form-content')
     expect(markup).toContain('placeholder="Добавить тег..."')
   })
 })

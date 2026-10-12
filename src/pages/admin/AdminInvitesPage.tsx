@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   IonPage, IonList, IonItem, IonLabel, IonBadge,
-  IonButton, IonIcon, IonSpinner, IonText, IonFab, IonFabButton,
+  IonButton, IonIcon, IonSpinner, IonText,
   IonModal, IonInput,
 } from '@ionic/react'
 import { addOutline, copyOutline, checkmarkOutline, mailOutline } from 'ionicons/icons'
@@ -101,16 +101,12 @@ export function AdminInvitesPage() {
 
   return (
     <IonPage>
-      <PageHeader title="Приглашения" />
-      <AppContent backHref="/admin" withFab
-        fixed={
-          <IonFab vertical="bottom" horizontal="end" slot="fixed">
-            <IonFabButton onClick={() => { setShowForm(true); setLastInviteURL(null); setApiError('') }}>
-              <IonIcon icon={addOutline} />
-            </IonFabButton>
-          </IonFab>
-        }
-      >
+      <PageHeader title="Приглашения" actions={
+        <IonButton aria-label="Создать приглашение" onClick={() => { setShowForm(true); setLastInviteURL(null); setApiError('') }}>
+          <IonIcon slot="icon-only" icon={addOutline} />
+        </IonButton>
+      } />
+      <AppContent backHref="/admin">
         {lastInviteURL && (
           <div className="ion-padding" style={{ background: 'var(--ion-background-color-step-50)', borderBottom: '1px solid var(--ion-color-success-shade)' }}>
             <IonText color="success">

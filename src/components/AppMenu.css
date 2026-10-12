@@ -7,8 +7,16 @@
   --inner-padding-end: 12px;
 }
 
-.app-menu-item ion-icon {
+.app-menu-item ion-icon:not(.ion-color) {
   color: var(--transaction-secondary-text);
+}
+
+.app-menu-settings {
+  margin-top: 20px;
+}
+
+.app-menu-item--logout {
+  margin-top: 16px;
 }
 
 .app-menu-item--active {
