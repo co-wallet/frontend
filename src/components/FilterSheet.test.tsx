@@ -209,11 +209,10 @@ it.each([true, false])('supports externally controlled open state: %s', (isOpen)
   expect(markup.match(/aria-pressed="true"/g)).toHaveLength(3)
 })
 
-it('places the amount preference beside the account scope without counting it as a filter', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()}
-    amountMode="total" onAmountModeChange={vi.fn()} />)
-  const scope = markup.match(/<section[^>]*aria-labelledby="filter-account-kinds-title".*?<\/section>/)?.[0]
-  expect(scope).toMatch(/Доступ к счёту[^]*ion-checkbox[^]*Показывать полные суммы/)
+it('keeps display preferences outside the filter sheet', () => {
+  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
+  expect(markup).not.toContain('Показывать полные суммы')
+  expect(markup).not.toContain('Отображать переводы')
   expect(markup).toContain('aria-label="Фильтры"')
   expect(markup).not.toContain('Фильтры, активно:')
 })

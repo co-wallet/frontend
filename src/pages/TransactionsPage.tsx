@@ -1,7 +1,7 @@
 import { PeriodControl } from '@/components/PeriodControl'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { AMOUNT_MODE_LABELS } from '@/components/AmountModeControl'
+import { AmountModeControl, AMOUNT_MODE_LABELS } from '@/components/AmountModeControl'
 import { useAmountMode } from '@/store/amountModeStore'
 import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
@@ -377,8 +377,7 @@ export function TransactionsPage() {
       >
         <div>
           <PeriodControl value={navigationPeriod} onChange={updatePeriod}
-            trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters}
-              amountMode={amountMode} onAmountModeChange={setAmountMode} />} />
+            trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
             <span className="transactions-filter-status__label">Фильтры:</span>
@@ -637,6 +636,7 @@ export function TransactionsPage() {
               >
                 Отображать переводы
               </IonCheckbox>
+              <AmountModeControl value={amountMode} onChange={setAmountMode} />
             </div>
           </IonPopover>
 

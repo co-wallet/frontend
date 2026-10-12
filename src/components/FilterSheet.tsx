@@ -25,8 +25,6 @@ import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type Category } from '@/api/categories'
 import { tagsApi, type Tag } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
-import type { AmountMode } from '@/api/analytics'
-import { AmountModeControl } from '@/components/AmountModeControl'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import {
   DEFAULT_TRANSACTION_ACCOUNT_KINDS,
@@ -39,8 +37,6 @@ import {
 import './FilterSheet.css'
 
 interface FilterSheetProps {
-  amountMode?: AmountMode
-  onAmountModeChange?: (mode: AmountMode) => void
   value: TransactionFilter
   onChange: (f: TransactionFilter) => void
   isOpen?: boolean
@@ -51,8 +47,7 @@ function toggle<T>(arr: T[], item: T): T[] {
   return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]
 }
 
-export function FilterSheet({ value, onChange, isOpen, onOpenChange, amountMode = 'share', onAmountModeChange }: FilterSheetProps) {
-  const [draftAmountMode, setDraftAmountMode] = useState(amountMode)
+export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterSheetProps) {
   const [localOpen, setLocalOpen] = useState(false)
   const open = isOpen ?? localOpen
   function setOpen(next: boolean) {
@@ -73,7 +68,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange, amountMode 
 
   useEffect(() => {
     if (open) {
-      setDraftAmountMode(amountMode)
       setAccountIds(value.accountIds ?? [])
       setAccountKinds(value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
       setAccountScope(transactionAccountScope(value))
@@ -146,7 +140,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange, amountMode 
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
     else if (value.withoutTags) f.withoutTags = true
     onChange(f)
-    onAmountModeChange?.(draftAmountMode)
     setOpen(false)
   }
 
@@ -247,7 +240,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange, amountMode 
                 <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
               </IonSegment>
             </div>
-            {onAmountModeChange && <AmountModeControl value={draftAmountMode} onChange={setDraftAmountMode} />}
           </section>
 
           {/* Accounts */}

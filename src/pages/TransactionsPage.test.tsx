@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { MemoryRouter, Route, Router } from 'react-router-dom'
 import { createMemoryHistory } from 'history'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,23 +22,21 @@ vi.mock('@/lib/usePeriodSwipe', () => ({
   },
 }))
 
-vi.mock('@ionic/react', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@ionic/react')>(),
-  IonPopover: (props: {
-    children: ReactNode
-    className?: string
-    trigger?: string
-    'aria-label'?: string
-  }) => (
-    <div
-      className={props.className}
-      data-trigger={props.trigger}
-      aria-label={props['aria-label']}
-    >
-      {props.children}
-    </div>
-  ),
-}))
+vi.mock('@ionic/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ionic/react')>()
+  return {
+    ...actual,
+    IonCheckbox: (props: ComponentProps<typeof actual.IonCheckbox>) => {
+      if (props.children === 'Показывать полные суммы') pagination.onAmountModeChange = props.onIonChange
+      return <actual.IonCheckbox {...props} />
+    },
+    IonPopover: (props: { children: ReactNode; className?: string; trigger?: string; 'aria-label'?: string }) => (
+      <div className={props.className} data-trigger={props.trigger} aria-label={props['aria-label']}>
+        {props.children}
+      </div>
+    ),
+  }
+})
 
 const pagination = vi.hoisted(() => ({
   data: { pages: [] as Transaction[][] },
@@ -49,6 +47,8 @@ const pagination = vi.hoisted(() => ({
   options: undefined as undefined | { queryKey: unknown[]; enabled: boolean },
   analyticsQueries: [] as { queryKey: unknown[]; enabled?: boolean }[],
   amountMode: 'share' as 'share' | 'total',
+  setAmountMode: vi.fn(),
+  onAmountModeChange: undefined as ComponentProps<typeof import('@ionic/react').IonCheckbox>['onIonChange'],
   chartGrouping: 'categories' as 'categories' | 'tags',
   currencies: [] as Currency[],
   missingAmounts: 0,
@@ -61,6 +61,8 @@ beforeEach(() => {
   pagination.options = undefined
   pagination.analyticsQueries = []
   pagination.amountMode = 'share'
+  pagination.setAmountMode.mockClear()
+  pagination.onAmountModeChange = undefined
   pagination.chartGrouping = 'categories'
   pagination.currencies = []
   pagination.missingAmounts = 0
@@ -117,7 +119,7 @@ vi.mock('@tanstack/react-query', () => ({
   useMutation: () => ({ mutate: vi.fn(), isPending: false }),
 }))
 
-vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: pagination.amountMode, setMode: vi.fn() }) }))
+vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: pagination.amountMode, setMode: pagination.setAmountMode }) }))
 
 function renderPage(path: string) {
   return renderToStaticMarkup(
@@ -453,4 +455,25 @@ it('uses the saved total mode for all analytics and daily totals without changin
   const divider = markup.match(/<ion-item-divider[^>]*>([\s\S]*?)<\/ion-item-divider>/)?.[1]
   expect(divider).toContain('−100 $')
   expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−100 $</span>')
+})
+
+
+it.each(['expense', 'income'])('places amount mode alongside transfer visibility for %s', (type) => {
+  const markup = renderPage(`/transactions?types=${type}`)
+  const settings = markup.match(/<div class="transactions-analytics__popover-content">([\s\S]*?)<\/div>/)?.[1]
+  expect(settings).toMatch(/Отображать переводы[^]*Показывать полные суммы/)
+  expect(settings).toContain('checked="false"')
+})
+
+it('changes amount mode immediately through display settings without changing URL filters', () => {
+  const history = createMemoryHistory({ initialEntries: ['/transactions?account_ids=a1&tag_ids=t1'] })
+  const before = history.location.search
+  renderToStaticMarkup(<Router history={history}><Route path="/transactions"><TransactionsPage /></Route></Router>)
+  expect(pagination.onAmountModeChange).toBeTypeOf('function')
+  for (const checked of [true, false]) {
+    pagination.onAmountModeChange!({ detail: { checked } } as Parameters<NonNullable<typeof pagination.onAmountModeChange>>[0])
+  }
+  expect(pagination.setAmountMode.mock.calls).toEqual([['total'], ['share']])
+  expect(history.location.search).toBe(before)
+  expect(history.length).toBe(1)
 })
