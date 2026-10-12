@@ -29,6 +29,14 @@ beforeEach(() => {
 })
 
 describe('account configuration UI', () => {
+  it('explains both directions and owner deletion with one availability toggle for personal accounts', () => {
+    const markup = renderToStaticMarkup(<AccountFormModal isOpen onClose={vi.fn()} defaultCurrency="USD" onSubmit={vi.fn()} loading={false}
+      isEditing canChangeTransferAcceptance initial={{ accessMode: 'personal', name: 'Personal', acceptTransfers: true }} title="Редактировать счёт" />)
+    expect(markup).toContain('Доступен для переводов другим пользователям')
+    expect(markup).toContain('пополнять свои счета с него')
+    expect(markup).toContain('можете удалить его')
+    expect(markup).toContain('checked="true"')
+  })
   it.each([true, false])('renders fixed mode even for owner=%s', (owner) => {
     const markup = renderToStaticMarkup(<AccountFormModal isOpen onClose={vi.fn()} defaultCurrency="USD" onSubmit={vi.fn()} loading={false}
       isEditing canChangeTransferAcceptance={owner} initial={{ accessMode: 'shared', name: 'Family' }} onManageMembers={vi.fn()} title="Редактировать счёт" />)

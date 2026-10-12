@@ -193,9 +193,9 @@ export function AccountFormModal({
 
           {accessMode === 'personal' && (!isEditing || canChangeTransferAcceptance) && <>
             <IonItem><IonToggle checked={acceptTransfers} onIonChange={(e) => setAcceptTransfers(e.detail.checked)}>
-              Принимать переводы от других пользователей
+              Доступен для переводов другим пользователям
             </IonToggle></IonItem>
-            <IonNote className="entity-form-note">По точному логину владельца будут видны название, иконка и валюта счёта. Баланс останется закрытым.</IonNote>
+            <IonNote className="entity-form-note">Другие пользователи смогут переводить деньги на этот счёт и пополнять свои счета с него. Перевод создаётся сразу; вы можете удалить его. По точному логину видны название, иконка и валюта счёта, баланс остаётся закрытым.</IonNote>
           </>}
           <AccountIconSettings
             value={icon}
