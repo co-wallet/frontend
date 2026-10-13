@@ -215,7 +215,9 @@ function ChartBlock({
               className="dashboard-chart-legend-link"
               routerLink={s.legendTransactionsHref}
               routerDirection="forward"
-              aria-label={`Транзакции по счету ${s.name}`}
+              aria-label={s.iconType === 'account'
+                ? `Транзакции по счету ${s.name}`
+                : `Транзакции категории ${s.name}`}
             >
               <div className="dashboard-chart-legend-row dashboard-chart-legend-row--link">
                 {content}
@@ -345,29 +347,37 @@ export function DashboardPage() {
 
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
-    .map((s) => ({
-      name: s.categoryName,
-      transactionsHref: categoryTransactionsHref(
+    .map((s) => {
+      const transactionsHref = categoryTransactionsHref(
         s.categoryId, transactionFilter, transactionPeriod, location.pathname,
-      ),
-      icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
-      categoryType: 'expense',
-      amount: s.amount,
-    }))
+      )
+      return {
+        name: s.categoryName,
+        transactionsHref,
+        legendTransactionsHref: transactionsHref,
+        icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
+        iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
+        categoryType: 'expense',
+        amount: s.amount,
+      }
+    })
 
   const incomePieData: DashboardPieEntry[] = byIncome
     .filter((s) => s.amount > 0)
-    .map((s) => ({
-      name: s.categoryName,
-      transactionsHref: categoryTransactionsHref(
+    .map((s) => {
+      const transactionsHref = categoryTransactionsHref(
         s.categoryId, transactionFilter, transactionPeriod, location.pathname,
-      ),
-      icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
-      categoryType: 'income',
-      amount: s.amount,
-    }))
+      )
+      return {
+        name: s.categoryName,
+        transactionsHref,
+        legendTransactionsHref: transactionsHref,
+        icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
+        iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
+        categoryType: 'income',
+        amount: s.amount,
+      }
+    })
 
   const chartTitles: Record<ChartMode, string> = {
     balance: 'Баланс по счетам',

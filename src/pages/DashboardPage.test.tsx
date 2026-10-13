@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { MemoryRouter } from 'react-router-dom'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { DashboardPage } from './DashboardPage'
-import type { TransactionPeriod } from '@/lib/transactionNavigation'
+import { filterFromParams, periodFromParams, type TransactionPeriod } from '@/lib/transactionNavigation'
 import type { ComponentProps } from 'react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
@@ -38,6 +38,7 @@ const queryState = vi.hoisted(() => ({
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
   summary: { balance: 10, expenses: 10, income: 0 },
+  categoryStats: undefined as { categoryId: string; categoryName: string; amount: number }[] | undefined,
   onCurrencyChange: undefined as ComponentProps<typeof import('@ionic/react').IonSelect>['onIonChange'],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
@@ -64,7 +65,7 @@ vi.mock('@tanstack/react-query', () => ({
       { id: 'savings', name: 'Резерв', kind: 'savings', accessMode: 'personal', currency: 'USD', balance: { display: 50 } },
       { id: 'shared-savings-account', name: 'Общий накопительный', kind: 'savings_account', accessMode: 'shared', currency: 'USD', balance: { display: 60, totalDisplay: 240 } },
     ].filter((account) => !queryState.onlyShared || account.accessMode === 'shared') }
-    if (queryKey[1] === 'by-category') return { data: [
+    if (queryKey[1] === 'by-category') return { data: queryState.categoryStats ?? [
       { categoryId: 'transfers:bank', categoryName: queryKey[2] === 'expense' ? "В 'Банк'" : "Из 'Банк'", amount: 50 },
     ] }
     if (queryKey[1] === 'summary') return { data: queryState.summary }
@@ -78,6 +79,7 @@ const initialPeriod = { ...queryState.period }
 afterEach(() => { useAuthStore.setState({ user: null }); vi.clearAllMocks() })
 afterEach(() => { queryState.popovers = [] })
 afterEach(() => { queryState.summary = { balance: 10, expenses: 10, income: 0 } })
+afterEach(() => { queryState.categoryStats = undefined })
 afterEach(() => { queryState.amountMode = 'share'; queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
 
@@ -264,6 +266,65 @@ describe('Dashboard account transaction navigation', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
 
     expect(markup).not.toContain('aria-label="Транзакции по счету')
+  })
+})
+
+describe('Dashboard category legend navigation', () => {
+  it.each(['expenses', 'income'] as const)('links %s categories with the current period and account scope', (mode) => {
+    queryState.chartMode = mode
+    queryState.categoryStats = [
+      { categoryId: 'category-1', categoryName: 'Путешествия', amount: 100 },
+      { categoryId: 'category-2', categoryName: 'Путешествия', amount: 50 },
+    ]
+    queryState.selectedKinds = ['spending', 'deposit']
+    queryState.includeShared = true
+    queryState.transferVisibility = { expenses: true, income: false }
+    queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
+
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    const links = [...markup.matchAll(/<ion-router-link[^>]*aria-label="Транзакции категории Путешествия"[^>]*>/g)]
+    expect(links).toHaveLength(2)
+    links.forEach(([link], index) => {
+      const href = link.match(/href="([^"]+)"/)![1].replace(/&amp;/g, '&')
+      const url = new URL(href, 'http://localhost')
+      expect(url.pathname).toBe('/transactions/filtered/1')
+      expect(filterFromParams(url.searchParams)).toEqual({
+        categoryIds: [`category-${index + 1}`],
+        accountKinds: ['spending', 'deposit'],
+        includeShared: true,
+        includeTransferExpenses: true,
+        includeTransferIncome: false,
+      })
+      expect(periodFromParams(url.searchParams, initialPeriod)).toEqual(queryState.period)
+      expect(link).toContain('router-direction="forward"')
+    })
+    expect(markup).not.toContain('aria-label="Транзакции по счету')
+  })
+
+  it.each(['expenses', 'income'] as const)('preserves a shifted period and personal account scope in %s', (mode) => {
+    queryState.chartMode = mode
+    queryState.categoryStats = [{ categoryId: 'category-1', categoryName: 'Продукты', amount: 100 }]
+    queryState.period = { ...initialPeriod, period: 'month', periodOffset: -2 }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    const href = markup.match(/href="([^"]*category_ids=category-1[^"]*)"/)![1].replace(/&amp;/g, '&')
+    const params = new URL(href, 'http://localhost').searchParams
+    expect(filterFromParams(params)).toEqual({ categoryIds: ['category-1'], accountKinds: ['spending'] })
+    expect(periodFromParams(params, initialPeriod)).toEqual(queryState.period)
+  })
+
+  it.each(['expenses', 'income'] as const)('keeps synthetic %s groups without invalid category links', (mode) => {
+    queryState.chartMode = mode
+    queryState.categoryStats = [
+      { categoryId: 'uncategorized', categoryName: 'Без категории', amount: 100 },
+      { categoryId: 'transfers', categoryName: 'Переводы', amount: 50 },
+      { categoryId: 'transfers:bank', categoryName: 'Банк', amount: 20 },
+    ]
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('Без категории')
+    expect(markup).toContain('Переводы')
+    expect(markup).toContain('Банк')
+    expect(markup).not.toContain('class="dashboard-chart-legend-link"')
+    expect(markup).not.toContain('category_ids=')
   })
 })
 

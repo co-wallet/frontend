@@ -36,12 +36,19 @@
 }
 
 .dashboard-chart-legend-row--link {
+  min-height: 44px;
   cursor: pointer;
 }
 
-.dashboard-chart-legend-link:focus-visible {
+.dashboard-chart-legend-link:focus-visible,
+.dashboard-chart-legend-link:focus-within {
   outline: 2px solid var(--ion-color-primary);
   outline-offset: 2px;
+}
+
+.dashboard-chart-legend-link:hover .dashboard-chart-legend-row,
+.dashboard-chart-legend-link:active .dashboard-chart-legend-row {
+  background: var(--ion-color-light);
 }
 
 body.dark .dashboard-chart-card {
