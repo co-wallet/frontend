@@ -58,6 +58,26 @@ function open(props: Partial<Props> = {}) {
 beforeEach(() => { controls.state = [] })
 
 describe('FilterMultiSelect', () => {
+  it('allows exactly one selection in single-select mode and resets to the first option', () => {
+    const onChange = vi.fn()
+    const props = { singleSelect: true, selectedIds: ['0'], onChange }
+    open(props)
+    controls.checks.get('Счёт 1')!()
+    let markup = render(props)
+    expect(markup).toContain('role="radio" aria-label="Счёт 1" aria-checked="true"')
+    expect(markup).toContain('role="radio" aria-label="Счёт 0" aria-checked="false"')
+    controls.checks.get('Счёт 1')!()
+    markup = render(props)
+    expect(markup.match(/aria-checked="true"/g)).toHaveLength(1)
+    expect(onChange).not.toHaveBeenCalled()
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(['1'])
+    open({ ...props, selectedIds: ['1'] })
+    controls.buttons.get('Сбросить')!()
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenLastCalledWith(['0'])
+  })
   it('keeps the closed row compact with first selected name and the count of the rest', () => {
     const markup = render({ selectedIds: ['3', '1', '7'] })
     expect(markup).toContain('aria-label="Счета: Счёт 3 +2"')

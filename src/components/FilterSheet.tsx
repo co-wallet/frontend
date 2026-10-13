@@ -10,11 +10,8 @@ import {
   IonButtons,
   IonBadge,
   IonIcon,
-  IonLabel,
   IonFooter,
   IonPage,
-  IonSelect,
-  IonSelectOption,
 } from '@ionic/react'
 import { closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi, type AccountKind } from '@/api/accounts'
@@ -202,14 +199,9 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
               ))}
               <FilterMultiSelect label="Теги" options={tags}
                 selectedIds={tagIds} onChange={setTagIds} searchLabel="Поиск тегов" hiddenLabel="Скрытые теги" />
-              <div className="filter-multiselect-row">
-                <IonLabel className="filter-multiselect-label">Совпадение тегов</IonLabel>
-                <IonSelect value={tagMode} interface="popover" aria-label="Совпадение выбранных тегов"
-                  className="filter-sheet-tag-select" onIonChange={(event) => setTagMode(event.detail.value as 'or' | 'and')}>
-                  <IonSelectOption value="or">Любой</IonSelectOption>
-                  <IonSelectOption value="and">Все</IonSelectOption>
-                </IonSelect>
-              </div>
+              <FilterMultiSelect label="Совпадение тегов" singleSelect
+                options={[{ id: 'or', name: 'Любой' }, { id: 'and', name: 'Все' }]}
+                selectedIds={[tagMode]} onChange={(ids) => setTagMode(ids[0] === 'and' ? 'and' : 'or')} />
             </div>
           </IonContent>
 

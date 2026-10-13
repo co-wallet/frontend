@@ -60,10 +60,10 @@ beforeEach(() => { controls.state = [] })
 const field = (label: string) => controls.fields.get(label)!
 
 describe('FilterSheet multiselects', () => {
-  it('shows six uniform fields and a separate tag matching rule', () => {
+  it('shows seven uniform fields with a single-select tag matching rule', () => {
     const markup = render()
     expect([...controls.fields.keys()]).toEqual([
-      'Тип средств', 'Доступ к счёту', 'Конкретные счета', 'Категории расходов', 'Категории доходов', 'Теги',
+      'Тип средств', 'Доступ к счёту', 'Конкретные счета', 'Категории расходов', 'Категории доходов', 'Теги', 'Совпадение тегов',
     ])
     expect(markup).toContain('Совпадение тегов')
     expect(field('Тип средств').selectedIds).toEqual(['spending'])
@@ -72,6 +72,21 @@ describe('FilterSheet multiselects', () => {
       expect(field(name).searchLabel).toBeTruthy()
     }
     expect(field('Тип средств').searchLabel).toBeUndefined()
+    expect(field('Совпадение тегов').singleSelect).toBe(true)
+    expect(field('Совпадение тегов').selectedIds).toEqual(['or'])
+  })
+
+  it('applies the selected tag matching rule and resets it to Any', () => {
+    const onChange = vi.fn()
+    const props = { value: { tagIds: ['tag'] }, onChange }
+    render(props)
+    field('Совпадение тегов').onChange(['and'])
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: ['spending'], tagIds: ['tag'], tagMode: 'and' })
+    field('Совпадение тегов').onChange(['or'])
+    render(props)
+    expect(field('Совпадение тегов').selectedIds).toEqual(['or'])
   })
 
   it('provides hidden categories and tags to the pickers', () => {

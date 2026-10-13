@@ -21,11 +21,12 @@ interface FilterMultiSelectProps<T extends FilterMultiSelectOption> {
   searchLabel?: string
   hiddenLabel?: string
   emptyLabel?: string
+  singleSelect?: boolean
   renderIcon?: (option: T) => ReactNode
 }
 
 export function FilterMultiSelect<T extends FilterMultiSelectOption>({
-  label, options, selectedIds, onChange, searchLabel, hiddenLabel, emptyLabel = 'Не выбрано', renderIcon,
+  label, options, selectedIds, onChange, searchLabel, hiddenLabel, emptyLabel = 'Не выбрано', singleSelect = false, renderIcon,
 }: FilterMultiSelectProps<T>) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -45,8 +46,8 @@ export function FilterMultiSelect<T extends FilterMultiSelectOption>({
     return (
       <IonItem key={option.id} button detail={false}
         className="category-select-option filter-multiselect-option"
-        role="checkbox" aria-label={option.name} aria-checked={draftIds.includes(option.id)}
-        onClick={() => setDraftIds((previous) => previous.includes(option.id)
+        role={singleSelect ? 'radio' : 'checkbox'} aria-label={option.name} aria-checked={draftIds.includes(option.id)}
+        onClick={() => setDraftIds((previous) => singleSelect ? [option.id] : previous.includes(option.id)
           ? previous.filter((id) => id !== option.id) : [...previous, option.id])}>
         {renderIcon && <span slot="start" className="category-select-icon">{renderIcon(option)}</span>}
         <IonLabel><h2>{option.name}</h2></IonLabel>
@@ -71,13 +72,15 @@ export function FilterMultiSelect<T extends FilterMultiSelectOption>({
       {open && (
         <EntitySelectModal title={label} isOpen onDismiss={() => setOpen(false)} footer={
           <div className="filter-multiselect-footer">
-            <IonButton expand="block" fill="outline" onClick={() => setDraftIds([])}>Сбросить</IonButton>
+            <IonButton expand="block" fill="outline"
+              onClick={() => setDraftIds(singleSelect && options.length ? [options[0].id] : [])}>Сбросить</IonButton>
             <IonButton expand="block" onClick={() => { onChange(draftIds); setOpen(false) }}>Применить</IonButton>
             </div>
         }>
             {searchLabel && <IonSearchbar value={search} placeholder={searchLabel} aria-label={searchLabel}
               debounce={0} onIonInput={(event) => setSearch(event.detail.value ?? '')} />}
-            <IonList inset className="category-select-modal__list filter-multiselect-options" aria-label={label}>
+            <IonList inset className="category-select-modal__list filter-multiselect-options"
+              role={singleSelect ? 'radiogroup' : undefined} aria-label={label}>
               {visible.map(optionItem)}
               {hidden.length > 0 && (query
                 ? hidden.map(optionItem)
