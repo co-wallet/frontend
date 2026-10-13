@@ -5,10 +5,11 @@ import { transactionsApi, type Transaction } from '@/api/transactions'
 import { RecentTransactions } from './RecentTransactions'
 
 vi.mock('@/lib/useRecentTransactionsFit', () => ({
-  useRecentTransactionsFit: () => ({ ref: { current: null }, count: 2, compact: false, hidden: false }),
+  useRecentTransactionsFit: () => ({ ref: { current: null }, ...state.fit }),
 }))
 
 const state = vi.hoisted(() => ({
+  fit: { count: 2, compact: false },
   loading: false,
   error: false,
   categoryError: false,
@@ -32,6 +33,7 @@ function render(overrides = {}) {
 }
 
 afterEach(() => {
+  state.fit = { count: 2, compact: false }
   state.loading = false
   state.error = false
   state.categoryError = false
@@ -41,6 +43,14 @@ afterEach(() => {
 })
 
 describe('RecentTransactions', () => {
+  it('keeps the full-list button accessible when no preview rows fit', () => {
+    state.fit = { count: 0, compact: true }
+    const markup = render({ fullListHref: '/transactions/filtered/1?account_kinds=all' })
+    expect(markup).toContain('Все транзакции')
+    expect(markup).toContain('href="/transactions/filtered/1?account_kinds=all"')
+    expect(markup).not.toContain('recent-transactions--hidden')
+    expect(markup).not.toMatch(/<ion-card[^>]*aria-hidden="true"/)
+  })
   it('keeps the preview accessible without a visible heading', () => {
     const markup = render()
     expect(markup).not.toContain('ion-card-header')
