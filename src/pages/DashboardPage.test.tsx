@@ -120,20 +120,20 @@ describe('Dashboard period visibility', () => {
     expect(useAuthStore.getState().user?.defaultCurrency).toBe('RUB')
   })
 
-  it('hides period controls in the initial balance view', () => {
+  it('shows period controls in the initial balance view', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).toContain('Баланс по счетам')
     expect(markup).not.toMatch(/<ion-card-title[^>]*>Баланс по счетам/)
     expect(markup).not.toContain('Моя доля')
-    expect(markup).not.toContain('Предыдущий период')
-    expect(markup).not.toContain('Период доходов и расходов')
+    expect(markup).toContain('Предыдущий период')
+    expect(markup).toContain('Период транзакций')
   })
 
   it.each(['expenses', 'income'] as const)('places period controls below summary cards in %s mode', (mode) => {
     queryState.chartMode = mode
     queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toMatch(/class="summary-strip"[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
+    expect(markup).toMatch(/class="summary-strip"[^]*<section[^>]*aria-label="Период транзакций"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
     expect(markup).toContain('Выбрать период. Сейчас: 01.08.26 - 20.08.26')
     expect(queryState.analyticsQueries[queryState.analyticsQueries.length - 1]?.params).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
   })
@@ -166,7 +166,7 @@ describe('Dashboard transfer visibility', () => {
     expect(markup).toContain('aria-haspopup="dialog"')
     expect(markup).not.toContain('Отображать переводы')
     expect(markup).not.toContain('dashboard-transfer-hint')
-    const periodControls = markup.match(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*?<\/section>/)?.[0]
+    const periodControls = markup.match(/<section[^>]*aria-label="Период транзакций"[^>]*>[^]*?<\/section>/)?.[0]
     expect(periodControls).not.toContain('ion-checkbox')
     const chartCard = markup.match(/<ion-card aria-label="(Расходы|Доходы) по категориям"[^>]*>[^]*?<\/ion-card>/)?.[0]
     expect(chartCard).toContain('id="dashboard-chart-settings"')
@@ -217,15 +217,15 @@ describe('Dashboard recent transactions', () => {
     expect(markup).toMatch(/Баланс по счетам[^]*Последние транзакции/)
     expect(markup).toContain('Все транзакции')
     expect(markup).toContain('account_kinds=spending')
-    expect(queryState.transactionQueries[0]?.filter).not.toHaveProperty('dateFrom')
-    expect(queryState.transactionQueries[0]?.filter).not.toHaveProperty('dateTo')
+    expect(queryState.transactionQueries[0]?.filter).toHaveProperty('dateFrom')
+    expect(queryState.transactionQueries[0]?.filter).toHaveProperty('dateTo')
   })
 
-  it.each(['expenses', 'income'] as const)('shows recent transactions after the chart in %s mode', (mode) => {
+  it.each(['balance', 'expenses', 'income'] as const)('shows recent transactions after the chart in %s mode', (mode) => {
     queryState.chartMode = mode
     queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    const chartTitle = mode === 'expenses' ? 'Расходы по категориям' : 'Доходы по категориям'
+    const chartTitle = mode === 'balance' ? 'Баланс по счетам' : mode === 'expenses' ? 'Расходы по категориям' : 'Доходы по категориям'
     expect(markup).toMatch(new RegExp(`${chartTitle}[^]*Последние транзакции`))
     expect(markup).toContain('Все транзакции')
     expect(markup).toContain('period=custom')

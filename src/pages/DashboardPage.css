@@ -3,6 +3,16 @@
   border: 1px solid transparent;
 }
 
+.dashboard-chart-plot {
+  height: 200px;
+}
+
+@media (max-width: 600px) and (max-height: 850px) {
+  .dashboard-chart-plot--compact {
+    height: 140px;
+  }
+}
+
 .dashboard-chart-card .recharts-wrapper:focus,
 .dashboard-chart-card .recharts-surface:focus,
 .dashboard-chart-card .recharts-sector:focus {
@@ -27,6 +37,28 @@
   padding: 2px 0;
   border-radius: 6px;
   font-size: 0.75rem;
+}
+
+.dashboard-chart-legend-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dashboard-chart-legend-actions:empty {
+  display: none;
+}
+
+.dashboard-chart-legend-actions ion-button {
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: none;
+  --padding-start: 0;
+  --padding-end: 8px;
+  --padding-top: 0;
+  --padding-bottom: 0;
 }
 
 .dashboard-chart-legend-link {

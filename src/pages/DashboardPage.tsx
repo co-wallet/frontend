@@ -76,6 +76,7 @@ function ChartBlock({
   tooltipStyle,
   legendColor,
   onNavigate,
+  compact = false,
 }: {
   data: DashboardPieEntry[]
   sym: string
@@ -83,6 +84,7 @@ function ChartBlock({
   tooltipStyle: React.CSSProperties
   legendColor: string
   onNavigate: (href: string) => void
+  compact?: boolean
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>()
@@ -124,51 +126,53 @@ function ChartBlock({
   return (
     <>
       {chartEntries.length > 0 && (
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              {...NON_ANIMATED_PIE_PROPS}
-              data={chartEntries}
-              dataKey="chartAmount"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              innerRadius={40}
-              onMouseMove={(entry, index, event) => positionTooltip(
-                event, `${entry.transactionsHref ?? entry.name}:${index}`,
-              )}
-              onMouseLeave={resetTooltipPosition}
-              onClick={(entry, index, event) => {
-                positionTooltip(event, `${entry.transactionsHref ?? entry.name}:${index}`)
-                if (entry.transactionsHref) {
-                  tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
-                  return
-                }
-                tooltip.onSectorClick()
-              }}
-            >
-              {chartEntries.map((entry, i) => (
-                <Cell
-                  key={`${entry.name}-${i}`}
-                  fill={dashboardEntryColor(entry)}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              trigger={tooltip.trigger}
-              active={tooltip.active}
-              position={tooltipPosition}
-              allowEscapeViewBox={{ x: true, y: true }}
-              wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
-              contentStyle={tooltipStyle}
-              content={<PieChartTooltip
-                maxWidth={DASHBOARD_TOOLTIP_WIDTH}
-                formatAmount={(amount) => formatAmount(amount, sym)}
-              />}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <div className={`dashboard-chart-plot${compact ? ' dashboard-chart-plot--compact' : ''}`}>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                {...NON_ANIMATED_PIE_PROPS}
+                data={chartEntries}
+                dataKey="chartAmount"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius="80%"
+                innerRadius="40%"
+                onMouseMove={(entry, index, event) => positionTooltip(
+                  event, `${entry.transactionsHref ?? entry.name}:${index}`,
+                )}
+                onMouseLeave={resetTooltipPosition}
+                onClick={(entry, index, event) => {
+                  positionTooltip(event, `${entry.transactionsHref ?? entry.name}:${index}`)
+                  if (entry.transactionsHref) {
+                    tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
+                    return
+                  }
+                  tooltip.onSectorClick()
+                }}
+              >
+                {chartEntries.map((entry, i) => (
+                  <Cell
+                    key={`${entry.name}-${i}`}
+                    fill={dashboardEntryColor(entry)}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                trigger={tooltip.trigger}
+                active={tooltip.active}
+                position={tooltipPosition}
+                allowEscapeViewBox={{ x: true, y: true }}
+                wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
+                contentStyle={tooltipStyle}
+                content={<PieChartTooltip
+                  maxWidth={DASHBOARD_TOOLTIP_WIDTH}
+                  formatAmount={(amount) => formatAmount(amount, sym)}
+                />}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       )}
       <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
@@ -232,7 +236,7 @@ function ChartBlock({
           )
         })}
       </div>
-      <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
+      <div className="dashboard-chart-legend-actions">
         {visibleCount < legendEntries.length && (
           <IonButton fill="clear" size="small" onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}>
             Показать ещё ({legendEntries.length - visibleCount})
@@ -289,9 +293,7 @@ export function DashboardPage() {
     ...(!transferVisibility.income ? { includeTransferIncome: false } : {}),
   }
   const transactionPeriod = { period, periodOffset, customFrom, customTo }
-  const recentTransactionFilter: TransactionFilter = chartMode === 'balance'
-    ? {}
-    : { dateFrom, dateTo }
+  const recentTransactionFilter: TransactionFilter = { dateFrom, dateTo }
   const allTransactionsHref = filteredTransactionsHref(transactionFilter, transactionPeriod)
 
   function addTransaction(type: TransactionType) {
@@ -505,19 +507,17 @@ export function DashboardPage() {
             error: accountsError || (hasAnalyticsAccounts && summaryError),
           }))} />
 
-          {chartMode !== 'balance' && (
-            <section className="dashboard-period-controls" aria-label="Период доходов и расходов">
-              <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
-                if (next.period !== undefined) setPeriod(next.period)
-                if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
-                if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
-                if (next.customTo !== undefined) setCustomTo(next.customTo)
-              }} />
-            </section>
-          )}
+          <section className="dashboard-period-controls" aria-label="Период транзакций">
+            <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
+              if (next.period !== undefined) setPeriod(next.period)
+              if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
+              if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
+              if (next.customTo !== undefined) setCustomTo(next.customTo)
+            }} />
+          </section>
 
           {/* Pie chart block */}
-          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: '0 0 16px 0' }}>
+          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: chartMode === 'balance' ? '0 0 8px 0' : '0 0 16px 0' }}>
             <IonButton
               id="dashboard-chart-settings"
               className="dashboard-chart-settings"
@@ -530,6 +530,7 @@ export function DashboardPage() {
             </IonButton>
             <IonCardContent>
               <ChartBlock
+                compact={chartMode === 'balance'}
                 data={activePieData}
                 sym={sym}
                 emptyText={chartEmptyTexts[chartMode]}
