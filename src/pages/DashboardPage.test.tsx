@@ -78,18 +78,23 @@ afterEach(() => { queryState.amountMode = 'share'; queryState.selectedKinds = ['
 describe('Dashboard summary cards', () => {
   it.each([
     { kinds: ['spending'] }, { kinds: ['deposit'] }, { kinds: ['spending', 'savings'] }, { kinds: [] },
-  ])('calls the balance Баланс for account kinds $kinds', ({ kinds }) => {
+  ])('keeps an accessible balance name without visible headings for account kinds $kinds', ({ kinds }) => {
     queryState.selectedKinds = kinds
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toContain('<span>Баланс</span>')
+    expect(markup).toContain('aria-label="Показать баланс"')
+    expect(markup).not.toContain('<span>Баланс</span>')
+    expect(markup).not.toContain('<span>Расходы</span>')
+    expect(markup).not.toContain('<span>Доходы</span>')
     expect(markup).not.toContain('Доступно')
   })
 
   it('renders full large and negative amounts in all three cards', () => {
-    queryState.summary = { balance: 142001.98, expenses: 123456789.12, income: -9876543.21 }
+    queryState.summary = { balance: -142001.98, expenses: 123456789.12, income: 9876543.21 }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    const amounts = [...markup.matchAll(/<p class="dashboard-summary__amount">([^<]+)<\/p>/g)].map((match) => match[1])
-    expect(amounts).toEqual(['USD 142 001,98', 'USD 123 456 789,12', 'USD -9 876 543,21'])
+    const strip = markup.match(/<section class="summary-strip"[^>]*>([\s\S]*?)<\/section>/)![1]
+    const amounts = [...strip.matchAll(/<strong[^>]*>([^<]+)<\/strong>/g)].map((match) => match[1])
+    expect(amounts).toEqual(['−142 001,98 $', '123 456 789,12 $', '9 876 543,21 $'])
+    expect(strip).not.toContain('ion-icon')
   })
 })
 
@@ -109,6 +114,8 @@ describe('Dashboard period visibility', () => {
   it('hides period controls in the initial balance view', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).toContain('Баланс по счетам')
+    expect(markup).not.toMatch(/<ion-card-title[^>]*>Баланс по счетам/)
+    expect(markup).not.toContain('Моя доля')
     expect(markup).not.toContain('Предыдущий период')
     expect(markup).not.toContain('Период доходов и расходов')
   })
@@ -117,7 +124,7 @@ describe('Dashboard period visibility', () => {
     queryState.chartMode = mode
     queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toMatch(/Доходы[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
+    expect(markup).toMatch(/class="summary-strip"[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
     expect(markup).toContain('Выбрать период. Сейчас: 01.08.26 - 20.08.26')
     expect(queryState.analyticsQueries[queryState.analyticsQueries.length - 1]?.params).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
   })
@@ -144,8 +151,9 @@ describe('Dashboard transfer visibility', () => {
     expect(markup).not.toContain('dashboard-transfer-hint')
     const periodControls = markup.match(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*?<\/section>/)?.[0]
     expect(periodControls).not.toContain('ion-checkbox')
-    const chartHeader = markup.match(/<ion-card-header[^>]*>[^]*?(Расходы|Доходы) по категориям[^]*?<\/ion-card-header>/)?.[0]
-    expect(chartHeader).toContain('id="dashboard-chart-settings"')
+    const chartCard = markup.match(/<ion-card aria-label="(Расходы|Доходы) по категориям"[^>]*>[^]*?<\/ion-card>/)?.[0]
+    expect(chartCard).toContain('id="dashboard-chart-settings"')
+    expect(chartCard).not.toContain('ion-card-header')
     expect(queryState.analyticsQueries[queryState.analyticsQueries.length - 1]?.params).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
   })
 
@@ -322,7 +330,7 @@ it.each(['balance', 'expenses', 'income'] as const)('uses total amounts in %s wi
   for (const query of queryState.analyticsQueries) expect(query.params).toMatchObject({
     amount_mode: 'total', account_ids: 'shared-savings-account',
   })
-  expect(markup).toContain('Полные суммы')
+  expect(markup).not.toContain('Полные суммы')
   if (mode === 'balance') expect(markup).toContain('240')
   expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(['shared-savings-account'])
 })

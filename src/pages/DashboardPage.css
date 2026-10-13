@@ -1,51 +1,5 @@
-.dashboard-summary {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin-bottom: 16px;
-}
-
-.dashboard-summary__card {
-  min-width: 0;
-  margin: 0;
-}
-
-.dashboard-summary__content {
-  padding: 16px;
-}
-
-.dashboard-summary__label {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-  font-size: 0.75rem;
-}
-
-.dashboard-summary__label ion-icon {
-  flex-shrink: 0;
-  font-size: 14px;
-}
-
-.dashboard-summary__content .dashboard-summary__amount {
-  margin: 0;
-  font-size: 0.875rem;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  white-space: nowrap;
-}
-
-@media (max-width: 420px) {
-  .dashboard-summary__content {
-    padding-inline: 8px;
-  }
-
-  .dashboard-summary__content .dashboard-summary__amount {
-    font-size: clamp(0.625rem, 3vw, 0.75rem);
-  }
-}
-
 .dashboard-chart-card {
+  position: relative;
   border: 1px solid transparent;
 }
 
@@ -148,39 +102,22 @@ body.dark .dashboard-chart-card {
   margin-bottom: 16px;
 }
 
-/* One wrapper preserves heading/action order in both Ionic platform modes. */
-.dashboard-chart-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.dashboard-chart-heading ion-card-title {
-  flex: 1;
-  min-width: 0;
-}
-
 .dashboard-chart-settings {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  z-index: 1;
   --padding-start: 10px;
   --padding-end: 10px;
   flex-shrink: 0;
   min-width: 44px;
   height: 44px;
-  margin: -8px -8px -8px 0;
+  margin: 0;
 }
 
 .dashboard-chart-popover {
   --width: 264px;
   --max-width: calc(100vw - 32px);
-}
-
-.dashboard-amount-mode-label {
-  display: block;
-  margin-top: 4px;
-  color: var(--ion-color-medium);
-  font-size: 0.75rem;
-  font-weight: 400;
 }
 
 .dashboard-chart-popover-content {

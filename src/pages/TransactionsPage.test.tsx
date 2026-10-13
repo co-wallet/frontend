@@ -139,7 +139,7 @@ vi.mock('@tanstack/react-query', () => ({
           : queryKey[0] === 'currencies'
             ? pagination.currencies
             : queryKey[0] === 'analytics' && queryKey[1] === 'summary'
-              ? { balance: pagination.balance, expensesMissingAmounts: pagination.missingAmounts, incomeMissingAmounts: 0 }
+              ? { balance: pagination.balance, expenses: 4206828.86, income: 8022062.6, expensesMissingAmounts: pagination.missingAmounts, incomeMissingAmounts: 0 }
           : [],
     isLoading: queryKey[0] === 'accounts' ? pagination.accountsLoading
       : queryKey[1] === 'summary' && pagination.summaryLoading,
@@ -177,11 +177,20 @@ describe('transaction account balance', () => {
 
   it('shows the server balance before expenses and income for the selected accounts', () => {
     const markup = renderPage('/transactions?account_ids=a1,a2&include_shared=true')
-    expect(markup.indexOf('<span>Баланс</span>')).toBeLessThan(markup.indexOf('<span>Расходы</span>'))
+    expect(markup.indexOf('aria-label="Показать все транзакции"')).toBeLessThan(markup.indexOf('aria-label="Показать расходы"'))
+    expect(markup).not.toMatch(/<span>(Баланс|Расходы|Доходы)<\/span>/)
+    expect(markup).not.toContain('Моя доля')
+    expect(markup).toContain('>Аналитика за период<')
+    const summary = markup.match(/<section class="summary-strip"[^>]*>([\s\S]*?)<\/section>/)![1]
+    expect(summary).toContain('4 206 828,86 $')
+    expect(summary).toContain('8 022 062,60 $')
+    expect(summary).not.toContain('−4 206 828,86 $')
+    expect(summary).not.toContain('+8 022 062,60 $')
+    expect(summary).not.toContain('ion-icon')
     expect(markup).toContain('1 250,50 $')
-    expect(markup).toMatch(/aria-pressed="true" aria-label="Показать все транзакции"/)
-    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
-    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a1,a2', currency: 'USD', amount_mode: 'share' })
+    expect(balanceCard('/transactions?account_ids=a1,a2&include_shared=true')).toContain('aria-pressed="true"')
+    const summaryQuery = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summaryQuery.queryKey[summaryQuery.queryKey.length - 1]).toMatchObject({ account_ids: 'a1,a2', currency: 'USD', amount_mode: 'share' })
   })
 
   it('uses the selected amount mode and formats a negative balance', () => {
@@ -553,7 +562,7 @@ it('uses the saved total mode for all analytics and daily totals without changin
   for (const query of pagination.analyticsQueries) expect(query.queryKey[query.queryKey.length - 1]).toMatchObject({
     amount_mode: 'total', account_ids: 'a1,a2',
   })
-  expect(markup).toContain('Полные суммы')
+  expect(markup).not.toContain('Полные суммы')
   const divider = markup.match(/<ion-item-divider[^>]*>([\s\S]*?)<\/ion-item-divider>/)?.[1]
   expect(divider).toContain('−100 $')
   expect(markup).toContain('<span class="transaction-item__amount transaction-item__amount--expense">−100 $</span>')
