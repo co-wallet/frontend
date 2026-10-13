@@ -20,17 +20,19 @@ const allKinds = ACCOUNT_KIND_OPTIONS.map((option) => option.value)
 
 describe('AllAccountKindsButton', () => {
   it.each([[], ['spending'], ['savings', 'deposit'], allKinds].map((initial) => ({ initial: initial as AccountKind[] })))(
-    'selects every kind in one click from $initial and keeps repeated selection stable', ({ initial }) => {
+    'toggles between all and no kinds from $initial', ({ initial }) => {
       let selectedKinds = initial
       const onChange = vi.fn((kinds: AccountKind[]) => { selectedKinds = kinds })
       const render = () => renderToStaticMarkup(<AllAccountKindsButton
         selectedKinds={selectedKinds} onChange={onChange} className="filter-sheet-option" />)
       render()
       controls.click!()
-      expect(onChange).toHaveBeenCalledExactlyOnceWith(allKinds)
-      expect(render()).toContain('aria-pressed="true"')
+      const initiallyAll = initial.length === allKinds.length
+      expect(onChange).toHaveBeenCalledExactlyOnceWith(initiallyAll ? [] : allKinds)
+      expect(render()).toContain(`aria-pressed="${!initiallyAll}"`)
       controls.click!()
-      expect(selectedKinds).toEqual(allKinds)
+      expect(selectedKinds).toEqual(initiallyAll ? allKinds : [])
+      expect(render()).toContain(`aria-pressed="${initiallyAll}"`)
       expect(onChange).toHaveBeenCalledTimes(2)
     },
   )

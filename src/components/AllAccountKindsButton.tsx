@@ -20,7 +20,7 @@ export function AllAccountKindsButton({
       color={selected ? 'primary' : undefined}
       aria-label="Все типы средств"
       aria-pressed={selected}
-      onClick={() => onChange(ACCOUNT_KIND_OPTIONS.map((option) => option.value))}
+      onClick={() => onChange(selected ? [] : ACCOUNT_KIND_OPTIONS.map((option) => option.value))}
     >
       <span>Все</span>
     </IonButton>
