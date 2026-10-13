@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useHistory } from 'react-router-dom'
 import {
-  IonButton, IonCard, IonCardContent, IonCardHeader, IonCardTitle,
+  IonButton, IonCard, IonCardContent,
   IonItem, IonLabel, IonList, IonSkeletonText,
 } from '@ionic/react'
 import type { Account } from '@/api/accounts'
@@ -61,9 +61,6 @@ export function RecentTransactions({
   return (
     <div className="recent-transactions-slot">
       <IonCard ref={fit.ref} className={`recent-transactions${fit.compact ? ' recent-transactions--compact' : ''}${fit.hidden ? ' recent-transactions--hidden' : ''}`} aria-hidden={fit.hidden || undefined}>
-        <IonCardHeader className="recent-transactions__header">
-          <IonCardTitle style={{ fontSize: '1rem' }}>Последние транзакции</IonCardTitle>
-        </IonCardHeader>
         {loading ? (
           <IonList className="recent-transactions__message" aria-label="Загрузка последних транзакций">
             {[0, 1, 2].map((key) => (

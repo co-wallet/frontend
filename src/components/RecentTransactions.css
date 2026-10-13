@@ -26,7 +26,6 @@
 
 /* Out-of-flow rows remain measurable at the same width, but cannot be seen or focused. */
 .recent-transactions__row--hidden,
-.recent-transactions--compact .recent-transactions__header,
 .recent-transactions--compact .recent-transactions__message {
   position: absolute;
   inset: 0 0 auto;
@@ -43,11 +42,6 @@
 
 .recent-transactions-slot {
   position: relative;
-}
-
-.recent-transactions .recent-transactions__header {
-  padding-block: 8px;
-  padding-inline: var(--recent-transactions-inset);
 }
 
 .app-content .recent-transactions--hidden {

@@ -113,6 +113,16 @@ describe('useRecentTransactionsFit', () => {
     expect(hooks.fit).toEqual({ count: 1, compact: false, hidden: false })
   })
 
+  it('uses all available space for rows when the card has no header', async () => {
+    top = 800
+    const card = hooks.card as { querySelector: (selector: string) => unknown }
+    const querySelector = card.querySelector
+    card.querySelector = (selector) => selector.endsWith('header') ? null : querySelector(selector)
+    await render()
+    flushFrame()
+    expect(hooks.fit).toEqual({ count: 2, compact: false, hidden: false })
+  })
+
   it.each([
     { available: 154, count: 1, compact: true },
     { available: 132, count: 1, compact: true },
