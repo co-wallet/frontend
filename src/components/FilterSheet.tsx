@@ -25,6 +25,7 @@ import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import {
   DEFAULT_TRANSACTION_ACCOUNT_KINDS,
   resetTransactionFilter,
+  selectedVisibleAccountIds,
   transactionAccountRestrictionLabels,
   transactionAccountScope,
   transactionAccountScopeFilter,
@@ -99,9 +100,26 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     ...transactionAccountScopeFilter(accountScope),
   })
 
-  const accountOptions = accounts.filter((account) =>
-    accountIds.includes(account.id) || visibleAccounts.some((visible) => visible.id === account.id),
-  )
+  const accountOptions = visibleAccounts
+  const visibleSelectedAccountIds = selectedVisibleAccountIds(visibleAccounts, accountIds)
+
+  function changeKinds(ids: string[]) {
+    const kinds = ids as AccountKind[]
+    setAccountKinds(kinds)
+    const available = transactionFilterAccounts(accounts, {
+      accountKinds: kinds, ...transactionAccountScopeFilter(accountScope),
+    })
+    setAccountIds((previous) => selectedVisibleAccountIds(available, previous))
+  }
+
+  function changeScopes(ids: string[]) {
+    setAccountScopes(ids)
+    const scope = ids.length === 1 ? ids[0] as TransactionAccountScope : 'all'
+    const available = transactionFilterAccounts(accounts, {
+      accountKinds, ...transactionAccountScopeFilter(scope),
+    })
+    setAccountIds((previous) => selectedVisibleAccountIds(available, previous))
+  }
 
   function apply() {
     const f: TransactionFilter = {
@@ -111,7 +129,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
       ...(value.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
     }
     Object.assign(f, transactionAccountScopeFilter(accountScope))
-    if (accountIds.length) f.accountIds = accountIds
+    if (visibleSelectedAccountIds.length) f.accountIds = visibleSelectedAccountIds
     if (categoryIds.length) f.categoryIds = categoryIds
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
     else if (value.withoutTags) f.withoutTags = true
@@ -178,11 +196,11 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
             <div className="filter-sheet-fields">
               <FilterMultiSelect label="Тип средств" emptyLabel="Все типы средств"
                 options={ACCOUNT_KIND_OPTIONS.map((option) => ({ id: option.value, name: option.shortLabel }))}
-                selectedIds={accountKinds} onChange={(ids) => setAccountKinds(ids as AccountKind[])} />
+                selectedIds={accountKinds} onChange={changeKinds} />
               <FilterMultiSelect label="Доступ к счёту" options={ACCESS_OPTIONS}
-                selectedIds={accountScopes} onChange={setAccountScopes} />
+                selectedIds={accountScopes} onChange={changeScopes} />
               <FilterMultiSelect label="Конкретные счета" options={accountOptions}
-                selectedIds={accountIds} onChange={setAccountIds} searchLabel="Поиск счетов"
+                selectedIds={visibleSelectedAccountIds} onChange={setAccountIds} searchLabel="Поиск счетов"
                 renderIcon={(account) => <AccountIcon value={account.icon} size={42} />} />
               {categoryGroups.map(({ type, title, categories }) => (
                 <FilterMultiSelect key={type} label={title} options={categories}

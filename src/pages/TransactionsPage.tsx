@@ -321,7 +321,7 @@ export function TransactionsPage() {
   const balanceLoading = accountsQuery.isLoading || (hasEffectiveAccounts && summaryQuery.isLoading)
   const balanceError = accountsQuery.isError || (hasEffectiveAccounts && summaryQuery.isError)
   const hasFilters = hasTransactionFilters(filter)
-  const accountScopeLabel = transactionAccountRestrictionLabels(filter).join(' · ')
+  const accountScopeLabel = filter.accountIds?.length ? '' : transactionAccountRestrictionLabels(filter).join(' · ')
   const filterGroups = [
     { kind: 'accountIds', label: 'Счета',
       items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },
@@ -380,36 +380,32 @@ export function TransactionsPage() {
           <div className="transactions-filter-status" aria-live="polite">
             <span className="transactions-filter-status__label">Фильтры:</span>
             <div className="transactions-active-filters" aria-label="Активные фильтры">
-              {filterGroups.filter((group) => group.items.length > 0).map((group) => {
-                const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
-                const remaining = group.items.length - 1
-                return (
-                  <IonButton
-                    key={group.kind}
-                    className="transactions-filter-group"
-                    fill="clear"
-                    size="small"
-                    onClick={() => setShowFilters(true)}
-                    aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
-                    title={`${group.label}: ${name}`}
-                  >
-                    <span className="transactions-filter-group__name">{name}</span>
-                    {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
-                  </IonButton>
-                )
-              })}
-              {accountScopeLabel && (
-                <IonButton
-                  className="transactions-filter-group"
-                  fill="clear"
-                  size="small"
-                  onClick={() => setShowFilters(true)}
-                  aria-label={`${accountScopeLabel}. Открыть фильтры`}
-                  title={accountScopeLabel}
-                >
-                  <span className="transactions-filter-group__name">{accountScopeLabel}</span>
-                </IonButton>
-              )}
+              {[
+                { label: 'Категории и теги', groups: filterGroups.filter((group) => group.kind !== 'accountIds'), scope: '' },
+                { label: 'Счета и ограничения', groups: filterGroups.filter((group) => group.kind === 'accountIds'), scope: accountScopeLabel },
+              ].filter((row) => row.scope || row.groups.some((group) => group.items.length > 0)).map((row) => (
+                <div key={row.label} className="transactions-filter-line" role="group" aria-label={row.label}>
+                  {row.groups.filter((group) => group.items.length > 0).map((group) => {
+                    const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
+                    const remaining = group.items.length - 1
+                    return (
+                      <IonButton key={group.kind} className="transactions-filter-group" fill="clear" size="small"
+                        onClick={() => setShowFilters(true)}
+                        aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
+                        title={`${group.label}: ${name}`}>
+                        <span className="transactions-filter-group__name">{name}</span>
+                        {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
+                      </IonButton>
+                    )
+                  })}
+                  {row.scope && (
+                    <IonButton className="transactions-filter-group" fill="clear" size="small"
+                      onClick={() => setShowFilters(true)} aria-label={`${row.scope}. Открыть фильтры`} title={row.scope}>
+                      <span className="transactions-filter-group__name">{row.scope}</span>
+                    </IonButton>
+                  )}
+                </div>
+              ))}
               {!accountScopeLabel && !filterGroups.some((group) => group.items.length > 0) && (
                 <span className="transactions-filter-group__name">Все транзакции</span>
               )}

@@ -151,13 +151,35 @@ describe('FilterSheet multiselects', () => {
     expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: [] })
   })
 
-  it('retains selected accounts outside the current scope and updates available accounts after changing kinds', () => {
-    const props = { value: { accountIds: ['shared'] } }
+  it('drops accounts outside the current scope before applying', () => {
+    const onChange = vi.fn()
+    const props = { value: { accountIds: ['shared'] }, onChange }
     render(props)
-    expect(field('Конкретные счета').options.map((option) => option.id)).toEqual(['personal', 'shared'])
+    expect(field('Конкретные счета').options.map((option) => option.id)).toEqual(['personal'])
+    expect(field('Конкретные счета').selectedIds).toEqual([])
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: ['spending'] })
+  })
+
+  it('prunes mismatching account selections on kind and access changes without restoring them later', () => {
+    const onChange = vi.fn()
+    const props = { value: { accountKinds: [], includeShared: true, accountIds: ['personal', 'shared', 'deposit'] }, onChange }
+    render(props)
     field('Тип средств').onChange(['deposit'])
     render(props)
-    expect(field('Конкретные счета').options.map((option) => option.id)).toEqual(['shared', 'deposit'])
+    expect(field('Конкретные счета').selectedIds).toEqual(['deposit'])
+    expect(field('Конкретные счета').options.map((option) => option.id)).toEqual(['deposit'])
+    field('Тип средств').onChange([])
+    render(props)
+    expect(field('Конкретные счета').selectedIds).toEqual(['deposit'])
+    field('Доступ к счёту').onChange(['shared'])
+    render(props)
+    expect(field('Конкретные счета').selectedIds).toEqual([])
+    field('Доступ к счёту').onChange([])
+    render(props)
+    expect(field('Конкретные счета').selectedIds).toEqual([])
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: [], includeShared: true })
   })
 
   it('discards draft changes when closing without applying', () => {

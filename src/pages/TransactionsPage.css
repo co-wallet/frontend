@@ -1,7 +1,7 @@
 .transactions-filter-status {
   display: flex;
   min-height: 32px;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin-bottom: 12px;
   color: var(--transaction-secondary-text);
@@ -12,12 +12,20 @@
   flex: 0 0 auto;
   color: var(--ion-text-color);
   font-weight: 650;
+  padding-block: 12px;
 }
 
 .transactions-active-filters {
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
+  gap: 4px;
+  flex-direction: column;
+}
+
+.transactions-filter-line {
+  display: flex;
+  min-width: 0;
   gap: 4px;
 }
 

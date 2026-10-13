@@ -82,7 +82,7 @@ describe('account analytics filters', () => {
     }).map((account) => account.id)).toEqual(['shared-spending'])
   })
 
-  it('intersects kinds, shared visibility, and explicitly selected accounts', () => {
+  it('intersects explicitly selected accounts with kinds and shared visibility', () => {
     expect(transactionFilterAccounts(accounts, {
       accountKinds: ['spending', 'deposit'],
       includeShared: true,
@@ -99,6 +99,7 @@ describe('account analytics filters', () => {
       .toEqual([accounts[1]])
     expect(transactionFilterAccounts(accounts, { accountKinds: [], accountIds: ['deposit', 'shared-spending'] }))
       .toEqual([accounts[2]])
+    expect(transactionAccountRestrictionLabels({ accountIds: ['deposit'], accountKinds: ['spending'] })).toEqual(['Текущие средства', 'личные счета'])
   })
 
   it('does not allow deselecting the last kind', () => {
