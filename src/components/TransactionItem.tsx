@@ -66,8 +66,12 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const description = tx.description?.trim()
   const categoryName = category?.name ?? 'Без категории'
-  const title = description
+  const counterpartyUsername = tx.type === 'transfer'
+    ? (!toAccount && tx.toAccountOwnerUsername) || (!account && tx.accountOwnerUsername)
+    : undefined
+  const titleBase = description
     || (tx.type === 'transfer' ? TRANSACTION_TYPE_LABELS.transfer : categoryName)
+  const title = `${titleBase}${counterpartyUsername ? ` @${counterpartyUsername}` : ''}`
   const accountLabel = tx.type === 'transfer'
     ? `${account?.name ?? tx.accountName ?? 'Счёт'} → ${toAccount?.name ?? tx.toAccountName ?? 'Счёт'}`
     : account?.name ?? tx.accountName ?? 'Счёт'
@@ -158,7 +162,7 @@ export function TransactionItem({
 
         <IonLabel className="transaction-item__label">
           <h2>{title}</h2>
-          <p>{meta}</p>
+          <p className={tx.type === 'transfer' ? 'transaction-item__transfer-accounts' : undefined}>{meta}</p>
           {showTags && !!tx.tags?.length && (
             <p className="transaction-item__tags">
               {tx.tags.map((tag) => tagHref ? (

@@ -9,11 +9,11 @@ import {
 } from '@ionic/react'
 import { refreshOutline } from 'ionicons/icons'
 import { transactionsApi, type CreateTransactionDto, type TransactionType } from '@/api/transactions'
-import { accountsApi, type Account, type AccountMember } from '@/api/accounts'
+import { accountsApi, type AccountMember } from '@/api/accounts'
 import { categoriesApi } from '@/api/categories'
 import { currenciesApi } from '@/api/currencies'
 import { TagInput } from '@/components/TagInput'
-import { transferSourceAccounts } from '@/lib/transferAccounts'
+import { transferSourceAccounts, transferDestinationAccounts } from '@/lib/transferAccounts'
 import { AccountSelect } from '@/components/AccountSelect'
 import { CategorySelect } from '@/components/CategorySelect'
 import { TransactionDescriptionInput } from '@/components/TransactionDescriptionInput'
@@ -47,17 +47,13 @@ export function AddTransactionPage() {
   const [type, setType] = useState<TransactionType>(creationDefaults.type ?? 'expense')
   const [accountId, setAccountId] = useState(creationDefaults.accountId ?? '')
   const [toAccountId, setToAccountId] = useState('')
-  const [transferMode, setTransferMode] = useState('own')
-  const [recipient, setRecipient] = useState('')
-  const [searchedRecipient, setSearchedRecipient] = useState('')
-  const externalTransfer = type === 'transfer' && transferMode === 'other'
-  const recipientQuery = useQuery({
-    queryKey: ['transfer-accounts', searchedRecipient],
-    queryFn: () => accountsApi.transferAccounts(searchedRecipient),
-    enabled: externalTransfer && !!searchedRecipient,
+  const externalAccountsQuery = useQuery({
+    queryKey: ['transfer-accounts'],
+    queryFn: () => accountsApi.transferAccounts(),
+    enabled: type === 'transfer',
     retry: false,
   })
-  const recipientAccounts = externalTransfer && recipient.trim() === searchedRecipient ? recipientQuery.data ?? [] : []
+  const externalAccounts = type === 'transfer' ? externalAccountsQuery.data ?? [] : []
 
   const [amount, setAmount] = useState('')
   const [defaultCurrencyAmountStr, setDefaultCurrencyAmountStr] = useState('')
@@ -77,16 +73,17 @@ export function AddTransactionPage() {
   })
 
   const accountCurrencyCodes = accounts.map((a) => a.currency)
-  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes, ...recipientAccounts.map((a) => a.currency)])]
+  const extraCodes = [...new Set([userDefaultCurrency, ...accountCurrencyCodes, ...externalAccounts.map((a) => a.currency)])]
   const { data: currencies = [] } = useQuery({
     queryKey: ['currencies', extraCodes.sort().join(',')],
     queryFn: () => currenciesApi.list(extraCodes),
     staleTime: 60_000,
   })
 
-  const sourceAccounts = transferSourceAccounts(accounts, externalTransfer)
-  const selectedAccount: Account | undefined = sourceAccounts.find((a) => a.id === accountId)
-  const isShared = selectedAccount?.accessMode === 'shared'
+  const sourceAccounts = type === 'transfer' ? transferSourceAccounts(accounts, externalAccounts) : accounts
+  const selectedAccount = sourceAccounts.find((a) => a.id === accountId)
+  const incomingTransfer = type === 'transfer' && !!selectedAccount && !accounts.some((a) => a.id === accountId)
+  const isShared = selectedAccount != null && 'accessMode' in selectedAccount && selectedAccount.accessMode === 'shared'
 
   const { data: members = [] } = useQuery<AccountMember[]>({
     queryKey: ['account-members', accountId],
@@ -129,7 +126,7 @@ export function AddTransactionPage() {
   }, [type])
 
   const accountCurrency = selectedAccount?.currency ?? ''
-  const destinationAccounts = externalTransfer ? recipientAccounts : accounts
+  const destinationAccounts = transferDestinationAccounts(accounts, externalAccounts, accountId)
   const toAccount = destinationAccounts.find((a) => a.id === toAccountId && a.id !== accountId)
   const toAccountCurrency = toAccount?.currency ?? ''
   const isCrossCurrencyTransfer = type === 'transfer' && !!accountCurrency && !!toAccountCurrency && toAccountCurrency !== accountCurrency
@@ -204,10 +201,10 @@ export function AddTransactionPage() {
       amount: totalAmount,
       currency: txCurrency,
       date: date + 'T00:00:00Z',
-      ...(categoryId ? { categoryId } : {}),
+      ...(type !== 'transfer' && categoryId ? { categoryId } : {}),
       ...(description.trim() ? { description: description.trim() } : {}),
       ...(type === 'transfer' && toAccountId ? { toAccountId, ...(isCrossCurrencyTransfer && parseDecimal(toAmountStr) > 0 ? { toAmount: parseDecimal(toAmountStr) } : {}) } : {}),
-      ...(allTags.length > 0 ? { tags: allTags } : {}),
+      ...(!incomingTransfer && allTags.length > 0 ? { tags: allTags } : {}),
       ...(needsDefaultCurrency && dcaValue > 0
         ? { defaultCurrency: userDefaultCurrency, defaultCurrencyAmount: dcaValue }
         : {}),
@@ -279,33 +276,26 @@ export function AddTransactionPage() {
                 ))}
               </EntityFormSelect>
             </IonItem>
+            {type === 'transfer' && <>
+              {externalAccountsQuery.isFetching && <IonSpinner />}
+              {externalAccountsQuery.isError && <EntityFormError>Не удалось загрузить чужие счета.
+                <IonButton fill="clear" onClick={() => void externalAccountsQuery.refetch()}>Повторить</IonButton>
+              </EntityFormError>}
+            </>}
+
             {/* Account */}
             <AccountSelect
-              label="Счёт"
+              label={type === 'transfer' ? 'Со счёта' : 'Счёт'}
               accounts={sourceAccounts}
               value={accountId}
-              onChange={setAccountId}
+              onChange={(id) => {
+                setAccountId(id)
+                if (!transferDestinationAccounts(accounts, externalAccounts, id).some((a) => a.id === toAccountId)) setToAccountId('')
+              }}
             />
 
             {/* To account (transfer) */}
             {type === 'transfer' && (<>
-              <IonItem><EntityFormSelect label="Кому" value={transferMode}
-                onIonChange={(e) => { setTransferMode(e.detail.value); setToAccountId(''); if (e.detail.value === 'other' && selectedAccount?.accessMode === 'shared') setAccountId('') }}>
-                <IonSelectOption value="own">Между своими счетами</IonSelectOption>
-                <IonSelectOption value="other">Другому пользователю</IonSelectOption>
-              </EntityFormSelect></IonItem>
-              {externalTransfer && <>
-                <IonNote className="entity-form-note">Переводы другим пользователям доступны только с личного счёта.</IonNote>
-                <IonItem><IonInput label="Логин получателя" labelPlacement="stacked" value={recipient}
-                  onIonInput={(e) => { setRecipient(e.detail.value ?? ''); setSearchedRecipient(''); setToAccountId('') }} />
-                  <IonButton slot="end" disabled={!recipient.trim() || recipientQuery.isFetching}
-                    onClick={() => { setToAccountId(''); setSearchedRecipient(recipient.trim()); if (searchedRecipient === recipient.trim()) void recipientQuery.refetch() }}>Найти</IonButton>
-                </IonItem>
-                {recipientQuery.isFetching && <IonSpinner />}
-                {recipientQuery.isError && <EntityFormError>Не удалось найти счета. Попробуйте ещё раз.</EntityFormError>}
-                {!!searchedRecipient && !recipientQuery.isFetching && !recipientQuery.isError && recipientAccounts.length === 0 &&
-                  <IonNote className="entity-form-note">Нет доступных счетов. Проверьте логин или попросите получателя включить приём переводов.</IonNote>}
-              </>}
               <AccountSelect
                 label="На счёт"
                 accounts={otherAccounts}
@@ -421,12 +411,12 @@ export function AddTransactionPage() {
             <TransactionDescriptionInput value={description} onChange={setDescription} />
           </EntityFormSection>
 
-          <EntityFormSection title="Дополнительно">
+          {!incomingTransfer && <EntityFormSection title="Дополнительно">
             <div className="entity-form-tags">
               <IonLabel className="entity-form-field-label">Теги</IonLabel>
               <TagInput value={tags} onChange={setTags} onPendingChange={(v) => { pendingTagRef.current = v }} />
             </div>
-          </EntityFormSection>
+          </EntityFormSection>}
 
           {/* Shares */}
           {isShared && members.length > 1 && (

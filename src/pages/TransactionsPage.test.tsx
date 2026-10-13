@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { TransactionsPage } from './TransactionsPage'
 import type { Transaction } from '@/api/transactions'
 import type { Currency } from '@/api/currencies'
+import type { CategoryStat } from '@/api/analytics'
 import { filterFromParams, periodFromParams } from '@/lib/transactionNavigation'
 import type { TransactionPeriod } from '@/lib/transactionNavigation'
 import { usePeriodStore } from '@/store/periodStore'
@@ -52,6 +53,7 @@ const pagination = vi.hoisted(() => ({
   chartGrouping: 'categories' as 'categories' | 'tags',
   currencies: [] as Currency[],
   missingAmounts: 0,
+  categoryStats: [] as CategoryStat[],
 }))
 beforeEach(() => {
   pagination.data = { pages: [[]] }
@@ -66,6 +68,7 @@ beforeEach(() => {
   pagination.chartGrouping = 'categories'
   pagination.currencies = []
   pagination.missingAmounts = 0
+  pagination.categoryStats = [{ categoryId: 'c1', categoryName: 'Продукты', amount: 125, icon: 'preset:groceries' }]
 })
 
 vi.mock('react', async (importOriginal) => {
@@ -96,7 +99,7 @@ vi.mock('@tanstack/react-query', () => ({
         { tagId: 'untagged', tagName: 'Без тегов', amount: 75 },
       ]
       : queryKey[0] === 'analytics' && queryKey[1] === 'by-category'
-        ? [{ categoryId: 'c1', categoryName: 'Продукты', amount: 125, icon: 'preset:groceries' }]
+        ? pagination.categoryStats
       : queryKey[0] === 'accounts'
       ? [
         { id: 'a1', name: 'Личная', kind: 'spending', accessMode: 'personal' },
@@ -128,6 +131,15 @@ function renderPage(path: string) {
     </MemoryRouter>,
   )
 }
+
+it('shows the owner login and transfer icon in an external transfer legend', () => {
+  pagination.categoryStats = [{ categoryId: 'transfers:external', categoryName: "В 'Карта' · @wallet_demo", amount: 100 }]
+  const markup = renderPage('/transactions?include_transfer_expenses=true')
+  expect(markup).toContain('@wallet_demo')
+  expect(markup).toContain('aria-label="Перевод"')
+  expect(markup).toContain('var(--account-icon-color-blue)')
+  expect(markup).not.toContain('Транзакции с тегом undefined')
+})
 
 describe('transaction navigation controls', () => {
   it('applies content swipes to the primary list period store', () => {

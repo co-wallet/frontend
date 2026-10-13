@@ -67,3 +67,11 @@ it('announces an API error and removes the alert when cleared', () => {
   expect(renderToStaticMarkup(<EntityFormError>Не удалось сохранить</EntityFormError>)).toContain('role="alert"')
   expect(renderToStaticMarkup(<EntityFormError />)).toBe('')
 })
+
+it('shows the owner separately from the primary picker value', () => {
+  const markup = renderToStaticMarkup(<EntityFormPicker label="На счёт" value="Карта · RUB" secondaryValue="@wallet_demo"
+    accessibleValue="Карта · @wallet_demo" isOpen={false} onOpen={vi.fn()} />)
+  expect(markup).toContain('aria-label="На счёт: Карта · @wallet_demo"')
+  expect(markup).toContain('<span>Карта · RUB</span>')
+  expect(markup).toContain('class="entity-form-picker__secondary">@wallet_demo')
+})

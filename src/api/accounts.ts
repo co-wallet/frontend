@@ -60,14 +60,14 @@ export interface UpdateAccountDto {
   initialBalanceDate?: string
 }
 
-export type TransferAccount = Pick<Account, 'id' | 'name' | 'icon' | 'currency'>
+export type TransferAccount = Pick<Account, 'id' | 'name' | 'icon' | 'currency'> & { ownerUsername?: string }
 
 export const accountsApi = {
   setOrder: async (accountIds: string[]): Promise<void> => {
     await apiClient.patch('/accounts/order', { accountIds })
   },
-  transferAccounts: async (username: string): Promise<TransferAccount[]> => {
-    const { data } = await apiClient.get<TransferAccount[]>('/transfer-accounts', { params: { username } })
+  transferAccounts: async (username?: string): Promise<TransferAccount[]> => {
+    const { data } = await apiClient.get<TransferAccount[]>('/transfer-accounts', { params: username === undefined ? {} : { username } })
     return data
   },
   list: async (currency?: string): Promise<Account[]> => {

@@ -15,6 +15,8 @@ export interface TransactionTag {
 }
 
 export interface Transaction {
+  accountOwnerUsername?: string
+  toAccountOwnerUsername?: string
   accountName?: string
   toAccountName?: string
   toCurrency?: string

@@ -39,6 +39,7 @@ import {
   alertCircleOutline,
   optionsOutline,
   receiptOutline,
+  swapHorizontalOutline,
 } from 'ionicons/icons'
 
 import { accountsApi } from '@/api/accounts'
@@ -66,6 +67,7 @@ import {
 } from '@/lib/transactionList'
 import { useChartTheme } from '@/lib/useChartTheme'
 import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
+import { TRANSFER_CHART_COLOR } from '@/lib/dashboardChart'
 import { useAuthStore } from '@/store/authStore'
 import { accountKindShortLabel } from '@/lib/accountKind'
 import {
@@ -270,6 +272,7 @@ export function TransactionsPage() {
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10)
     .map((stat) => {
+      const isTransfer = stat.categoryId === 'transfers' || stat.categoryId.startsWith('transfers:')
       const icon = stat.categoryId === 'uncategorized'
         ? UNCATEGORIZED_CATEGORY_ICON
         : stat.icon
@@ -284,8 +287,8 @@ export function TransactionsPage() {
           location.pathname,
         ),
         icon,
-        iconType: 'category' as const,
-        color: categoryIconChartColor(icon, chartCategoryType),
+        iconType: isTransfer ? 'transfer' as const : 'category' as const,
+        color: isTransfer ? TRANSFER_CHART_COLOR : categoryIconChartColor(icon, chartCategoryType),
       }
     })
   const tagChartData = (tagAnalyticsQuery.data ?? [])
@@ -547,7 +550,7 @@ export function TransactionsPage() {
                     </ResponsiveContainer>
                     <div className="transactions-chart-legend">
                       {chartData.map((stat) => {
-                        const transactionsHref = stat.iconType === 'category'
+                        const transactionsHref = stat.iconType === 'category' || stat.iconType === 'transfer'
                           ? stat.transactionsHref
                           : filteredTransactionsHref(
                             stat.iconType === 'untagged'
@@ -571,6 +574,7 @@ export function TransactionsPage() {
                                 ariaLabel={stat.categoryId === 'uncategorized' ? 'Без категории' : undefined}
                               />
                             )}
+                            {stat.iconType === 'transfer' && <IonIcon icon={swapHorizontalOutline} aria-label="Перевод" style={{ color: TRANSFER_CHART_COLOR }} />}
                             <span style={{ color: chartTheme.legendColor }}>{stat.iconType === 'tag' ? '#' : ''}{stat.name}</span>
                           </div>
                           <span className="transactions-chart-legend__amount">
@@ -586,9 +590,11 @@ export function TransactionsPage() {
                             routerDirection="forward"
                             aria-label={stat.iconType === 'category'
                               ? `Транзакции категории ${stat.name}`
+                              : stat.iconType === 'transfer'
+                                ? `Переводы ${stat.name}`
                               : stat.iconType === 'untagged'
                                 ? 'Транзакции без тегов'
-                                : `Транзакции с тегом ${stat.tagName}`}
+                                : `Транзакции с тегом ${stat.name}`}
                           >
                             <span className="transactions-chart-legend__link-content">
                               {content}

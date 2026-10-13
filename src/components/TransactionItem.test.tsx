@@ -56,6 +56,38 @@ function transaction(overrides: Partial<Transaction> = {}): Transaction {
 }
 
 describe('TransactionItem', () => {
+  it('labels an external destination with its owner username', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer',
+      description: null, toAccountId: 'external', accountOwnerUsername: 'me', toAccountName: 'Карта', toAccountOwnerUsername: 'wallet_demo' })}
+      account={account} defaultCurrency="RUB" onEdit={vi.fn()} />)
+    expect(markup).toContain('<h2>Перевод @wallet_demo</h2>')
+    expect(markup).toContain('<p class="transaction-item__transfer-accounts">Личная → Карта</p>')
+    expect(markup).not.toContain('@me')
+  })
+  it('labels an external source in an incoming transfer', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer', readOnly: true,
+      description: null, accountName: 'Карта', accountOwnerUsername: 'wallet_demo', toAccountOwnerUsername: 'me' })}
+      toAccount={account} defaultCurrency="RUB" onEdit={vi.fn()} />)
+    expect(markup).toContain('<h2>Перевод @wallet_demo</h2>')
+    expect(markup).toContain('<p class="transaction-item__transfer-accounts">Карта → Личная</p>')
+    expect(markup).not.toContain('@me')
+  })
+  it('keeps a transfer description while placing the owner beside it', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer', description: 'Возврат',
+      toAccountName: 'Карта', toAccountOwnerUsername: 'wallet_demo' })}
+      account={account} defaultCurrency="RUB" onEdit={vi.fn()} />)
+    expect(markup).toContain('<h2>Возврат @wallet_demo</h2>')
+    expect(markup).toContain('<p class="transaction-item__transfer-accounts">Личная → Карта</p>')
+  })
+  it('does not add an owner login to transfers between accessible accounts', () => {
+    const markup = renderToStaticMarkup(<TransactionItem tx={transaction({ type: 'transfer', description: null,
+      accountOwnerUsername: 'me', toAccountOwnerUsername: 'member' })}
+      account={account} toAccount={{ ...account, name: 'Общая', accessMode: 'shared' }} defaultCurrency="RUB" onEdit={vi.fn()} />)
+    expect(markup).toContain('<h2>Перевод</h2>')
+    expect(markup).toContain('Личная → Общая')
+    expect(markup).not.toContain('@member')
+    expect(markup).not.toContain('@me')
+  })
   it('can leave horizontal gestures to the page while retaining tap-to-open and tags', () => {
     const markup = renderToStaticMarkup(<TransactionItem tx={transaction()} defaultCurrency="RUB"
       onEdit={vi.fn()} onDelete={vi.fn()} swipeActions={false}

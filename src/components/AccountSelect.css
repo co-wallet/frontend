@@ -7,6 +7,16 @@
   margin-top: 12px;
 }
 
+.account-select-group-divider {
+  --background: var(--ion-background-color-step-50);
+  --color: var(--ion-text-color-step-300);
+  --padding-start: 16px;
+  min-height: 36px;
+  border-top: 1px solid var(--ion-background-color-step-150);
+  font-size: 13px;
+  font-weight: 600;
+}
+
 .account-select-option {
   --min-height: 64px;
 }
