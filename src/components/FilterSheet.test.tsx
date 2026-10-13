@@ -195,7 +195,20 @@ describe('FilterSheet multiselects', () => {
   })
 
   it('announces active filters without counting transfer preferences', () => {
-    expect(render({ value: { accountIds: ['personal'], categoryIds: ['expense'], tagIds: ['tag'] } })).toContain('Фильтры, активно: 3')
-    expect(render({ value: { includeTransferExpenses: true } })).toContain('aria-label="Фильтры"')
+    expect(render({ value: { accountIds: ['personal'], categoryIds: ['expense'], tagIds: ['tag'] } })).toContain('Фильтры, активно: 5')
+    expect(render({ value: { includeTransferExpenses: true } })).toContain('aria-label="Фильтры, активно: 2"')
+  })
+
+  it.each([
+    { value: {}, count: 2 },
+    { value: { accountKinds: [] }, count: 1 },
+    { value: { includeShared: true }, count: 1 },
+    { value: { accountKinds: [], includeShared: true, onlyShared: true }, count: 1 },
+    { value: { accountKinds: ACCOUNT_KIND_OPTIONS.map((option) => option.value), includeShared: true }, count: 0 },
+  ])('counts effective kind and access restrictions: $count', ({ value, count }) => {
+    const markup = render({ value })
+    expect(markup).toContain(count ? `aria-label="Фильтры, активно: ${count}"` : 'aria-label="Фильтры"')
+    if (count) expect(markup).toContain(`aria-hidden="true">${count}</ion-badge>`)
+    else expect(markup).not.toContain('ion-badge')
   })
 })

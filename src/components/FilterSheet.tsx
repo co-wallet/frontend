@@ -25,6 +25,7 @@ import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import {
   DEFAULT_TRANSACTION_ACCOUNT_KINDS,
   resetTransactionFilter,
+  transactionAccountKinds,
   transactionAccountScope,
   transactionAccountScopeFilter,
   transactionFilterAccounts,
@@ -132,8 +133,9 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   const activeCount = [
     (value.accountIds?.length ?? 0) > 0,
     (value.types?.length ?? 0) > 0,
-    (value.accountKinds?.length ?? 0) > 0,
-    value.onlyShared === true,
+    transactionAccountKinds(value).length > 0
+      && !ACCOUNT_KIND_OPTIONS.every((option) => transactionAccountKinds(value).includes(option.value)),
+    transactionAccountScope(value) !== 'all',
     (value.categoryIds?.length ?? 0) > 0,
     (value.tagIds?.length ?? 0) > 0,
   ].filter(Boolean).length
