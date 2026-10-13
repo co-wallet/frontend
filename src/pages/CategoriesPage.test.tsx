@@ -29,6 +29,7 @@ describe('CategoriesPage visibility', () => {
     state.categories = [visible, hidden]
     const markup = renderToStaticMarkup(<CategoriesPage />)
     expect(markup).toContain('Редактировать «Еда»')
+    expect(markup).not.toContain('Общий справочник. Изменения видны всем.')
     expect(markup).not.toContain('Архивная')
     expect(markup).toContain('Показать скрытые категории (1)')
     expect(markup).toContain('aria-expanded="false"')

@@ -156,7 +156,6 @@ export default function CategoriesPage() {
           </IonFab>
         }
       >
-        <IonText color="medium"><p>Общий справочник. Изменения видны всем. Скрытие действует только для вас.</p></IonText>
         {hiddenCount > 0 && <IonButton fill="outline" onClick={() => setShowHidden(!showHidden)} aria-expanded={showHidden}>
           {showHidden ? 'Не показывать скрытые' : `Показать скрытые категории (${hiddenCount})`}
         </IonButton>}

@@ -91,7 +91,6 @@ export function TagsPage() {
           </IonFabButton>
         </IonFab>
       }>
-        <IonText color="medium"><p>Общий справочник. Изменения видны всем. Скрытие действует только для вас.</p></IonText>
         {hiddenCount > 0 && <IonButton fill="outline" onClick={() => setShowHidden(!showHidden)} aria-expanded={showHidden}>
           {showHidden ? 'Не показывать скрытые' : `Показать скрытые теги (${hiddenCount})`}
         </IonButton>}

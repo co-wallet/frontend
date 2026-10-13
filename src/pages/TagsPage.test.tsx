@@ -34,6 +34,7 @@ describe('TagsPage', () => {
     expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-1&amp;account_kinds=all&amp;include_shared=true&amp;period=')
     expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-2&amp;account_kinds=all&amp;include_shared=true&amp;period=')
     expect(markup).toContain('Транзакций: 4')
+    expect(markup).not.toContain('Общий справочник. Изменения видны всем.')
     expect(markup).not.toContain('Операции')
     expect(markup).toMatch(/<ion-router-link[^>]*href="[^"]+"[^>]*><h2>#Отпуск<\/h2>/)
     expect(markup).toContain('Транзакций: 0')

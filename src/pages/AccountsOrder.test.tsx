@@ -91,7 +91,7 @@ describe('AccountsPage direct ordering', () => {
     const markup = render()
     expect(controls.sensors).toContainEqual({ sensor: MouseSensor, options: { activationConstraint: { distance: { y: 8 } } } })
     expect(controls.sensors).toContainEqual({ sensor: TouchSensor, options: { activationConstraint: { delay: 350, tolerance: 8 } } })
-    expect(markup).toContain('Удерживайте счёт')
+    expect(markup).not.toContain('Удерживайте счёт')
     expect(markup).not.toContain('ion-reorder')
     expect(markup).not.toContain('Поднять счёт')
     expect(markup).not.toContain('Опустить счёт')
