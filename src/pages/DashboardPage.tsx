@@ -172,6 +172,7 @@ function ChartBlock({
       <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
           const isNegative = s.amount < 0
+          const transactionsHref = s.legendTransactionsHref ?? s.transactionsHref
           const content = (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -209,11 +210,11 @@ function ChartBlock({
               </span>
             </>
           )
-          return s.legendTransactionsHref ? (
+          return transactionsHref ? (
             <IonRouterLink
               key={i}
               className="dashboard-chart-legend-link"
-              routerLink={s.legendTransactionsHref}
+              routerLink={transactionsHref}
               routerDirection="forward"
               aria-label={s.iconType === 'account'
                 ? `Транзакции по счету ${s.name}`
@@ -347,37 +348,29 @@ export function DashboardPage() {
 
   const expensePieData: DashboardPieEntry[] = byExpense
     .filter((s) => s.amount > 0)
-    .map((s) => {
-      const transactionsHref = categoryTransactionsHref(
+    .map((s) => ({
+      name: s.categoryName,
+      transactionsHref: categoryTransactionsHref(
         s.categoryId, transactionFilter, transactionPeriod, location.pathname,
-      )
-      return {
-        name: s.categoryName,
-        transactionsHref,
-        legendTransactionsHref: transactionsHref,
-        icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-        iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
-        categoryType: 'expense',
-        amount: s.amount,
-      }
-    })
+      ),
+      icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
+      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
+      categoryType: 'expense',
+      amount: s.amount,
+    }))
 
   const incomePieData: DashboardPieEntry[] = byIncome
     .filter((s) => s.amount > 0)
-    .map((s) => {
-      const transactionsHref = categoryTransactionsHref(
+    .map((s) => ({
+      name: s.categoryName,
+      transactionsHref: categoryTransactionsHref(
         s.categoryId, transactionFilter, transactionPeriod, location.pathname,
-      )
-      return {
-        name: s.categoryName,
-        transactionsHref,
-        legendTransactionsHref: transactionsHref,
-        icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
-        iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
-        categoryType: 'income',
-        amount: s.amount,
-      }
-    })
+      ),
+      icon: s.categoryId === 'uncategorized' ? UNCATEGORIZED_CATEGORY_ICON : s.icon ?? undefined,
+      iconType: s.categoryId.startsWith('transfers:') || s.categoryId === 'transfers' ? 'transfer' as const : 'category' as const,
+      categoryType: 'income',
+      amount: s.amount,
+    }))
 
   const chartTitles: Record<ChartMode, string> = {
     balance: 'Баланс по счетам',
