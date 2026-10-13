@@ -19,11 +19,12 @@ interface FilterMultiSelectProps<T extends FilterMultiSelectOption> {
   onChange: (ids: string[]) => void
   searchLabel?: string
   hiddenLabel?: string
+  emptyLabel?: string
   renderIcon?: (option: T) => ReactNode
 }
 
 export function FilterMultiSelect<T extends FilterMultiSelectOption>({
-  label, options, selectedIds, onChange, searchLabel, hiddenLabel, renderIcon,
+  label, options, selectedIds, onChange, searchLabel, hiddenLabel, emptyLabel = 'Не выбрано', renderIcon,
 }: FilterMultiSelectProps<T>) {
   const [open, setOpen] = useState(false)
   const [search, setSearch] = useState('')
@@ -31,7 +32,7 @@ export function FilterMultiSelect<T extends FilterMultiSelectOption>({
     const option = options.find((item) => item.id === id)
     return option ? [option] : []
   })
-  const firstName = selected[0]?.name ?? 'Не выбрано'
+  const firstName = selected[0]?.name ?? emptyLabel
   const summary = selected.length > 1 ? `${firstName} +${selected.length - 1}` : firstName
   const query = search.trim().toLocaleLowerCase('ru')
   const matching = options.filter((option) => option.name.toLocaleLowerCase('ru').includes(query))

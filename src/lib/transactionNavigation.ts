@@ -81,7 +81,7 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
   if (params.get('tag_mode') === 'and') filter.tagMode = 'and'
   if (params.get('without_tags') === 'true') filter.withoutTags = true
   const accountKinds = params.get('account_kinds')
-  if (accountKinds === 'none') filter.accountKinds = []
+  if (accountKinds === 'all' || accountKinds === 'none') filter.accountKinds = []
   else if (accountKinds) {
     const validKinds = accountKinds.split(',').filter(isAccountKind)
     if (validKinds.length) filter.accountKinds = validKinds
@@ -112,7 +112,7 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
   if (filter.withoutTags) result.set('without_tags', 'true')
   result.delete('account_kinds')
   if (filter.accountKinds) {
-    result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'none')
+    result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'all')
   }
   for (const [key, enabled] of [
     ['include_shared', filter.includeShared],

@@ -240,7 +240,7 @@ describe('transaction account balance', () => {
   })
 
   it('shows zero when no accounts match instead of using cached summary data', () => {
-    expect(balanceCard('/transactions?account_kinds=none')).toContain('>0 $</strong>')
+    expect(balanceCard('/transactions?account_kinds=deposit')).toContain('>0 $</strong>')
     expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
   })
 })
@@ -449,11 +449,14 @@ describe('active filter summary', () => {
     expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a2' })
   })
 
-  it('disables list and analytics requests when no account kinds are selected', () => {
-    const markup = renderPage('/transactions?account_kinds=none')
-    expect(markup).toContain('Типы средств не выбраны')
-    expect(pagination.options?.enabled).toBe(false)
-    expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
+  it.each(['all', 'none'])('requests all kinds for an empty selection encoded as %s', (kinds) => {
+    const markup = renderPage(`/transactions?account_kinds=${kinds}`)
+    expect(markup).toContain('Все типы средств')
+    expect(pagination.options?.enabled).toBe(true)
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summary.enabled).toBe(true)
+    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a1,a3', account_kinds: 'all' })
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a1', 'a3'] })
   })
 
   it('passes independent transfer preferences to summary analytics', () => {

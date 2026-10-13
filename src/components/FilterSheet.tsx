@@ -182,7 +182,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
           <IonContent className="ion-padding filter-sheet-content">
             <div className="filter-sheet-fields">
-              <FilterMultiSelect label="Тип средств"
+              <FilterMultiSelect label="Тип средств" emptyLabel="Все типы средств"
                 options={ACCOUNT_KIND_OPTIONS.map((option) => ({ id: option.value, name: option.shortLabel }))}
                 selectedIds={accountKinds} onChange={(ids) => setAccountKinds(ids as AccountKind[])} />
               <FilterMultiSelect label="Доступ к счёту" options={ACCESS_OPTIONS}

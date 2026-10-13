@@ -70,7 +70,17 @@ describe('account analytics filters', () => {
       includeShared: true,
       accountIds: ['shared-spending', 'deposit', 'investment'],
     }).map((account) => account.id)).toEqual(['shared-spending', 'deposit'])
-    expect(transactionFilterAccounts(accounts, { accountKinds: [] })).toEqual([])
+    expect(transactionFilterAccounts(accounts, { accountKinds: [] }).map((account) => account.id))
+      .toEqual(['spending', 'deposit', 'investment', 'savings', 'savings_account'])
+  })
+
+  it('shows all kinds for an empty selection while retaining scope and concrete-account restrictions', () => {
+    expect(filterAccountsByKinds(accounts, [])).toEqual(accounts)
+    expect(transactionFilterAccounts(accounts, { accountKinds: [], includeShared: true })).toEqual(accounts)
+    expect(transactionFilterAccounts(accounts, { accountKinds: [], includeShared: true, onlyShared: true }))
+      .toEqual([accounts[1]])
+    expect(transactionFilterAccounts(accounts, { accountKinds: [], accountIds: ['deposit', 'shared-spending'] }))
+      .toEqual([accounts[2]])
   })
 
   it('does not allow deselecting the last kind', () => {

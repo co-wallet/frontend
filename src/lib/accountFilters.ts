@@ -5,7 +5,7 @@ export const DEFAULT_TRANSACTION_ACCOUNT_KINDS: AccountKind[] = ['spending']
 export type TransactionAccountScope = 'personal' | 'shared' | 'all'
 
 export function filterAccountsByKinds(accounts: Account[], kinds: AccountKind[]): Account[] {
-  return accounts.filter((account) => kinds.includes(account.kind))
+  return kinds.length ? accounts.filter((account) => kinds.includes(account.kind)) : accounts
 }
 
 export function selectedVisibleAccountIds(accounts: Account[], selectedIds: string[]): string[] {

@@ -361,12 +361,15 @@ describe('Dashboard shared accounts', () => {
 })
 
 
-it('shows zero totals without querying analytics when no account types are selected', () => {
+it('queries every personal account kind when no account types are selected', () => {
   queryState.selectedKinds = []
   const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-  expect(markup).toContain('Типы не выбраны')
-  expect(markup).toContain('Нет данных о балансе')
-  expect(queryState.analyticsQueries.every((query) => !query.enabled)).toBe(true)
+  expect(markup).toContain('Все типы средств')
+  expect(queryState.analyticsQueries.every((query) => query.enabled)).toBe(true)
+  for (const query of queryState.analyticsQueries) {
+    expect(query.params).toMatchObject({ account_kinds: 'all', account_ids: 'spending,deposit,savings' })
+  }
+  expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(['spending', 'deposit', 'savings'])
 })
 
 it.each([false, true])('shows all kinds selected and queries matching accounts, shared=%s', (includeShared) => {

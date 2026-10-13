@@ -325,7 +325,7 @@ export function TransactionsPage() {
   const accountKinds = transactionAccountKinds(filter)
   const accountScope = transactionAccountScope(filter)
   const accountScopeLabel = `${accountKinds.length === 0
-    ? 'Типы средств не выбраны'
+    ? 'Все типы средств'
     : accountKinds.length === 1
       ? accountKindShortLabel(accountKinds[0])
       : `Типов средств: ${accountKinds.length}`} · ${accountScope === 'all'

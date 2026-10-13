@@ -74,6 +74,11 @@ describe('FilterMultiSelect', () => {
     expect(markup).not.toContain('filter-multiselect-count')
   })
 
+  it('supports an unrestricted label for an empty selection', () => {
+    expect(render({ label: 'Тип средств', emptyLabel: 'Все типы средств' }))
+      .toContain('aria-label="Тип средств: Все типы средств"')
+  })
+
   it('opens a complete list with select-all and clear-all actions', () => {
     const markup = open()
     expect(controls.checks.size).toBe(8)

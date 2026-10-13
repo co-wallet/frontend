@@ -280,7 +280,7 @@ export function DashboardPage() {
     date_to: dateTo,
     currency: displayCurrency,
     account_ids: filteredAccountIds,
-    account_kinds: selectedKinds.join(','),
+    account_kinds: selectedKinds.length ? selectedKinds.join(',') : 'all',
   }
   const transactionFilter: TransactionFilter = {
     accountKinds: selectedKinds,
@@ -434,7 +434,7 @@ export function DashboardPage() {
                 aria-label="Тип средств"
                 aria-haspopup="dialog"
               >
-                <span className="dashboard-kind-trigger__content"><span>{selectedKinds.length === 0 ? 'Типы не выбраны' : selectedKinds.length === 1
+                <span className="dashboard-kind-trigger__content"><span>{selectedKinds.length === 0 ? 'Все типы средств' : selectedKinds.length === 1
                   ? accountKindShortLabel(selectedKinds[0])
                   : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
                     ? 'Все типы средств'

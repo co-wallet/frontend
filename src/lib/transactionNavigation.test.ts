@@ -88,6 +88,13 @@ describe('tag navigation', () => {
     })
   })
 
+  it('serializes empty kinds as all and reads both current and legacy empty links', () => {
+    expect(filterToParams({ accountKinds: [] }).get('account_kinds')).toBe('all')
+    for (const value of ['all', 'none']) {
+      expect(filterFromParams(new URLSearchParams(`account_kinds=${value}`))).toEqual({ accountKinds: [] })
+    }
+  })
+
   it('clears filters without losing the period', () => {
     const params = query(filteredTransactionsHref({ accountIds: ['one'], tagIds: ['travel'], tagMode: 'and' }, period))
     const cleared = filterToParams({}, params)
