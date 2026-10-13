@@ -60,7 +60,7 @@ export function RecentTransactions({
 
   return (
     <div className="recent-transactions-slot">
-      <IonCard ref={fit.ref} className={`recent-transactions${fit.compact ? ' recent-transactions--compact' : ''}${fit.hidden ? ' recent-transactions--hidden' : ''}`} aria-hidden={fit.hidden || undefined}>
+      <IonCard ref={fit.ref} className={`recent-transactions${fit.compact ? ' recent-transactions--compact' : ''}`}>
         {loading ? (
           <IonList className="recent-transactions__message" aria-label="Загрузка последних транзакций">
             {[0, 1, 2].map((key) => (

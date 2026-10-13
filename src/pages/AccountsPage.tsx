@@ -441,9 +441,9 @@ export function AccountsPage() {
       >
         <div className="accounts-scroll ion-content-scroll-host">
           <div className="accounts-scroll-inner">
-            {accounts.length > 1 && <div className="account-order-help">
-              <IonNote role={orderMutation.isPending ? 'status' : undefined}>
-                {orderMutation.isPending ? 'Сохраняем порядок…' : 'Удерживайте счёт, чтобы изменить порядок.'}
+            {accounts.length > 1 && orderMutation.isPending && <div className="account-order-help">
+              <IonNote role="status">
+                Сохраняем порядок…
               </IonNote>
             </div>}
             {orderMutation.error && <IonText color="danger"><p className="account-order-status" role="alert">

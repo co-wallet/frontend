@@ -202,11 +202,14 @@ describe('transaction list helpers', () => {
     })
     expect(hasTransactionFilters({ tagIds: ['tag-1'] })).toBe(true)
     expect(hasTransactionFilters({ withoutTags: true })).toBe(true)
-    expect(hasTransactionFilters({ accountKinds: [] })).toBe(true)
+    expect(hasTransactionFilters({ withoutCategory: true })).toBe(true)
+    expect(buildTransactionAnalyticsParams({ withoutCategory: true }, '2026-09-01', '2026-09-30', 'USD'))
+      .toMatchObject({ without_category: true })
+    expect(hasTransactionFilters({ accountKinds: [], includeShared: true })).toBe(false)
     expect(hasTransactionFilters({ includeShared: true, onlyShared: true })).toBe(true)
     expect(hasTransactionFilters({ includeTransferExpenses: true })).toBe(true)
     expect(hasTransactionFilters({ types: ['expense'] })).toBe(true)
-    expect(hasTransactionFilters({})).toBe(false)
+    expect(hasTransactionFilters({})).toBe(true)
   })
 
   it('includes the without-tags condition in analytics parameters', () => {

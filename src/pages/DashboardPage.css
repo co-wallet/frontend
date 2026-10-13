@@ -3,6 +3,10 @@
   border: 1px solid transparent;
 }
 
+.dashboard-chart-plot {
+  height: 200px;
+}
+
 .dashboard-chart-card .recharts-wrapper:focus,
 .dashboard-chart-card .recharts-surface:focus,
 .dashboard-chart-card .recharts-sector:focus {
@@ -11,6 +15,10 @@
 
 .dashboard-chart-card .recharts-tooltip-wrapper {
   pointer-events: none;
+}
+
+.dashboard-chart-card ion-card-content {
+  padding-top: 0;
 }
 
 .dashboard-chart-card,
@@ -27,6 +35,28 @@
   padding: 2px 0;
   border-radius: 6px;
   font-size: 0.75rem;
+}
+
+.dashboard-chart-legend-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.dashboard-chart-legend-actions:empty {
+  display: none;
+}
+
+.dashboard-chart-legend-actions ion-button {
+  height: 24px;
+  min-height: 24px;
+  margin: 0;
+  font-size: 0.75rem;
+  text-transform: none;
+  --padding-start: 0;
+  --padding-end: 8px;
+  --padding-top: 0;
+  --padding-bottom: 0;
 }
 
 .dashboard-chart-legend-link {
@@ -51,55 +81,60 @@ body.dark .dashboard-chart-card {
   box-shadow: 0 8px 24px rgba(4, 6, 20, 0.22);
 }
 
-.dashboard-view-controls {
-  display: grid;
-  gap: 12px;
-  margin-bottom: 20px;
+.dashboard-chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 0;
 }
 
-.dashboard-account-filter {
-  --dashboard-filter-height: 46px;
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 112px;
-  align-items: stretch;
-  gap: 8px;
+.dashboard-chart-toolbar-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 4px;
+}
+
+.dashboard-kind-trigger {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  height: 44px;
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 400;
+  text-transform: none;
+  --color: var(--ion-color-medium);
+  --padding-start: 4px;
+  --padding-end: 4px;
+}
+
+.dashboard-kind-trigger::part(native) {
+  justify-content: flex-start;
 }
 
 .dashboard-currency-select {
+  width: 52px;
+  min-height: 44px;
+  height: 44px;
+  padding: 0 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--ion-color-medium);
   --padding-top: 0;
   --padding-bottom: 0;
-  width: 100%;
-  min-width: 0;
-  box-sizing: border-box;
-  height: var(--dashboard-filter-height);
-  min-height: var(--dashboard-filter-height);
-  padding: 0 12px;
-  border: 1px solid var(--ion-border-color, var(--ion-color-light-shade));
-  border-radius: 12px;
-  background: var(--ion-item-background, var(--ion-background-color));
 }
 
 .dashboard-currency-select::part(wrapper) {
   justify-content: center;
 }
 
-.dashboard-kind-trigger {
-  --border-color: var(--ion-border-color, var(--ion-color-light-shade));
-  --border-width: 1px;
-  --background: var(--ion-item-background, var(--ion-background-color));
-  --border-radius: 12px;
-  --padding-start: 12px;
-  --padding-end: 12px;
-  --padding-top: 0;
-  --padding-bottom: 0;
-  --color: var(--ion-text-color);
-  min-width: 0;
-  text-transform: none;
-  font-weight: 400;
-  font-size: 1rem;
-  margin: 0;
-  height: var(--dashboard-filter-height);
-  min-height: var(--dashboard-filter-height);
+.dashboard-currency-select::part(icon) {
+  display: none;
+}
+
+.dashboard-currency-select::part(text) {
+  color: var(--ion-color-medium);
 }
 
 .dashboard-period-controls .period-control__row { margin-bottom: 0; }
@@ -110,10 +145,6 @@ body.dark .dashboard-chart-card {
 }
 
 .dashboard-chart-settings {
-  position: absolute;
-  inset-block-start: 4px;
-  inset-inline-end: 4px;
-  z-index: 1;
   --padding-start: 10px;
   --padding-end: 10px;
   flex-shrink: 0;
@@ -153,23 +184,20 @@ body.dark .dashboard-chart-card {
   white-space: normal;
 }
 
-/* The fitted list already reserves the FAB area; keep only the normal bottom gutter. */
-ion-content.app-content.dashboard-balance-content {
-  --padding-bottom: calc(var(--app-page-gutter) + env(safe-area-inset-bottom));
-}
-
 .dashboard-kind-trigger .dashboard-kind-trigger__content {
   display: flex;
   width: 100%;
   align-items: center;
-  justify-content: space-between;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 6px;
 }
 
 .dashboard-kind-trigger span {
   min-width: 0;
   text-align: start;
-  white-space: normal;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .dashboard-kind-trigger ion-icon {
@@ -178,25 +206,25 @@ ion-content.app-content.dashboard-balance-content {
 }
 
 .dashboard-kind-popover {
+  --width: 280px;
   --max-width: calc(100vw - 32px);
 }
 
 .dashboard-kind-options {
-  display: grid;
-  padding: 8px;
-  gap: 4px;
+  padding-block: 0;
 }
 
 .dashboard-kind-option {
-  margin: 0;
-  min-width: 0;
-  min-height: 44px;
-  --border-radius: 8px;
-  text-transform: none;
+  --min-height: 48px;
+  --background: var(--ion-item-background, var(--ion-background-color));
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+}
+
+.dashboard-kind-option ion-label {
   white-space: normal;
 }
 
-.dashboard-kind-option span {
-  width: 100%;
-  text-align: start;
+.dashboard-kind-option ion-icon {
+  font-size: 20px;
 }

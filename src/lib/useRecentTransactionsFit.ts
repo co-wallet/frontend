@@ -3,7 +3,7 @@ import { fitRecentTransactions } from './fitRecentTransactions'
 
 export function useRecentTransactionsFit(contentKey: unknown, status: string) {
   const ref = useRef<HTMLIonCardElement>(null)
-  const [fit, setFit] = useState({ count: 0, compact: true, hidden: true })
+  const [fit, setFit] = useState({ count: 0, compact: true })
 
   useEffect(() => {
     const card = ref.current
@@ -45,9 +45,8 @@ export function useRecentTransactionsFit(contentKey: unknown, status: string) {
         const count = compact && rows.length > 0
           ? fitRecentTransactions(available, 0, footerHeight, rowHeights)
           : fullCount
-        const hidden = footerHeight > available
-        setFit((previous) => previous.count === count && previous.compact === compact && previous.hidden === hidden
-          ? previous : { count, compact, hidden })
+        setFit((previous) => previous.count === count && previous.compact === compact
+          ? previous : { count, compact })
       }
       // Batch layout reads after React/Ionic updates; never recurse through promise microtasks.
       const scheduleMeasure = () => {

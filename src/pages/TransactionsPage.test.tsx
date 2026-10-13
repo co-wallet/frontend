@@ -240,7 +240,7 @@ describe('transaction account balance', () => {
   })
 
   it('shows zero when no accounts match instead of using cached summary data', () => {
-    expect(balanceCard('/transactions?account_kinds=none')).toContain('>0 $</strong>')
+    expect(balanceCard('/transactions?account_kinds=deposit')).toContain('>0 $</strong>')
     expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
   })
 })
@@ -406,6 +406,54 @@ describe('transaction analytics grouping', () => {
 
 
 describe('active filter summary', () => {
+  it('shows and applies the uncategorized filter to list and analytics', () => {
+    const markup = renderPage('/transactions?without_category=true&account_kinds=all&include_shared=true')
+    expect(markup).toContain('Категории: Без категории. Открыть фильтры')
+    expect(markup).toContain('Фильтры, активно: 1')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ withoutCategory: true })
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ without_category: true })
+  })
+  it('separates categories and tags from explicit accounts and hides overridden restrictions', () => {
+    const markup = renderPage('/transactions?category_ids=c1&tag_ids=t1&account_ids=a1&account_kinds=spending')
+    const primary = markup.match(/aria-label="Категории и теги"[\s\S]*?<\/div>/)![0]
+    const secondary = markup.match(/aria-label="Счета и ограничения"[\s\S]*?<\/div>/)![0]
+    expect(primary).toContain('Категории: Продукты')
+    expect(primary).toContain('Теги: #путешествия')
+    expect(primary).not.toContain('Счета:')
+    expect(secondary).toContain('Счета: Личная')
+    expect(secondary).not.toContain('Текущие средства')
+    expect(secondary).not.toContain('общие счета')
+    expect(markup).toContain('Фильтры, активно: 5')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a1'] })
+  })
+  it('puts category and tag selections before secondary account restrictions', () => {
+    const markup = renderPage('/transactions/filtered/1?category_ids=c1&tag_ids=t1&account_kinds=deposit')
+    const summary = markup.slice(markup.indexOf('class="transactions-filter-status"'), markup.indexOf('class="summary-strip"'))
+    expect(summary.indexOf('Категории: Продукты')).toBeLessThan(summary.indexOf('Вклад · личные счета'))
+    expect(summary.indexOf('Теги: #путешествия')).toBeLessThan(summary.indexOf('Вклад · личные счета'))
+    expect(summary).not.toContain('Фильтры:')
+    expect(summary).not.toContain('transactions-filter-status__label')
+  })
+
+  it.each(['category_ids=c1', 'tag_ids=t1', 'account_ids=a3'])('uses only the entity filter with unrestricted types and access: %s', (entity) => {
+    const markup = renderPage(`/transactions/filtered/1?${entity}&account_kinds=all&include_shared=true`)
+    const summary = markup.slice(markup.indexOf('class="transactions-filter-status"'), markup.indexOf('class="summary-strip"'))
+    expect(summary).not.toContain('Типов средств')
+    expect(summary).not.toContain('личные')
+    expect(summary).not.toContain('общие')
+    expect(markup).toContain('Фильтры, активно: 1')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: entity.startsWith('account') ? ['a3'] : ['a1', 'a2', 'a3'] })
+  })
+
+  it('omits unrestricted kinds and access from the summary and badge even with all five kinds selected', () => {
+    const markup = renderPage('/transactions/filtered/1?category_ids=c1&account_kinds=spending,savings,deposit,savings_account,investment&include_shared=true')
+    const summary = markup.slice(markup.indexOf('class="transactions-filter-status"'), markup.indexOf('class="summary-strip"'))
+    expect(summary).toContain('Продукты')
+    expect(summary).not.toContain('Типов средств')
+    expect(summary).not.toContain('личные и общие')
+    expect(markup).toContain('Фильтры, активно: 1')
+  })
   it('shows a clear unfiltered state without empty groups', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('Текущие средства · личные счета')
@@ -420,7 +468,7 @@ describe('active filter summary', () => {
     expect(markup).toContain('aria-label="Счета:')
     expect(markup).toContain('aria-label="Категории:')
     expect(markup).toContain('aria-label="Теги:')
-    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(4)
+    expect(markup.match(/\. Открыть фильтры"/g)).toHaveLength(3)
     expect(markup).toContain('Личная')
     expect(markup).toContain('Продукты')
     expect(markup).toContain('#путешествия')
@@ -434,7 +482,7 @@ describe('active filter summary', () => {
     expect(markup).not.toContain('Сбросить все')
   })
 
-  it('intersects selected account kinds with shared visibility and explicit accounts', () => {
+  it('intersects explicit accounts with kinds and shared visibility', () => {
     renderPage('/transactions?account_ids=a2,a3&account_kinds=investment&include_shared=true')
     expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a3'] })
     const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')
@@ -449,11 +497,14 @@ describe('active filter summary', () => {
     expect(summary?.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a2' })
   })
 
-  it('disables list and analytics requests when no account kinds are selected', () => {
-    const markup = renderPage('/transactions?account_kinds=none')
-    expect(markup).toContain('Типы средств не выбраны')
-    expect(pagination.options?.enabled).toBe(false)
-    expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
+  it.each(['all', 'none'])('requests all kinds for an empty selection encoded as %s', (kinds) => {
+    const markup = renderPage(`/transactions?account_kinds=${kinds}`)
+    expect(markup).toContain('личные счета')
+    expect(pagination.options?.enabled).toBe(true)
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summary.enabled).toBe(true)
+    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a1,a3', account_kinds: 'all' })
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a1', 'a3'] })
   })
 
   it('passes independent transfer preferences to summary analytics', () => {

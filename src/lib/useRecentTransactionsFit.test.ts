@@ -3,7 +3,7 @@ import { useRecentTransactionsFit as runFitHook } from './useRecentTransactionsF
 
 const hooks = vi.hoisted(() => ({
   card: null as unknown,
-  fit: { count: 0, compact: true, hidden: true },
+  fit: { count: 0, compact: true },
   deps: undefined as unknown[] | undefined,
   effect: undefined as (() => void | (() => void)) | undefined,
   cleanup: undefined as (() => void) | undefined,
@@ -49,7 +49,7 @@ beforeEach(() => {
   hooks.deps = undefined
   hooks.effect = undefined
   hooks.cleanup = undefined
-  hooks.fit = { count: 0, compact: true, hidden: true }
+  hooks.fit = { count: 0, compact: true }
   top = 700
   padding = 0
   fabTop = undefined
@@ -83,16 +83,22 @@ beforeEach(() => {
 afterEach(() => { hooks.cleanup?.(); vi.unstubAllGlobals() })
 
 describe('useRecentTransactionsFit', () => {
+  it.each([950, 1200])('hides preview rows when no footer space fits at top %s without hiding the card', async (cardTop) => {
+    top = cardTop
+    await render()
+    flushFrame()
+    expect(hooks.fit).toEqual({ count: 0, compact: true })
+  })
   it('restores rows after expanding and collapsing filters without a render loop', async () => {
     await render()
     flushFrame()
-    expect(hooks.fit).toEqual({ count: 2, compact: false, hidden: false })
+    expect(hooks.fit).toEqual({ count: 2, compact: false })
     await render()
     expect(frames.size).toBe(0)
     top = 940
     notifyResize()
     flushFrame()
-    expect(hooks.fit).toEqual({ count: 0, compact: true, hidden: false })
+    expect(hooks.fit).toEqual({ count: 0, compact: true })
     await render()
     top = 700
     notifyResize()
@@ -110,7 +116,7 @@ describe('useRecentTransactionsFit', () => {
     fabTop = 834
     await render()
     flushFrame()
-    expect(hooks.fit).toEqual({ count: 1, compact: false, hidden: false })
+    expect(hooks.fit).toEqual({ count: 1, compact: false })
   })
 
   it('uses all available space for rows when the card has no header', async () => {
@@ -120,7 +126,7 @@ describe('useRecentTransactionsFit', () => {
     card.querySelector = (selector) => selector.endsWith('header') ? null : querySelector(selector)
     await render()
     flushFrame()
-    expect(hooks.fit).toEqual({ count: 2, compact: false, hidden: false })
+    expect(hooks.fit).toEqual({ count: 2, compact: false })
   })
 
   it.each([
@@ -132,7 +138,7 @@ describe('useRecentTransactionsFit', () => {
     top = 1000 - test.available - 2
     await render()
     flushFrame()
-    expect(hooks.fit).toEqual({ count: test.count, compact: test.compact, hidden: false })
+    expect(hooks.fit).toEqual({ count: test.count, compact: test.compact })
   })
 
   it('batches resize notifications into one frame and cancels it on unmount', async () => {

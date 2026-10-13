@@ -23,11 +23,15 @@ import {
   IonSelectOption,
   IonText,
   IonRouterLink,
+  IonItem,
+  IonLabel,
+  IonList,
 } from '@ionic/react'
 import {
   optionsOutline,
   swapHorizontalOutline,
-  chevronDownOutline,
+  funnelOutline,
+  checkmark,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
@@ -40,6 +44,7 @@ import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/Category
 import { QuickTransactionFab } from '@/components/QuickTransactionFab'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import { filterAccountsByKinds } from '@/lib/accountFilters'
+import { AllAccountKindsButton } from '@/components/AllAccountKindsButton'
 import {
   dashboardEntryColor,
   DASHBOARD_TOOLTIP_WIDTH,
@@ -123,51 +128,53 @@ function ChartBlock({
   return (
     <>
       {chartEntries.length > 0 && (
-        <ResponsiveContainer width="100%" height={200}>
-          <PieChart>
-            <Pie
-              {...NON_ANIMATED_PIE_PROPS}
-              data={chartEntries}
-              dataKey="chartAmount"
-              nameKey="name"
-              cx="50%"
-              cy="50%"
-              outerRadius={80}
-              innerRadius={40}
-              onMouseMove={(entry, index, event) => positionTooltip(
-                event, `${entry.transactionsHref ?? entry.name}:${index}`,
-              )}
-              onMouseLeave={resetTooltipPosition}
-              onClick={(entry, index, event) => {
-                positionTooltip(event, `${entry.transactionsHref ?? entry.name}:${index}`)
-                if (entry.transactionsHref) {
-                  tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
-                  return
-                }
-                tooltip.onSectorClick()
-              }}
-            >
-              {chartEntries.map((entry, i) => (
-                <Cell
-                  key={`${entry.name}-${i}`}
-                  fill={dashboardEntryColor(entry)}
-                />
-              ))}
-            </Pie>
-            <Tooltip
-              trigger={tooltip.trigger}
-              active={tooltip.active}
-              position={tooltipPosition}
-              allowEscapeViewBox={{ x: true, y: true }}
-              wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
-              contentStyle={tooltipStyle}
-              content={<PieChartTooltip
-                maxWidth={DASHBOARD_TOOLTIP_WIDTH}
-                formatAmount={(amount) => formatAmount(amount, sym)}
-              />}
-            />
-          </PieChart>
-        </ResponsiveContainer>
+        <div className="dashboard-chart-plot">
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart>
+              <Pie
+                {...NON_ANIMATED_PIE_PROPS}
+                data={chartEntries}
+                dataKey="chartAmount"
+                nameKey="name"
+                cx="50%"
+                cy="50%"
+                outerRadius={80}
+                innerRadius={40}
+                onMouseMove={(entry, index, event) => positionTooltip(
+                  event, `${entry.transactionsHref ?? entry.name}:${index}`,
+                )}
+                onMouseLeave={resetTooltipPosition}
+                onClick={(entry, index, event) => {
+                  positionTooltip(event, `${entry.transactionsHref ?? entry.name}:${index}`)
+                  if (entry.transactionsHref) {
+                    tooltip.onNavigableSectorClick(entry.transactionsHref, () => onNavigate(entry.transactionsHref!))
+                    return
+                  }
+                  tooltip.onSectorClick()
+                }}
+              >
+                {chartEntries.map((entry, i) => (
+                  <Cell
+                    key={`${entry.name}-${i}`}
+                    fill={dashboardEntryColor(entry)}
+                  />
+                ))}
+              </Pie>
+              <Tooltip
+                trigger={tooltip.trigger}
+                active={tooltip.active}
+                position={tooltipPosition}
+                allowEscapeViewBox={{ x: true, y: true }}
+                wrapperStyle={{ width: DASHBOARD_TOOLTIP_WIDTH }}
+                contentStyle={tooltipStyle}
+                content={<PieChartTooltip
+                  maxWidth={DASHBOARD_TOOLTIP_WIDTH}
+                  formatAmount={(amount) => formatAmount(amount, sym)}
+                />}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       )}
       <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
@@ -231,7 +238,7 @@ function ChartBlock({
           )
         })}
       </div>
-      <div style={{ marginTop: 8, display: 'flex', gap: 12 }}>
+      <div className="dashboard-chart-legend-actions">
         {visibleCount < legendEntries.length && (
           <IonButton fill="clear" size="small" onClick={() => setVisibleCount((n) => n + LEGEND_PAGE_SIZE)}>
             Показать ещё ({legendEntries.length - visibleCount})
@@ -279,7 +286,7 @@ export function DashboardPage() {
     date_to: dateTo,
     currency: displayCurrency,
     account_ids: filteredAccountIds,
-    account_kinds: selectedKinds.join(','),
+    account_kinds: selectedKinds.length ? selectedKinds.join(',') : 'all',
   }
   const transactionFilter: TransactionFilter = {
     accountKinds: selectedKinds,
@@ -288,9 +295,7 @@ export function DashboardPage() {
     ...(!transferVisibility.income ? { includeTransferIncome: false } : {}),
   }
   const transactionPeriod = { period, periodOffset, customFrom, customTo }
-  const recentTransactionFilter: TransactionFilter = chartMode === 'balance'
-    ? {}
-    : { dateFrom, dateTo }
+  const recentTransactionFilter: TransactionFilter = { dateFrom, dateTo }
   const allTransactionsHref = filteredTransactionsHref(transactionFilter, transactionPeriod)
 
   function addTransaction(type: TransactionType) {
@@ -417,82 +422,12 @@ export function DashboardPage() {
       <PageHeader title="co-wallet" />
 
       <AppContent fullscreen withFab
-        className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
+        className="dashboard-content"
         fixed={
           <QuickTransactionFab onSelect={addTransaction} />
         }
       >
         <div>
-          <section className="dashboard-view-controls" aria-label="Параметры отображения">
-            {/* Account filter */}
-            <div className="dashboard-account-filter">
-              <IonButton
-                id="dashboard-kind-filter"
-                className="dashboard-kind-trigger"
-                fill="outline"
-                aria-label="Тип средств"
-                aria-haspopup="dialog"
-              >
-                <span className="dashboard-kind-trigger__content"><span>{selectedKinds.length === 0 ? 'Типы не выбраны' : selectedKinds.length === 1
-                  ? accountKindShortLabel(selectedKinds[0])
-                  : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
-                    ? 'Все типы средств'
-                    : `Типов средств: ${selectedKinds.length}`}</span>
-                <IonIcon icon={chevronDownOutline} aria-hidden="true" /></span>
-              </IonButton>
-              <IonPopover
-                trigger="dashboard-kind-filter"
-                className="dashboard-kind-popover"
-                reference="trigger"
-                size="cover"
-                side="bottom"
-                alignment="start"
-                arrow={false}
-                aria-label="Тип средств"
-              >
-                <div className="dashboard-kind-options">
-                  {ACCOUNT_KIND_OPTIONS.map((option) => {
-                    const selected = selectedKinds.includes(option.value)
-                    return (
-                      <IonButton
-                        key={option.value}
-                        className="dashboard-kind-option"
-                        fill={selected ? 'solid' : 'clear'}
-                        color={selected ? 'primary' : 'medium'}
-                        aria-pressed={selected}
-                        onClick={() => setSelectedKinds((previous) => previous.includes(option.value)
-                          ? previous.filter((kind) => kind !== option.value)
-                          : [...previous, option.value])}
-                      >
-                        <span>{option.shortLabel}</span>
-                      </IonButton>
-                    )
-                  })}
-                </div>
-              </IonPopover>
-              <IonSelect
-                aria-label="Валюта"
-                interface="popover"
-                value={displayCurrency}
-                onIonChange={(e) => {
-                  const code = e.detail.value as string
-                  if (code && code !== displayCurrency) {
-                    setDisplayCurrency(code)
-                  }
-                }}
-                selectedText={displayCurrency}
-                className="dashboard-currency-select"
-              >
-                {currencies.map((c) => (
-                  <IonSelectOption key={c.code} value={c.code}>
-                    {c.symbol} {c.code}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
-            </div>
-
-          </section>
-
           {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
             <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {displayCurrency}.</p></IonText>}
           {/* Summary cards */}
@@ -502,29 +437,97 @@ export function DashboardPage() {
             error: accountsError || (hasAnalyticsAccounts && summaryError),
           }))} />
 
-          {chartMode !== 'balance' && (
-            <section className="dashboard-period-controls" aria-label="Период доходов и расходов">
-              <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
-                if (next.period !== undefined) setPeriod(next.period)
-                if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
-                if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
-                if (next.customTo !== undefined) setCustomTo(next.customTo)
-              }} />
-            </section>
-          )}
+          <section className="dashboard-period-controls" aria-label="Период транзакций">
+            <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
+              if (next.period !== undefined) setPeriod(next.period)
+              if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
+              if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
+              if (next.customTo !== undefined) setCustomTo(next.customTo)
+            }} />
+          </section>
 
           {/* Pie chart block */}
           <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: '0 0 16px 0' }}>
-            <IonButton
-              id="dashboard-chart-settings"
-              className="dashboard-chart-settings"
-              fill="clear"
-              color="medium"
-              aria-label={chartSettingsLabels[chartMode]}
-              aria-haspopup="dialog"
-            >
-              <IonIcon slot="icon-only" icon={optionsOutline} />
-            </IonButton>
+            <div className="dashboard-chart-toolbar" role="group" aria-label="Параметры отображения">
+              <IonButton
+                id="dashboard-kind-filter"
+                className="dashboard-kind-trigger"
+                fill="clear"
+                color="medium"
+                aria-label="Тип средств"
+                aria-haspopup="dialog"
+              >
+                <span className="dashboard-kind-trigger__content"><span>{selectedKinds.length === 0 ? 'Все типы средств' : selectedKinds.length === 1
+                  ? accountKindShortLabel(selectedKinds[0])
+                  : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
+                    ? 'Все типы средств'
+                    : `Типов средств: ${selectedKinds.length}`}</span>
+                <IonIcon icon={funnelOutline} aria-hidden="true" /></span>
+              </IonButton>
+              <IonPopover
+                trigger="dashboard-kind-filter"
+                className="dashboard-kind-popover"
+                reference="trigger"
+                side="bottom"
+                alignment="center"
+                aria-label="Тип средств"
+              >
+                <IonList className="dashboard-kind-options">
+                  <AllAccountKindsButton selectedKinds={selectedKinds} onChange={setSelectedKinds}
+                    className="dashboard-kind-option" />
+                  {ACCOUNT_KIND_OPTIONS.map((option) => {
+                    const selected = selectedKinds.includes(option.value)
+                    return (
+                      <IonItem button detail={false}
+                        key={option.value}
+                        className="dashboard-kind-option"
+                        role="checkbox"
+                        aria-label={option.shortLabel}
+                        aria-checked={selected}
+                        onClick={() => setSelectedKinds((previous) => previous.includes(option.value)
+                          ? previous.filter((kind) => kind !== option.value)
+                          : [...previous, option.value])}
+                      >
+                        <IonLabel>{option.shortLabel}</IonLabel>
+                        {selected && <IonIcon slot="end" icon={checkmark} color="primary" aria-hidden="true" />}
+                      </IonItem>
+                    )
+                  })}
+                </IonList>
+              </IonPopover>
+              <div className="dashboard-chart-toolbar-actions">
+                <IonSelect
+                  aria-label="Валюта"
+                  color="medium"
+                  interface="popover"
+                  value={displayCurrency}
+                  onIonChange={(e) => {
+                    const code = e.detail.value as string
+                    if (code && code !== displayCurrency) {
+                      setDisplayCurrency(code)
+                    }
+                  }}
+                  selectedText={displayCurrency}
+                  className="dashboard-currency-select"
+                >
+                  {currencies.map((c) => (
+                    <IonSelectOption key={c.code} value={c.code}>
+                      {c.symbol} {c.code}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+                <IonButton
+                  id="dashboard-chart-settings"
+                  className="dashboard-chart-settings"
+                  fill="clear"
+                  color="medium"
+                  aria-label={chartSettingsLabels[chartMode]}
+                  aria-haspopup="dialog"
+                >
+                  <IonIcon slot="icon-only" icon={optionsOutline} />
+                </IonButton>
+              </div>
+            </div>
             <IonCardContent>
               <ChartBlock
                 data={activePieData}

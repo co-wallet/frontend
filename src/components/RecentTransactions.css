@@ -33,18 +33,6 @@
   pointer-events: none;
 }
 
-.app-content .recent-transactions--hidden {
-  position: absolute;
-  width: 100%;
-  visibility: hidden;
-  pointer-events: none;
-}
-
 .recent-transactions-slot {
   position: relative;
-}
-
-.app-content .recent-transactions--hidden {
-  max-height: 0;
-  overflow: hidden;
 }

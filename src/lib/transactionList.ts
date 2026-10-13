@@ -3,6 +3,7 @@ import type { AmountMode, AnalyticsParams } from '@/api/analytics'
 import type { Currency } from '@/api/currencies'
 import type { Transaction, TransactionFilter, TransactionType } from '@/api/transactions'
 import type { Period } from '@/store/periodStore'
+import { transactionAccountRestrictionLabels } from './accountFilters'
 
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   expense: 'Расход',
@@ -217,6 +218,7 @@ export function buildTransactionAnalyticsParams(
       tag_mode: filter.tagMode ?? 'or',
     } : {}),
     ...(filter.withoutTags ? { without_tags: true } : {}),
+    ...(filter.withoutCategory ? { without_category: true } : {}),
   }
 }
 
@@ -224,14 +226,13 @@ export function hasTransactionFilters(filter: TransactionFilter): boolean {
   return Boolean(
     filter.accountIds?.length
     || filter.types?.length
-    || filter.accountKinds !== undefined
-    || filter.includeShared === true
-    || filter.onlyShared === true
+    || transactionAccountRestrictionLabels(filter).length
     || filter.includeTransferExpenses === true
     || filter.includeTransferIncome === false
     || filter.categoryIds?.length
     || filter.tagIds?.length
     || filter.withoutTags
+    || filter.withoutCategory
   )
 }
 

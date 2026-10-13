@@ -70,10 +70,9 @@ import { useChartTheme } from '@/lib/useChartTheme'
 import { NON_ANIMATED_PIE_PROPS } from '@/lib/chartMotion'
 import { TRANSFER_CHART_COLOR } from '@/lib/dashboardChart'
 import { useAuthStore } from '@/store/authStore'
-import { accountKindShortLabel } from '@/lib/accountKind'
 import {
-  transactionAccountKinds,
-  transactionAccountScope,
+  transactionAccountRestrictionLabels,
+  resetTransactionFilter,
   transactionFilterAccounts,
 } from '@/lib/accountFilters'
 import {
@@ -322,20 +321,14 @@ export function TransactionsPage() {
   const balanceLoading = accountsQuery.isLoading || (hasEffectiveAccounts && summaryQuery.isLoading)
   const balanceError = accountsQuery.isError || (hasEffectiveAccounts && summaryQuery.isError)
   const hasFilters = hasTransactionFilters(filter)
-  const accountKinds = transactionAccountKinds(filter)
-  const accountScope = transactionAccountScope(filter)
-  const accountScopeLabel = `${accountKinds.length === 0
-    ? 'Типы средств не выбраны'
-    : accountKinds.length === 1
-      ? accountKindShortLabel(accountKinds[0])
-      : `Типов средств: ${accountKinds.length}`} · ${accountScope === 'all'
-    ? 'личные и общие счета'
-    : accountScope === 'shared' ? 'общие счета' : 'личные счета'}`
+  const accountScopeLabel = filter.accountIds?.length ? '' : transactionAccountRestrictionLabels(filter).join(' · ')
   const filterGroups = [
     { kind: 'accountIds', label: 'Счета',
       items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },
     { kind: 'categoryIds', label: 'Категории',
       items: (filter.categoryIds ?? []).map((id) => ({ id, name: categoriesById.get(id)?.name ?? 'Категория' })) },
+    { kind: 'withoutCategory', label: 'Категории',
+      items: filter.withoutCategory ? [{ id: 'uncategorized', name: 'Без категории' }] : [] },
     { kind: 'tagIds', label: 'Теги',
       items: (filter.tagIds ?? []).map((id) => ({ id, name: tags.find((tag) => tag.id === id)?.name ?? 'Тег' })) },
     { kind: 'withoutTags', label: 'Теги',
@@ -387,36 +380,36 @@ export function TransactionsPage() {
             trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
-            <span className="transactions-filter-status__label">Фильтры:</span>
             <div className="transactions-active-filters" aria-label="Активные фильтры">
-              <IonButton
-                className="transactions-filter-group"
-                fill="clear"
-                size="small"
-                onClick={() => setShowFilters(true)}
-                aria-label={`${accountScopeLabel}. Открыть фильтры`}
-                title={accountScopeLabel}
-              >
-                <span className="transactions-filter-group__name">{accountScopeLabel}</span>
-              </IonButton>
-              {filterGroups.filter((group) => group.items.length > 0).map((group) => {
-                const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
-                const remaining = group.items.length - 1
-                return (
-                  <IonButton
-                    key={group.kind}
-                    className="transactions-filter-group"
-                    fill="clear"
-                    size="small"
-                    onClick={() => setShowFilters(true)}
-                    aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
-                    title={`${group.label}: ${name}`}
-                  >
-                    <span className="transactions-filter-group__name">{name}</span>
-                    {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
-                  </IonButton>
-                )
-              })}
+              {[
+                { label: 'Категории и теги', groups: filterGroups.filter((group) => group.kind !== 'accountIds'), scope: '' },
+                { label: 'Счета и ограничения', groups: filterGroups.filter((group) => group.kind === 'accountIds'), scope: accountScopeLabel },
+              ].filter((row) => row.scope || row.groups.some((group) => group.items.length > 0)).map((row) => (
+                <div key={row.label} className="transactions-filter-line" role="group" aria-label={row.label}>
+                  {row.groups.filter((group) => group.items.length > 0).map((group) => {
+                    const name = `${group.kind === 'tagIds' ? '#' : ''}${group.items[0].name}`
+                    const remaining = group.items.length - 1
+                    return (
+                      <IonButton key={group.kind} className="transactions-filter-group" fill="clear" size="small"
+                        onClick={() => setShowFilters(true)}
+                        aria-label={`${group.label}: ${name}${remaining > 0 ? `, ещё ${remaining}` : ''}. Открыть фильтры`}
+                        title={`${group.label}: ${name}`}>
+                        <span className="transactions-filter-group__name">{name}</span>
+                        {remaining > 0 && <span className="transactions-filter-group__count">+{remaining}</span>}
+                      </IonButton>
+                    )
+                  })}
+                  {row.scope && (
+                    <IonButton className="transactions-filter-group" fill="clear" size="small"
+                      onClick={() => setShowFilters(true)} aria-label={`${row.scope}. Открыть фильтры`} title={row.scope}>
+                      <span className="transactions-filter-group__name">{row.scope}</span>
+                    </IonButton>
+                  )}
+                </div>
+              ))}
+              {!accountScopeLabel && !filterGroups.some((group) => group.items.length > 0) && (
+                <span className="transactions-filter-group__name">Все транзакции</span>
+              )}
             </div>
           </div>
 
@@ -664,7 +657,7 @@ export function TransactionsPage() {
                   ? 'Измените условия или сбросьте активные фильтры.'
                   : 'Добавьте первую операцию за выбранный период.'}
               </p>
-              <IonButton fill="outline" onClick={hasFilters ? () => setFilter({}) : () => addTransaction('expense')}>
+              <IonButton fill="outline" onClick={hasFilters ? () => setFilter(resetTransactionFilter(filter)) : () => addTransaction('expense')}>
                 {hasFilters ? 'Сбросить фильтры' : 'Добавить транзакцию'}
               </IonButton>
             </div>

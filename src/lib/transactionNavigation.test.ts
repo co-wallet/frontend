@@ -88,6 +88,13 @@ describe('tag navigation', () => {
     })
   })
 
+  it('serializes empty kinds as all and reads both current and legacy empty links', () => {
+    expect(filterToParams({ accountKinds: [] }).get('account_kinds')).toBe('all')
+    for (const value of ['all', 'none']) {
+      expect(filterFromParams(new URLSearchParams(`account_kinds=${value}`))).toEqual({ accountKinds: [] })
+    }
+  })
+
   it('clears filters without losing the period', () => {
     const params = query(filteredTransactionsHref({ accountIds: ['one'], tagIds: ['travel'], tagMode: 'and' }, period))
     const cleared = filterToParams({}, params)
@@ -119,7 +126,7 @@ describe('tag navigation', () => {
 })
 
 describe('account navigation', () => {
-  it('selects a personal account with its kind and preserves the period', () => {
+  it('selects only a personal account without kind or access restrictions and preserves the period', () => {
     const href = accountTransactionsHref({
       id: 'deposit & one',
       kind: 'deposit',
@@ -128,7 +135,7 @@ describe('account navigation', () => {
 
     expect(filterFromParams(query(href))).toEqual({
       accountIds: ['deposit & one'],
-      accountKinds: ['deposit'],
+      accountKinds: [], includeShared: true,
     })
     expect(periodFromParams(query(href), { ...period, periodOffset: 0 })).toEqual(period)
   })
@@ -143,7 +150,7 @@ describe('account navigation', () => {
     expect(href).toContain('/transactions/filtered/3?')
     expect(filterFromParams(query(href))).toEqual({
       accountIds: ['shared-account'],
-      accountKinds: ['savings_account'],
+      accountKinds: [],
       includeShared: true,
     })
   })
@@ -167,7 +174,20 @@ describe('category navigation', () => {
     expect(periodFromParams(query(href!), { ...period, periodOffset: 0 })).toEqual(period)
   })
 
-  it.each(['uncategorized', 'transfers', 'transfers:bank'])(
+  it('links uncategorized transactions without losing context or retaining incompatible category IDs', () => {
+    const href = categoryTransactionsHref('uncategorized', {
+      categoryIds: ['old'], accountKinds: ['deposit'], includeShared: true, tagIds: ['tag'],
+    }, period, '/transactions/filtered/1')!
+    expect(filterFromParams(query(href))).toEqual({
+      withoutCategory: true, accountKinds: ['deposit'], includeShared: true, tagIds: ['tag'],
+    })
+    expect(periodFromParams(query(href), period)).toEqual(period)
+    expect(href).toContain('/transactions/filtered/2?')
+    expect(filterFromParams(query(categoryTransactionsHref('food', { withoutCategory: true }, period)!)))
+      .toEqual({ categoryIds: ['food'] })
+  })
+
+  it.each(['transfers', 'transfers:bank'])(
     'does not create an invalid transaction filter for %s analytics',
     (categoryId) => {
       expect(categoryTransactionsHref(categoryId, {}, period)).toBeUndefined()

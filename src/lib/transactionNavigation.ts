@@ -3,6 +3,7 @@ import type { History, LocationDescriptorObject } from 'history'
 import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
 import type { AccountAccessMode, AccountKind } from '@/api/accounts'
+import { resetTransactionFilter } from './accountFilters'
 
 export interface TransactionPeriod {
   period: Period
@@ -80,8 +81,9 @@ export function filterFromParams(params: URLSearchParams): TransactionFilter {
   if (types?.length) filter.types = [...new Set(types)]
   if (params.get('tag_mode') === 'and') filter.tagMode = 'and'
   if (params.get('without_tags') === 'true') filter.withoutTags = true
+  if (params.get('without_category') === 'true') filter.withoutCategory = true
   const accountKinds = params.get('account_kinds')
-  if (accountKinds === 'none') filter.accountKinds = []
+  if (accountKinds === 'all' || accountKinds === 'none') filter.accountKinds = []
   else if (accountKinds) {
     const validKinds = accountKinds.split(',').filter(isAccountKind)
     if (validKinds.length) filter.accountKinds = validKinds
@@ -110,9 +112,11 @@ export function filterToParams(filter: TransactionFilter, params = new URLSearch
   if (filter.tagMode === 'and') result.set('tag_mode', 'and')
   result.delete('without_tags')
   if (filter.withoutTags) result.set('without_tags', 'true')
+  result.delete('without_category')
+  if (filter.withoutCategory) result.set('without_category', 'true')
   result.delete('account_kinds')
   if (filter.accountKinds) {
-    result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'none')
+    result.set('account_kinds', filter.accountKinds.length ? filter.accountKinds.join(',') : 'all')
   }
   for (const [key, enabled] of [
     ['include_shared', filter.includeShared],
@@ -166,9 +170,8 @@ export function accountTransactionsHref(
   sourcePath = '',
 ): string {
   return filteredTransactionsHref({
+    ...resetTransactionFilter({}),
     accountIds: [account.id],
-    accountKinds: [account.kind],
-    ...(account.accessMode === 'shared' ? { includeShared: true } : {}),
   }, period, sourcePath)
 }
 
@@ -178,10 +181,13 @@ export function categoryTransactionsHref(
   period: TransactionPeriod,
   sourcePath = '',
 ): string | undefined {
-  if (categoryId === 'uncategorized' || categoryId === 'transfers' || categoryId.startsWith('transfers:')) {
+  if (categoryId === 'uncategorized') {
+    return filteredTransactionsHref({ ...baseFilter, categoryIds: undefined, withoutCategory: true }, period, sourcePath)
+  }
+  if (categoryId === 'transfers' || categoryId.startsWith('transfers:')) {
     return undefined
   }
-  return filteredTransactionsHref({ ...baseFilter, categoryIds: [categoryId] }, period, sourcePath)
+  return filteredTransactionsHref({ ...baseFilter, withoutCategory: undefined, categoryIds: [categoryId] }, period, sourcePath)
 }
 
 function validDate(value: string): boolean {

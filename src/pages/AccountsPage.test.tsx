@@ -77,7 +77,7 @@ describe('AccountsPage list', () => {
     const markup = renderAccount({ name: 'Семейный бюджет', accessMode: 'shared', kind: 'savings_account' })
 
     expect(markup).toContain('aria-label="Транзакции по счету Семейный бюджет"')
-    expect(markup).toContain('account_ids=account-1&amp;account_kinds=savings_account&amp;include_shared=true&amp;period=')
+    expect(markup).toContain('account_ids=account-1&amp;account_kinds=all&amp;include_shared=true&amp;period=')
     expect(markup).toContain('aria-label="Редактировать счёт Семейный бюджет"')
     expect(markup).toContain('/accounts/account-1/members')
   })
