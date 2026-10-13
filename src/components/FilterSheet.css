@@ -48,142 +48,18 @@
   --padding-bottom: 24px;
 }
 
-.filter-sheet-section + .filter-sheet-section {
-  margin-top: 24px;
+.filter-sheet-fields {
+  max-width: 640px;
+  margin-inline: auto;
 }
 
-.filter-sheet-section__heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.filter-sheet-section__title {
-  display: block;
-  color: var(--ion-text-color);
+.filter-sheet-tag-select {
+  width: 100%;
+  min-height: 44px;
+  padding-inline: 12px;
+  border: 1px solid var(--ion-border-color, var(--ion-color-light-shade));
+  border-radius: 10px;
   font-size: 0.875rem;
-  font-weight: 650;
-}
-
-.filter-sheet-options {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 8px;
-}
-
-.filter-sheet-account-scope {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 8px;
-}
-
-.filter-sheet-account-scope > ion-label {
-  color: var(--transaction-secondary-text);
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-.filter-sheet-account-scope ion-segment {
-  min-height: 44px;
-  padding: 3px;
-  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.22);
-  border-radius: 11px;
-  background: rgba(var(--ion-color-primary-rgb), 0.08);
-}
-
-.filter-sheet-account-scope ion-segment-button {
-  min-width: 0;
-  min-height: 36px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-transform: none;
-  --color: var(--transaction-secondary-text);
-  --color-checked: var(--ion-color-primary);
-  --indicator-color: var(--transaction-action-background);
-  --indicator-box-shadow: none;
-}
-
-.filter-sheet-option {
-  min-height: 44px;
-  margin: 0;
-  text-transform: none;
-  --border-radius: 999px;
-  --padding-start: 12px;
-  --padding-end: 12px;
-}
-
-.filter-sheet-option[fill='outline'] {
-  --border-color: var(--transaction-transfer-text);
-  --color: var(--transaction-transfer-text);
-}
-
-.filter-sheet-option[fill='solid'] {
-  --background: var(--transaction-action-background);
-  --color: #ffffff;
-}
-
-.filter-sheet-option__content {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.filter-sheet-search {
-  padding: 8px 0 0;
-}
-
-.filter-sheet-expand {
-  min-height: 44px;
-  margin: 4px 0 0;
-  text-transform: none;
-  --padding-start: 0;
-  --padding-end: 8px;
-}
-
-.filter-sheet-empty {
-  display: block;
-  margin-top: 12px;
-}
-
-.filter-sheet-tag-mode-control {
-  display: flex;
-  flex: 0 0 auto;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 4px;
-}
-
-.filter-sheet-tag-mode__label {
-  color: var(--transaction-secondary-text);
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1;
-}
-
-.filter-sheet-tag-mode {
-  width: 176px;
-  min-height: 44px;
-  padding: 3px;
-  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.22);
-  border-radius: 11px;
-  background: rgba(var(--ion-color-primary-rgb), 0.08);
-}
-
-.filter-sheet-tag-mode ion-segment-button {
-  min-width: 0;
-  min-height: 36px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  text-transform: none;
-  --color: var(--transaction-secondary-text);
-  --color-checked: #ffffff;
-  --indicator-color: var(--transaction-action-background);
-  --indicator-box-shadow: none;
 }
 
 .filter-sheet-footer {
@@ -213,20 +89,4 @@
   .filter-sheet-modal {
     --height: 92%;
   }
-}
-
-.filter-sheet-hidden {
-  margin-top: 12px;
-}
-
-.filter-sheet-hidden summary {
-  min-height: 44px;
-  padding-block: 12px;
-  color: var(--ion-color-primary);
-  cursor: pointer;
-}
-
-.filter-sheet-hidden summary:focus-visible {
-  outline: 2px solid var(--ion-color-primary);
-  outline-offset: 2px;
 }

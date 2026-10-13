@@ -1,226 +1,172 @@
-import type { ReactNode } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { FilterSheet } from '@/components/FilterSheet'
+import { FilterSheet } from './FilterSheet'
+import type { FilterMultiSelect } from './FilterMultiSelect'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 
-const categoryFixture = vi.hoisted(() => ({ emptyType: '', onlyHidden: false }))
-beforeEach(() => {
-  categoryFixture.emptyType = ''
-  categoryFixture.onlyHidden = false
-})
-
-vi.mock('@ionic/react', async (importOriginal) => ({
-  ...await importOriginal<typeof import('@ionic/react')>(),
-  IonModal: ({ children, isOpen }: { children: ReactNode; isOpen: boolean }) => <div data-open={isOpen}>{children}</div>,
+const controls = vi.hoisted(() => ({
+  state: [] as unknown[], cursor: 0,
+  fields: new Map<string, ComponentProps<typeof FilterMultiSelect>>(),
+  buttons: new Map<string, () => void>(),
 }))
-
-vi.mock('@tanstack/react-query', () => ({
-  useQuery: ({ queryKey }: { queryKey: string[] }) => {
-    if (queryKey[0] === 'categories' && queryKey[1] === categoryFixture.emptyType) return { data: [] }
-    if (queryKey[0] === 'accounts') {
-      return { data: [{
-        id: 'account-1', name: 'Личная', icon: null, kind: 'spending', accessMode: 'personal',
-      }, {
-        id: 'account-shared', name: 'Общая', icon: null, kind: 'spending', accessMode: 'shared',
-      }] }
-    }
-    if (queryKey[0] === 'categories' && queryKey[1] === 'expense') {
-      return {
-        data: [{
-          id: 'category-1',
-          name: 'Продукты',
-          icon: 'preset:groceries',
-          type: 'expense',
-        }, { id: 'category-hidden', name: 'Архивная', icon: null, type: 'expense', hidden: true }].filter((category) => !categoryFixture.onlyHidden || category.hidden),
-      }
-    }
-    if (queryKey[0] === 'categories' && queryKey[1] === 'income') {
-      return { data: [
-        { id: 'income-1', name: 'Зарплата', icon: null, type: 'income', hidden: false },
-        { id: 'income-hidden', name: 'Старая работа', icon: null, type: 'income', hidden: true },
-      ].filter((category) => !categoryFixture.onlyHidden || category.hidden) }
-    }
-    if (queryKey[0] === 'tags') {
-      return { data: [{ id: 'tag-1', name: 'дом' }, { id: 'tag-hidden', name: 'архив', hidden: true }] }
-    }
-    return { data: [] }
+vi.mock('react', async (importOriginal) => ({
+  ...await importOriginal<typeof import('react')>(),
+  useState: (initial: unknown) => {
+    const index = controls.cursor++
+    if (!(index in controls.state)) controls.state[index] = initial
+    return [controls.state[index], (next: unknown) => {
+      controls.state[index] = typeof next === 'function' ? next(controls.state[index]) : next
+    }]
   },
 }))
-
-describe('FilterSheet', () => {
-  it.each([false, true])('marks the all-kinds option selected only for a complete selection: %s', (all) => {
-    const markup = renderToStaticMarkup(<FilterSheet
-      value={all ? { accountKinds: ACCOUNT_KIND_OPTIONS.map((option) => option.value) } : {}}
-      onChange={vi.fn()} />)
-    expect(markup).toContain(`aria-label="Все типы средств" aria-pressed="${all}"`)
-    expect(markup).toContain('value="personal"')
-  })
-  it('keeps dates in the period control and announces the active filter count', () => {
-    const markup = renderToStaticMarkup(
-      <FilterSheet
-        value={{
-          accountIds: ['account-1'],
-          categoryIds: ['category-1'],
-          tagIds: ['tag-1'],
-          tagMode: 'and',
-        }}
-        onChange={vi.fn()}
-      />,
-    )
-
-    expect(markup).toContain('aria-label="Фильтры, активно: 3"')
-    expect(markup).toContain('slot="icon-only"')
-    expect(markup).not.toContain('filter-sheet-trigger__label')
-    expect(markup).not.toContain('Период с')
-    expect(markup).not.toContain('Период по')
-    expect(markup).toContain('Тип средств')
-    expect(markup).toContain('Доступ к счёту')
-    expect(markup).toContain('Личные')
-    expect(markup).toContain('Общие')
-    expect(markup).toContain('Все')
-    expect(markup).not.toContain('Переводы в суммах')
-    expect(markup).not.toContain('Учитывать в расходах')
-    expect(markup).not.toContain('Учитывать в доходах')
-    expect(markup).toContain('value="personal"')
-  })
-})
-
-it('shows only shared concrete accounts for the shared account scope', () => {
-  const markup = renderToStaticMarkup(
-    <FilterSheet
-      value={{ includeShared: true, onlyShared: true }}
-      onChange={vi.fn()}
-    />,
-  )
-
-  expect(markup).toContain('aria-label="Фильтры, активно: 1"')
-  expect(markup).toContain('value="shared"')
-  expect(markup).toContain('Общая')
-  expect(markup).not.toContain('>Личная<')
-})
-
-it('does not count transfer display settings as filters', () => {
-  const markup = renderToStaticMarkup(
-    <FilterSheet
-      value={{ includeTransferExpenses: true, includeTransferIncome: false }}
-      onChange={vi.fn()}
-    />,
-  )
-
-  expect(markup).toContain('aria-label="Фильтры"')
-  expect(markup).not.toContain('Фильтры, активно:')
-})
-
-it('counts the summary transaction type selection as a filter', () => {
-  const markup = renderToStaticMarkup(
-    <FilterSheet value={{ types: ['expense', 'transfer'] }} onChange={vi.fn()} />,
-  )
-
-  expect(markup).toContain('aria-label="Фильтры, активно: 1"')
-})
-
-it('puts hidden categories and tags in separate closed disclosures', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
-  const disclosures = markup.match(/<details[^>]*>.*?<\/details>/g) ?? []
-  expect(disclosures).toHaveLength(3)
-  expect(disclosures[0]).toContain('Скрытые категории (1)')
-  expect(disclosures[0]).toContain('Архивная')
-  expect(disclosures[1]).toContain('Скрытые категории (1)')
-  expect(disclosures[1]).toContain('Старая работа')
-  expect(disclosures[2]).toContain('Скрытые теги (1)')
-  expect(disclosures[2]).toContain('#архив')
-  expect(disclosures.join('')).not.toMatch(/<details[^>]* open/)
-  const visibleMarkup = markup.replace(/<details[^>]*>.*?<\/details>/g, '')
-  expect(visibleMarkup).toContain('Продукты')
-  expect(visibleMarkup).toContain('Зарплата')
-  expect(visibleMarkup).not.toContain('Старая работа')
-  expect(visibleMarkup).toContain('#дом')
-  expect(visibleMarkup).not.toContain('Архивная')
-  expect(visibleMarkup).not.toContain('#архив')
-})
-
-it('separates expense and income options into labelled sections with a shared selection', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{ categoryIds: ['category-1', 'income-1', 'income-hidden'] }} onChange={vi.fn()} />)
-  const expense = markup.match(/<section[^>]*aria-labelledby="filter-expense-categories-title".*?<\/section>/)?.[0] ?? ''
-  const income = markup.match(/<section[^>]*aria-labelledby="filter-income-categories-title".*?<\/section>/)?.[0] ?? ''
-  expect(expense).toContain('Категории расходов')
-  expect(expense).toContain('Продукты')
-  expect(expense).toContain('Архивная')
-  expect(expense).not.toContain('Зарплата')
-  expect(expense).not.toContain('Старая работа')
-  expect(expense).not.toContain('выбрано:')
-  expect(income).toContain('Категории доходов')
-  expect(income).toContain('Зарплата')
-  expect(income).toContain('Старая работа')
-  expect(income).not.toContain('Продукты')
-  expect(income).not.toContain('Архивная')
-  expect(income).not.toContain('<details')
-  expect(expense.match(/aria-pressed="true"/g)).toHaveLength(1)
-  expect(income.match(/aria-pressed="true"/g)).toHaveLength(2)
-  expect(markup).toContain('aria-label="Фильтры, активно: 1"')
-})
-
-it.each(['expense', 'income'])('omits an empty %s group', (type) => {
-  categoryFixture.emptyType = type
-  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
-  expect(markup).not.toContain(`filter-${type}-categories-title`)
-  expect(markup).toContain(`filter-${type === 'expense' ? 'income' : 'expense'}-categories-title`)
-})
-
-it('keeps groups with only hidden categories available', () => {
-  categoryFixture.onlyHidden = true
-  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
-  expect(markup).toContain('Категории расходов')
-  expect(markup).toContain('Категории доходов')
-  expect(markup).toContain('Архивная')
-  expect(markup).toContain('Старая работа')
-  expect(markup).not.toContain('<span>Продукты</span>')
-  expect(markup).not.toContain('<span>Зарплата</span>')
-  expect(markup).not.toMatch(/<details[^>]* open/)
-})
-
-it('shows selected hidden filters outside closed disclosures without duplicate options or checkmarks', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{ categoryIds: ['category-hidden'], tagIds: ['tag-hidden'] }} onChange={vi.fn()} />)
-  const visibleMarkup = markup.replace(/<details[^>]*>.*?<\/details>/g, '')
-  expect(visibleMarkup).toContain('<span>Архивная</span>')
-  expect(visibleMarkup).toContain('<span>#архив</span>')
-  expect(markup.match(/<span>Архивная<\/span>/g)).toHaveLength(1)
-  expect(markup.match(/<span>#архив<\/span>/g)).toHaveLength(1)
-  expect(markup).not.toContain('filter-sheet-option__check')
-  expect(markup).not.toMatch(/<details[^>]* open/)
-})
-
-it('keeps a selected concrete account visible outside the current account scope', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{ accountIds: ['account-shared'] }} onChange={vi.fn()} />)
-  expect(markup).toContain('<span>Общая</span>')
-  expect(markup).toContain('<span>Личная</span>')
-  expect(markup.match(/aria-pressed="true"/g)).toHaveLength(2)
-})
-
-it('provides an independent search field for each option list', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
-  for (const label of ['Поиск счетов', 'Поиск категорий расходов', 'Поиск категорий доходов', 'Поиск тегов']) {
-    expect(markup).toContain(`aria-label="${label}"`)
+vi.mock('@ionic/react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@ionic/react')>()
+  return {
+    ...actual,
+    IonModal: ({ children, isOpen }: { children: ReactNode; isOpen: boolean }) => <div data-open={isOpen}>{children}</div>,
+    IonButton: ({ children, onClick, ...props }: ComponentProps<typeof actual.IonButton>) => {
+      controls.buttons.set(props['aria-label'] ?? String(children), () => onClick?.({} as Parameters<NonNullable<typeof onClick>>[0]))
+      return <actual.IonButton {...props}>{children}</actual.IonButton>
+    },
   }
 })
+vi.mock('./FilterMultiSelect', () => ({
+  FilterMultiSelect: (props: ComponentProps<typeof FilterMultiSelect>) => {
+    controls.fields.set(props.label, props)
+    return <div data-field={props.label}>{props.label}</div>
+  },
+}))
+vi.mock('@tanstack/react-query', () => ({
+  useQuery: ({ queryKey }: { queryKey: string[] }) => ({ data:
+    queryKey[0] === 'accounts' ? [
+      { id: 'personal', name: 'Личная', kind: 'spending', accessMode: 'personal' },
+      { id: 'shared', name: 'Общая', kind: 'spending', accessMode: 'shared' },
+      { id: 'deposit', name: 'Вклад', kind: 'deposit', accessMode: 'personal' },
+    ] : queryKey[0] === 'categories' ? [
+      { id: queryKey[1], name: queryKey[1], type: queryKey[1] },
+      { id: `${queryKey[1]}-hidden`, name: 'Архив', type: queryKey[1], hidden: true },
+    ] : [{ id: 'tag', name: 'дом' }, { id: 'tag-hidden', name: 'архив', hidden: true }],
+  }),
+}))
 
+function render(props: Partial<ComponentProps<typeof FilterSheet>> = {}) {
+  controls.cursor = 0
+  controls.fields.clear()
+  controls.buttons.clear()
+  return renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} {...props} />)
+}
+beforeEach(() => { controls.state = [] })
+const field = (label: string) => controls.fields.get(label)!
 
-it.each([true, false])('supports externally controlled open state: %s', (isOpen) => {
-  const markup = renderToStaticMarkup(
-    <FilterSheet value={{ accountIds: ['account-1'], tagIds: ['tag-1'] }}
-      onChange={vi.fn()} isOpen={isOpen} onOpenChange={vi.fn()} />,
-  )
-  expect(markup).toContain(`data-open="${isOpen}"`)
-  expect(markup).toContain('aria-label="Фильтры, активно: 2"')
-  expect(markup.match(/aria-pressed="true"/g)).toHaveLength(3)
-})
+describe('FilterSheet multiselects', () => {
+  it('shows six uniform fields and a separate tag matching rule', () => {
+    const markup = render()
+    expect([...controls.fields.keys()]).toEqual([
+      'Тип средств', 'Доступ к счёту', 'Конкретные счета', 'Категории расходов', 'Категории доходов', 'Теги',
+    ])
+    expect(markup).toContain('Совпадение тегов')
+    expect(field('Тип средств').selectedIds).toEqual(['spending'])
+    expect(field('Доступ к счёту').selectedIds).toEqual(['personal'])
+    for (const name of ['Конкретные счета', 'Категории расходов', 'Категории доходов', 'Теги']) {
+      expect(field(name).searchLabel).toBeTruthy()
+    }
+    expect(field('Тип средств').searchLabel).toBeUndefined()
+  })
 
-it('keeps display preferences outside the filter sheet', () => {
-  const markup = renderToStaticMarkup(<FilterSheet value={{}} onChange={vi.fn()} />)
-  expect(markup).not.toContain('Показывать полные суммы')
-  expect(markup).not.toContain('Отображать переводы')
-  expect(markup).toContain('aria-label="Фильтры"')
-  expect(markup).not.toContain('Фильтры, активно:')
+  it('provides hidden categories and tags to the pickers', () => {
+    render()
+    expect(field('Категории расходов').options).toContainEqual(expect.objectContaining({ id: 'expense-hidden', hidden: true }))
+    expect(field('Теги').options).toContainEqual(expect.objectContaining({ id: 'tag-hidden', hidden: true }))
+  })
+
+  it('keeps category selections independent when selecting or clearing an entire group', () => {
+    const onChange = vi.fn()
+    const props = { value: { categoryIds: ['expense', 'income', 'income-hidden'] }, onChange }
+    render(props)
+    field('Категории расходов').onChange(['expense', 'expense-hidden'])
+    render(props)
+    expect(field('Категории доходов').selectedIds).toEqual(['income', 'income-hidden'])
+    field('Категории доходов').onChange([])
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: ['spending'], categoryIds: ['expense', 'expense-hidden'] })
+  })
+
+  it('applies all kinds, concrete accounts and tags while preserving transaction settings', () => {
+    const onChange = vi.fn()
+    const props = { value: { types: ['expense' as const], includeTransferExpenses: true, includeTransferIncome: false, tagMode: 'and' as const }, onChange }
+    render(props)
+    const kinds = ACCOUNT_KIND_OPTIONS.map((option) => option.value)
+    field('Тип средств').onChange(kinds)
+    field('Доступ к счёту').onChange(['personal', 'shared'])
+    field('Конкретные счета').onChange(['personal', 'shared'])
+    field('Теги').onChange(['tag', 'tag-hidden'])
+    expect(onChange).not.toHaveBeenCalled()
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({
+      accountKinds: kinds, includeShared: true, accountIds: ['personal', 'shared'],
+      tagIds: ['tag', 'tag-hidden'], tagMode: 'and', types: ['expense'],
+      includeTransferExpenses: true, includeTransferIncome: false,
+    })
+  })
+
+  it.each([
+    { scopes: ['personal'], expected: {} },
+    { scopes: ['shared'], expected: { includeShared: true, onlyShared: true } },
+    { scopes: ['personal', 'shared'], expected: { includeShared: true } },
+    { scopes: [], expected: { includeShared: true } },
+  ])('maps access selections $scopes to the existing API', ({ scopes, expected }) => {
+    const onChange = vi.fn()
+    render({ onChange })
+    field('Доступ к счёту').onChange(scopes)
+    render({ onChange })
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: ['spending'], ...expected })
+  })
+
+  it('clears all kinds and removes optional restrictions on apply', () => {
+    const onChange = vi.fn()
+    const props = { value: { accountIds: ['personal'], categoryIds: ['expense'], tagIds: ['tag'] }, onChange }
+    render(props)
+    for (const label of ['Тип средств', 'Конкретные счета', 'Категории расходов', 'Теги']) field(label).onChange([])
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: [] })
+  })
+
+  it('retains selected accounts outside the current scope and updates available accounts after changing kinds', () => {
+    const props = { value: { accountIds: ['shared'] } }
+    render(props)
+    expect(field('Конкретные счета').options.map((option) => option.id)).toEqual(['personal', 'shared'])
+    field('Тип средств').onChange(['deposit'])
+    render(props)
+    expect(field('Конкретные счета').options.map((option) => option.id)).toEqual(['shared', 'deposit'])
+  })
+
+  it('discards draft changes when closing without applying', () => {
+    const onChange = vi.fn()
+    const onOpenChange = vi.fn()
+    render({ onChange, onOpenChange })
+    field('Тип средств').onChange([])
+    controls.buttons.get('Закрыть фильтры')!()
+    expect(onChange).not.toHaveBeenCalled()
+    expect(onOpenChange).toHaveBeenCalledWith(false)
+  })
+
+  it('resets filters while retaining transfer display preferences', () => {
+    const onChange = vi.fn()
+    render({ value: { accountIds: ['shared'], tagIds: ['tag'], includeTransferIncome: false }, onChange })
+    controls.buttons.get('Сбросить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ includeTransferIncome: false })
+    render()
+    expect(field('Доступ к счёту').selectedIds).toEqual(['personal'])
+    expect(field('Тип средств').selectedIds).toEqual(['spending'])
+  })
+
+  it('announces active filters without counting transfer preferences', () => {
+    expect(render({ value: { accountIds: ['personal'], categoryIds: ['expense'], tagIds: ['tag'] } })).toContain('Фильтры, активно: 3')
+    expect(render({ value: { includeTransferExpenses: true } })).toContain('aria-label="Фильтры"')
+  })
 })

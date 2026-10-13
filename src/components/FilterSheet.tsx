@@ -10,21 +10,19 @@ import {
   IonButtons,
   IonBadge,
   IonIcon,
-  IonSegment,
-  IonSegmentButton,
   IonLabel,
-  IonNote,
   IonFooter,
   IonPage,
+  IonSelect,
+  IonSelectOption,
 } from '@ionic/react'
 import { closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
-import { AllAccountKindsButton } from '@/components/AllAccountKindsButton'
-import { FilterOptionList } from '@/components/FilterOptionList'
+import { FilterMultiSelect } from '@/components/FilterMultiSelect'
 import { CategoryIcon } from '@/components/CategoryIcon'
-import { categoriesApi, type Category } from '@/api/categories'
-import { tagsApi, type Tag } from '@/api/tags'
+import { categoriesApi } from '@/api/categories'
+import { tagsApi } from '@/api/tags'
 import { type TransactionFilter } from '@/api/transactions'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import {
@@ -44,8 +42,11 @@ interface FilterSheetProps {
   onOpenChange?: (open: boolean) => void
 }
 
-function toggle<T>(arr: T[], item: T): T[] {
-  return arr.includes(item) ? arr.filter((x) => x !== item) : [...arr, item]
+const ACCESS_OPTIONS = [{ id: 'personal', name: 'Личные' }, { id: 'shared', name: 'Общие' }]
+
+function scopeIds(value: TransactionFilter): string[] {
+  const scope = transactionAccountScope(value)
+  return scope === 'all' ? ACCESS_OPTIONS.map((option) => option.id) : [scope]
 }
 
 export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterSheetProps) {
@@ -60,9 +61,9 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   const [accountKinds, setAccountKinds] = useState<AccountKind[]>(
     value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS],
   )
-  const [accountScope, setAccountScope] = useState<TransactionAccountScope>(
-    transactionAccountScope(value),
-  )
+  const [accountScopes, setAccountScopes] = useState<string[]>(scopeIds(value))
+  const accountScope: TransactionAccountScope = accountScopes.length === 1
+    ? accountScopes[0] as TransactionAccountScope : 'all'
   const [categoryIds, setCategoryIds] = useState<string[]>(value.categoryIds ?? [])
   const [tagIds, setTagIds] = useState<string[]>(value.tagIds ?? [])
   const [tagMode, setTagMode] = useState<'or' | 'and'>(value.tagMode ?? 'or')
@@ -71,7 +72,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     if (open) {
       setAccountIds(value.accountIds ?? [])
       setAccountKinds(value.accountKinds ?? [...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
-      setAccountScope(transactionAccountScope(value))
+      setAccountScopes(scopeIds(value))
       setCategoryIds(value.categoryIds ?? [])
       setTagIds(value.tagIds ?? [])
       setTagMode(value.tagMode ?? 'or')
@@ -103,31 +104,6 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     accountIds.includes(account.id) || visibleAccounts.some((visible) => visible.id === account.id),
   )
 
-  function categoryOption(c: Category) {
-    const selected = categoryIds.includes(c.id)
-    return (
-      <IonButton key={c.id} fill={selected ? 'solid' : 'outline'} className="filter-sheet-option"
-        onClick={() => setCategoryIds((prev) => toggle(prev, c.id))} aria-pressed={selected}>
-        <span className="filter-sheet-option__content">
-          <CategoryIcon value={c.icon} type={c.type} size={22} />
-          <span>{c.name}</span>
-        </span>
-      </IonButton>
-    )
-  }
-
-  function tagOption(tag: Tag) {
-    const selected = tagIds.includes(tag.id)
-    return (
-      <IonButton key={tag.id} fill={selected ? 'solid' : 'outline'} className="filter-sheet-option"
-        onClick={() => setTagIds((prev) => toggle(prev, tag.id))} aria-pressed={selected}>
-        <span className="filter-sheet-option__content">
-          <span>#{tag.name}</span>
-        </span>
-      </IonButton>
-    )
-  }
-
   function apply() {
     const f: TransactionFilter = {
       accountKinds,
@@ -147,7 +123,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   function reset() {
     setAccountIds([])
     setAccountKinds([...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
-    setAccountScope('personal')
+    setAccountScopes(['personal'])
     setCategoryIds([])
     setTagIds([])
     setTagMode('or')
@@ -205,114 +181,36 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
           </IonHeader>
 
           <IonContent className="ion-padding filter-sheet-content">
-          <section className="filter-sheet-section" aria-labelledby="filter-account-kinds-title">
-            <IonNote id="filter-account-kinds-title" className="filter-sheet-section__title">
-              Тип средств
-            </IonNote>
-            <div className="filter-sheet-options">
-              <AllAccountKindsButton selectedKinds={accountKinds} onChange={setAccountKinds}
-                className="filter-sheet-option" />
-              {ACCOUNT_KIND_OPTIONS.map((option) => {
-                const selected = accountKinds.includes(option.value)
-                return (
-                  <IonButton
-                    key={option.value}
-                    fill={selected ? 'solid' : 'outline'}
-                    className="filter-sheet-option"
-                    onClick={() => setAccountKinds((previous) => toggle(previous, option.value))}
-                    aria-pressed={selected}
-                  >
-                    <span className="filter-sheet-option__content">
-                      <span>{option.shortLabel}</span>
-                    </span>
-                  </IonButton>
-                )
-              })}
-            </div>
-            <div className="filter-sheet-account-scope">
-              <IonLabel>Доступ к счёту</IonLabel>
-              <IonSegment
-                value={accountScope}
-                onIonChange={(event) => {
-                  if (event.detail.value) setAccountScope(event.detail.value as TransactionAccountScope)
-                }}
-                aria-label="Доступ к счёту"
-              >
-                <IonSegmentButton value="personal"><IonLabel>Личные</IonLabel></IonSegmentButton>
-                <IonSegmentButton value="shared"><IonLabel>Общие</IonLabel></IonSegmentButton>
-                <IonSegmentButton value="all"><IonLabel>Все</IonLabel></IonSegmentButton>
-              </IonSegment>
-            </div>
-          </section>
-
-          {/* Accounts */}
-          {accountOptions.length > 0 && (
-            <section className="filter-sheet-section" aria-labelledby="filter-accounts-title">
-              <IonNote id="filter-accounts-title" className="filter-sheet-section__title">
-                Конкретные счета
-              </IonNote>
-              <FilterOptionList id="filter-accounts" options={accountOptions} selectedIds={accountIds}
-                searchLabel="Поиск счетов" renderOption={(a) => {
-                  const selected = accountIds.includes(a.id)
-                  return (
-                    <IonButton
-                      key={a.id}
-                      fill={selected ? 'solid' : 'outline'}
-                      className="filter-sheet-option"
-                      onClick={() => setAccountIds((prev) => toggle(prev, a.id))}
-                      aria-pressed={selected}
-                    >
-                      <span className="filter-sheet-option__content">
-                        <AccountIcon value={a.icon} size={22} />
-                        <span>{a.name}</span>
-                      </span>
-                    </IonButton>
-                  )
-                }} />
-            </section>
-          )}
-
-          {/* Categories */}
-          {categoryGroups.map(({ type, title, categories }) => {
-            if (categories.length === 0) return null
-            const titleId = `filter-${type}-categories-title`
-            return (
-              <section key={type} className="filter-sheet-section" aria-labelledby={titleId}>
-                <IonNote id={titleId} className="filter-sheet-section__title">{title}</IonNote>
-                <FilterOptionList id={`filter-${type}-categories`} options={categories}
-                  selectedIds={categoryIds} searchLabel={`Поиск категорий ${type === 'expense' ? 'расходов' : 'доходов'}`}
-                  hiddenLabel="Скрытые категории" renderOption={categoryOption} />
-              </section>
-            )
-          })}
-
-          {/* Tags */}
-          {tags.length > 0 && (
-            <section className="filter-sheet-section" aria-labelledby="filter-tags-title">
-              <div className="filter-sheet-section__heading">
-                <IonNote id="filter-tags-title" className="filter-sheet-section__title">Теги</IonNote>
-                <div className="filter-sheet-tag-mode-control">
-                  <span className="filter-sheet-tag-mode__label">Совпадение</span>
-                  <IonSegment
-                    value={tagMode}
-                    onIonChange={(e) => setTagMode(e.detail.value as 'or' | 'and')}
-                    className="filter-sheet-tag-mode"
-                    aria-label="Совпадение выбранных тегов"
-                  >
-                    <IonSegmentButton value="or" aria-label="Любой выбранный тег">
-                      <IonLabel>Любой</IonLabel>
-                    </IonSegmentButton>
-                    <IonSegmentButton value="and" aria-label="Все выбранные теги">
-                      <IonLabel>Все</IonLabel>
-                    </IonSegmentButton>
-                  </IonSegment>
-                </div>
+            <div className="filter-sheet-fields">
+              <FilterMultiSelect label="Тип средств"
+                options={ACCOUNT_KIND_OPTIONS.map((option) => ({ id: option.value, name: option.shortLabel }))}
+                selectedIds={accountKinds} onChange={(ids) => setAccountKinds(ids as AccountKind[])} />
+              <FilterMultiSelect label="Доступ к счёту" options={ACCESS_OPTIONS}
+                selectedIds={accountScopes} onChange={setAccountScopes} />
+              <FilterMultiSelect label="Конкретные счета" options={accountOptions}
+                selectedIds={accountIds} onChange={setAccountIds} searchLabel="Поиск счетов"
+                renderIcon={(account) => <AccountIcon value={account.icon} size={22} />} />
+              {categoryGroups.map(({ type, title, categories }) => (
+                <FilterMultiSelect key={type} label={title} options={categories}
+                  selectedIds={categoryIds.filter((id) => categories.some((category) => category.id === id))}
+                  onChange={(ids) => setCategoryIds((previous) => [
+                    ...previous.filter((id) => !categories.some((category) => category.id === id)), ...ids,
+                  ])}
+                  searchLabel={`Поиск категорий ${type === 'expense' ? 'расходов' : 'доходов'}`}
+                  hiddenLabel="Скрытые категории"
+                  renderIcon={(category) => <CategoryIcon value={category.icon} type={category.type} size={22} />} />
+              ))}
+              <FilterMultiSelect label="Теги" options={tags}
+                selectedIds={tagIds} onChange={setTagIds} searchLabel="Поиск тегов" hiddenLabel="Скрытые теги" />
+              <div className="filter-multiselect-row">
+                <IonLabel className="filter-multiselect-label">Совпадение тегов</IonLabel>
+                <IonSelect value={tagMode} interface="popover" aria-label="Совпадение выбранных тегов"
+                  className="filter-sheet-tag-select" onIonChange={(event) => setTagMode(event.detail.value as 'or' | 'and')}>
+                  <IonSelectOption value="or">Любой</IonSelectOption>
+                  <IonSelectOption value="and">Все</IonSelectOption>
+                </IonSelect>
               </div>
-              <FilterOptionList id="filter-tags" options={tags} selectedIds={tagIds}
-                searchLabel="Поиск тегов" hiddenLabel="Скрытые теги" renderOption={tagOption} />
-            </section>
-          )}
-
+            </div>
           </IonContent>
 
           <IonFooter className="filter-sheet-footer">
