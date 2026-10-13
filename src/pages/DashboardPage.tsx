@@ -76,7 +76,6 @@ function ChartBlock({
   tooltipStyle,
   legendColor,
   onNavigate,
-  compact = false,
 }: {
   data: DashboardPieEntry[]
   sym: string
@@ -84,7 +83,6 @@ function ChartBlock({
   tooltipStyle: React.CSSProperties
   legendColor: string
   onNavigate: (href: string) => void
-  compact?: boolean
 }) {
   const [visibleCount, setVisibleCount] = useState(LEGEND_PAGE_SIZE)
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number }>()
@@ -126,7 +124,7 @@ function ChartBlock({
   return (
     <>
       {chartEntries.length > 0 && (
-        <div className={`dashboard-chart-plot${compact ? ' dashboard-chart-plot--compact' : ''}`}>
+        <div className="dashboard-chart-plot">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
               <Pie
@@ -136,8 +134,8 @@ function ChartBlock({
                 nameKey="name"
                 cx="50%"
                 cy="50%"
-                outerRadius="80%"
-                innerRadius="40%"
+                outerRadius={80}
+                innerRadius={40}
                 onMouseMove={(entry, index, event) => positionTooltip(
                   event, `${entry.transactionsHref ?? entry.name}:${index}`,
                 )}
@@ -420,7 +418,7 @@ export function DashboardPage() {
       <PageHeader title="co-wallet" />
 
       <AppContent fullscreen withFab
-        className={chartMode === 'balance' ? 'dashboard-balance-content' : undefined}
+        className="dashboard-content"
         fixed={
           <QuickTransactionFab onSelect={addTransaction} />
         }
@@ -517,7 +515,7 @@ export function DashboardPage() {
           </section>
 
           {/* Pie chart block */}
-          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: chartMode === 'balance' ? '0 0 8px 0' : '0 0 16px 0' }}>
+          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: '0 0 16px 0' }}>
             <IonButton
               id="dashboard-chart-settings"
               className="dashboard-chart-settings"
@@ -530,7 +528,6 @@ export function DashboardPage() {
             </IonButton>
             <IonCardContent>
               <ChartBlock
-                compact={chartMode === 'balance'}
                 data={activePieData}
                 sym={sym}
                 emptyText={chartEmptyTexts[chartMode]}

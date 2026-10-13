@@ -108,6 +108,14 @@ describe('Dashboard summary cards', () => {
 })
 
 describe('Dashboard period visibility', () => {
+  it.each(['balance', 'expenses', 'income'] as const)('uses the same chart layout and period controls in %s', (mode) => {
+    queryState.chartMode = mode
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('class="dashboard-chart-plot"')
+    expect(markup).toContain('Период транзакций')
+    expect(markup).not.toContain('dashboard-chart-plot--compact')
+    expect(markup).not.toContain('dashboard-balance-content')
+  })
   it('keeps the base profile currency when selecting another display currency', () => {
     useAuthStore.setState({ user: {
       id: 'user', username: 'user', email: 'user@example.test', defaultCurrency: 'RUB',
