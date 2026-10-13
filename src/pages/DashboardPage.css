@@ -32,13 +32,16 @@
   font-size: 0.875rem;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
-  white-space: normal;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 
 @media (max-width: 420px) {
   .dashboard-summary__content {
     padding-inline: 8px;
+  }
+
+  .dashboard-summary__content .dashboard-summary__amount {
+    font-size: clamp(0.625rem, 3vw, 0.75rem);
   }
 }
 
