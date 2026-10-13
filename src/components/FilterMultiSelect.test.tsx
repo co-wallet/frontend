@@ -6,7 +6,7 @@ import { FilterMultiSelect } from './FilterMultiSelect'
 const controls = vi.hoisted(() => ({
   state: [] as unknown[], cursor: 0,
   buttons: new Map<string, () => void>(),
-  checks: new Map<string, (checked: boolean) => void>(),
+  checks: new Map<string, () => void>(),
   search: undefined as undefined | ((value?: string | null) => void),
   dismiss: undefined as undefined | (() => void),
 }))
@@ -15,7 +15,7 @@ vi.mock('react', async (importOriginal) => ({
   useState: (initial: unknown) => {
     const index = controls.cursor++
     if (!(index in controls.state)) controls.state[index] = initial
-    return [controls.state[index], (next: unknown) => { controls.state[index] = next }]
+    return [controls.state[index], (next: unknown) => { controls.state[index] = typeof next === 'function' ? next(controls.state[index]) : next }]
   },
 }))
 vi.mock('@ionic/react', async (importOriginal) => {
@@ -30,9 +30,9 @@ vi.mock('@ionic/react', async (importOriginal) => {
       controls.buttons.set(props['aria-label'] ?? String(children), () => onClick?.({} as Parameters<NonNullable<typeof onClick>>[0]))
       return <actual.IonButton {...props}>{children}</actual.IonButton>
     },
-    IonCheckbox: ({ children, checked, onIonChange }: ComponentProps<typeof actual.IonCheckbox>) => {
-      controls.checks.set(String(children), (next) => onIonChange?.({ detail: { checked: next } } as Parameters<NonNullable<typeof onIonChange>>[0]))
-      return <label><input type="checkbox" checked={checked} readOnly />{children}</label>
+    IonItem: ({ children, onClick, ...props }: ComponentProps<typeof actual.IonItem>) => {
+      controls.checks.set(props['aria-label'] ?? '', () => onClick?.({} as Parameters<NonNullable<typeof onClick>>[0]))
+      return <div role={props.role} aria-label={props['aria-label']} aria-checked={props['aria-checked']}>{children}</div>
     },
     IonSearchbar: ({ value, onIonInput, ...props }: ComponentProps<typeof actual.IonSearchbar>) => {
       controls.search = (next) => onIonInput?.({ detail: { value: next } } as Parameters<NonNullable<typeof onIonInput>>[0])
@@ -79,36 +79,45 @@ describe('FilterMultiSelect', () => {
       .toContain('aria-label="Тип средств: Все типы средств"')
   })
 
-  it('opens a complete list with select-all and clear-all actions', () => {
+  it('opens a complete list styled like the transaction picker without select-all or a count', () => {
     const markup = open()
     expect(controls.checks.size).toBe(8)
-    expect(markup).toContain('Выбрать все')
-    expect(markup).toContain('Снять все')
+    expect(markup).toContain('Сбросить')
+    expect(markup).toContain('Применить')
     expect(markup).toContain('aria-expanded="true"')
-    expect(markup).not.toContain('Показать все')
+    expect(markup).not.toContain('Выбрать все')
+    expect(markup).not.toContain('Выбрано:')
     expect(markup).toContain('Скрытые варианты (2)')
+    expect(markup).toContain('inset="true"')
   })
 
-  it('selects every option regardless of search and clears every selected option', () => {
+  it('resets the draft without closing or saving, then applies the cleared selection', () => {
     const onChange = vi.fn()
-    open({ onChange, selectedIds: ['1'] })
-    controls.search!('Счёт 3')
-    render({ onChange, selectedIds: ['1'] })
-    controls.buttons.get('Выбрать все')!()
-    expect(onChange).toHaveBeenLastCalledWith(options.map((option) => option.id))
-    controls.buttons.get('Снять все')!()
-    expect(onChange).toHaveBeenLastCalledWith([])
+    const props = { selectedIds: ['1', '2'], onChange }
+    open(props)
+    controls.buttons.get('Сбросить')!()
+    const markup = render(props)
+    expect(markup).toContain('role="dialog"')
+    expect(markup).not.toContain('aria-checked="true"')
+    expect(onChange).not.toHaveBeenCalled()
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith([])
+    expect(render(props)).not.toContain('role="dialog"')
   })
 
-  it('selects and deselects individual options without duplicates', () => {
+  it('selects and deselects individual draft options and saves only on Apply', () => {
     const onChange = vi.fn()
-    open({ selectedIds: ['1', '2'], onChange })
-    controls.checks.get('Счёт 3')!(true)
-    expect(onChange).toHaveBeenLastCalledWith(['1', '2', '3'])
-    controls.checks.get('Счёт 1')!(true)
-    expect(onChange).toHaveBeenLastCalledWith(['2', '1'])
-    controls.checks.get('Счёт 1')!(false)
-    expect(onChange).toHaveBeenLastCalledWith(['2'])
+    const props = { selectedIds: ['1', '2'], onChange }
+    open(props)
+    controls.checks.get('Счёт 3')!()
+    render(props)
+    controls.checks.get('Счёт 1')!()
+    const markup = render(props)
+    expect(markup).toContain('aria-label="Счёт 3" aria-checked="true"')
+    expect(markup).toContain('aria-label="Счёт 1" aria-checked="false"')
+    expect(onChange).not.toHaveBeenCalled()
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenCalledExactlyOnceWith(['2', '3'])
   })
 
   it('searches all options with trimmed case-insensitive text and exposes hidden matches', () => {
@@ -142,26 +151,31 @@ describe('FilterMultiSelect', () => {
   it('keeps selected hidden options outside closed disclosures without duplicates', () => {
     const markup = open({ selectedIds: ['7'] })
     expect(markup.replace(/<details.*?<\/details>/g, '')).toContain('Счёт 7')
-    expect(markup.match(/Счёт 7<\/label>/g)).toHaveLength(1)
+    expect(markup.match(/aria-label="Счёт 7"/g)).toHaveLength(1)
     expect(markup).not.toMatch(/<details[^>]* open/)
   })
 
-  it('closes with Done and resets search when reopened', () => {
-    open()
+  it('discards edits on Close or backdrop dismissal and resets search when reopened', () => {
+    const onChange = vi.fn()
+    const props = { selectedIds: ['1'], onChange }
+    open(props)
+    controls.checks.get('Счёт 3')!()
     controls.search!('Счёт 1')
-    render()
-    controls.buttons.get('Готово')!()
-    expect(render()).not.toContain('role="dialog"')
-    open()
+    render(props)
+    controls.buttons.get('Закрыть')!()
+    expect(render(props)).not.toContain('role="dialog"')
+    const markup = open(props)
     expect(controls.checks.size).toBe(8)
+    expect(markup).toContain('aria-label="Счёт 3" aria-checked="false"')
+    expect(onChange).not.toHaveBeenCalled()
     controls.dismiss!()
-    expect(render()).not.toContain('role="dialog"')
+    expect(render(props)).not.toContain('role="dialog"')
   })
 
   it('supports lists without search and empty lists', () => {
     const markup = open({ options: [], searchLabel: undefined })
     expect(markup).not.toContain('Поиск счетов')
     expect(markup).toContain('Нет доступных вариантов')
-    expect(markup).toContain('disabled="true"')
+    expect(markup).not.toContain('disabled="true"')
   })
 })

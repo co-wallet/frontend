@@ -51,57 +51,28 @@
   color: var(--ion-color-primary);
 }
 
-.filter-multiselect-modal {
-  --width: 560px;
-  --max-width: 100%;
-  --height: 85%;
-  --border-radius: 16px;
-}
-
-.filter-multiselect-actions {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 4px;
-  padding: 4px 12px;
+.filter-multiselect-footer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
   background: var(--ion-toolbar-background, var(--ion-background-color));
+  border-top: 1px solid var(--ion-border-color, var(--ion-color-light-shade));
 }
 
-.filter-multiselect-actions ion-button {
+.filter-multiselect-footer ion-button {
   min-height: 44px;
   margin: 0;
   text-transform: none;
 }
 
-.filter-multiselect-actions ion-note {
-  margin-inline-start: auto;
-  font-size: 0.8125rem;
+.filter-multiselect-option[aria-checked='true'] {
+  --background: rgba(var(--ion-color-primary-rgb), 0.08);
 }
 
-.filter-multiselect-options {
-  padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  background: transparent;
-}
-
-.filter-multiselect-option {
-  --min-height: 52px;
-}
-
-.filter-multiselect-option ion-checkbox {
-  width: 100%;
-  min-height: 44px;
-  font-size: 1rem;
-}
-
-.filter-multiselect-option ion-checkbox::part(label) {
+.filter-multiselect-option ion-label h2 {
   white-space: normal;
   overflow-wrap: anywhere;
-}
-
-.filter-multiselect-icon {
-  display: flex;
-  align-items: center;
-  margin-inline-end: 12px;
 }
 
 .filter-multiselect-hidden summary {
@@ -119,8 +90,4 @@
 .filter-multiselect-empty {
   padding: 16px;
   color: var(--ion-color-medium);
-}
-
-@media (orientation: landscape) {
-  .filter-multiselect-modal { --height: 92%; }
 }

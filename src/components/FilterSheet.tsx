@@ -189,7 +189,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                 selectedIds={accountScopes} onChange={setAccountScopes} />
               <FilterMultiSelect label="Конкретные счета" options={accountOptions}
                 selectedIds={accountIds} onChange={setAccountIds} searchLabel="Поиск счетов"
-                renderIcon={(account) => <AccountIcon value={account.icon} size={22} />} />
+                renderIcon={(account) => <AccountIcon value={account.icon} size={42} />} />
               {categoryGroups.map(({ type, title, categories }) => (
                 <FilterMultiSelect key={type} label={title} options={categories}
                   selectedIds={categoryIds.filter((id) => categories.some((category) => category.id === id))}
@@ -198,7 +198,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
                   ])}
                   searchLabel={`Поиск категорий ${type === 'expense' ? 'расходов' : 'доходов'}`}
                   hiddenLabel="Скрытые категории"
-                  renderIcon={(category) => <CategoryIcon value={category.icon} type={category.type} size={22} />} />
+                  renderIcon={(category) => <CategoryIcon value={category.icon} type={category.type} size={42} />} />
               ))}
               <FilterMultiSelect label="Теги" options={tags}
                 selectedIds={tagIds} onChange={setTagIds} searchLabel="Поиск тегов" hiddenLabel="Скрытые теги" />

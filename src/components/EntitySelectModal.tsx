@@ -3,6 +3,7 @@ import {
   IonButton,
   IonButtons,
   IonContent,
+  IonFooter,
   IonHeader,
   IonModal,
   IonTitle,
@@ -16,11 +17,13 @@ export function EntitySelectModal({
   isOpen,
   onDismiss,
   children,
+  footer,
 }: {
   title: string
   isOpen: boolean
   onDismiss: () => void
   children: ReactNode
+  footer?: ReactNode
 }) {
   return (
     <IonModal
@@ -39,6 +42,7 @@ export function EntitySelectModal({
       <IonContent className="entity-select-modal__content">
         {children}
       </IonContent>
+      {footer && <IonFooter>{footer}</IonFooter>}
     </IonModal>
   )
 }
