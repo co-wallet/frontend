@@ -538,8 +538,9 @@ export function DashboardPage() {
             key={chartMode}
             trigger="dashboard-chart-settings"
             className="dashboard-chart-popover"
+            reference="trigger"
             side="bottom"
-            alignment="end"
+            alignment="center"
             aria-label={chartSettingsLabels[chartMode]}
           >
             <div className="dashboard-chart-popover-content">

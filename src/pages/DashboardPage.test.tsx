@@ -12,6 +12,10 @@ vi.mock('@ionic/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ionic/react')>()
   return {
     ...actual,
+    IonPopover: (props: ComponentProps<typeof actual.IonPopover>) => {
+      queryState.popovers.push(props)
+      return <actual.IonPopover {...props} />
+    },
     IonSelect: (props: ComponentProps<typeof actual.IonSelect>) => {
       if (props['aria-label'] === 'Валюта') queryState.onCurrencyChange = props.onIonChange
       return <actual.IonSelect {...props} />
@@ -22,6 +26,7 @@ vi.mock('@ionic/react', async (importOriginal) => {
 vi.mock('@/lib/useChartTheme', () => ({ useChartTheme: () => ({ tooltipStyle: {}, legendColor: 'black' }) }))
 
 const queryState = vi.hoisted(() => ({
+  popovers: [] as ComponentProps<typeof import('@ionic/react').IonPopover>[],
   selectedKinds: ['spending'] as string[],
   includeShared: false,
   amountMode: 'share' as 'share' | 'total',
@@ -71,6 +76,7 @@ vi.mock('@tanstack/react-query', () => ({
 vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: queryState.amountMode, setMode: vi.fn() }) }))
 const initialPeriod = { ...queryState.period }
 afterEach(() => { useAuthStore.setState({ user: null }); vi.clearAllMocks() })
+afterEach(() => { queryState.popovers = [] })
 afterEach(() => { queryState.summary = { balance: 10, expenses: 10, income: 0 } })
 afterEach(() => { queryState.amountMode = 'share'; queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
@@ -141,6 +147,14 @@ describe('Dashboard quick transaction actions', () => {
 
 
 describe('Dashboard transfer visibility', () => {
+  it.each(['balance', 'expenses', 'income'] as const)('anchors the %s settings arrow to the trigger center', (mode) => {
+    queryState.chartMode = mode
+    renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(queryState.popovers.find((popover) => popover.trigger === 'dashboard-chart-settings')).toMatchObject({
+      reference: 'trigger', side: 'bottom', alignment: 'center',
+    })
+  })
+
   it.each(['expenses', 'income'] as const)('shows the independent default for %s', (mode) => {
     queryState.chartMode = mode
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
