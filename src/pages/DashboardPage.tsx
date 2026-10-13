@@ -402,7 +402,7 @@ export function DashboardPage() {
     {
       mode: 'balance',
       icon: analyticsOutline,
-      label: selectedKinds.length === 1 && selectedKinds[0] === 'spending' ? 'Доступно' : 'Баланс',
+      label: 'Баланс',
       value: summary?.balance ?? 0,
       color: 'primary',
     },
@@ -494,21 +494,21 @@ export function DashboardPage() {
           {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
             <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {displayCurrency}.</p></IonText>}
           {/* Summary cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
+          <div className="dashboard-summary">
             {summaryCards.map((card) => (
               <IonCard
                 key={card.mode}
                 button
                 onClick={() => setChartMode(card.mode)}
                 color={chartMode === card.mode ? card.color : undefined}
-                style={{ margin: 0 }}
+                className="dashboard-summary__card"
               >
-                <IonCardContent className="ion-padding">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                    <IonIcon icon={card.icon} style={{ fontSize: 14 }} />
-                    <span style={{ fontSize: '0.75rem' }}>{card.label}</span>
+                <IonCardContent className="dashboard-summary__content">
+                  <div className="dashboard-summary__label">
+                    <IonIcon icon={card.icon} />
+                    <span>{card.label}</span>
                   </div>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
+                  <p className="dashboard-summary__amount">
                     {formatAmount(card.value, sym)}
                   </p>
                 </IonCardContent>

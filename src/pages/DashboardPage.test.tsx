@@ -32,6 +32,7 @@ const queryState = vi.hoisted(() => ({
   transactionQueries: [] as { filter: Record<string, unknown>; enabled: boolean }[],
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
+  summary: { balance: 10, expenses: 10, income: 0 },
   onCurrencyChange: undefined as ComponentProps<typeof import('@ionic/react').IonSelect>['onIonChange'],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
@@ -61,7 +62,7 @@ vi.mock('@tanstack/react-query', () => ({
     if (queryKey[1] === 'by-category') return { data: [
       { categoryId: 'transfers:bank', categoryName: queryKey[2] === 'expense' ? "В 'Банк'" : "Из 'Банк'", amount: 50 },
     ] }
-    if (queryKey[1] === 'summary') return { data: { balance: 10, expenses: 10, income: 0 } }
+    if (queryKey[1] === 'summary') return { data: queryState.summary }
     return { data: [] }
   },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -70,8 +71,27 @@ vi.mock('@tanstack/react-query', () => ({
 vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: queryState.amountMode, setMode: vi.fn() }) }))
 const initialPeriod = { ...queryState.period }
 afterEach(() => { useAuthStore.setState({ user: null }); vi.clearAllMocks() })
+afterEach(() => { queryState.summary = { balance: 10, expenses: 10, income: 0 } })
 afterEach(() => { queryState.amountMode = 'share'; queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
+
+describe('Dashboard summary cards', () => {
+  it.each([
+    { kinds: ['spending'] }, { kinds: ['deposit'] }, { kinds: ['spending', 'savings'] }, { kinds: [] },
+  ])('calls the balance Баланс for account kinds $kinds', ({ kinds }) => {
+    queryState.selectedKinds = kinds
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('<span>Баланс</span>')
+    expect(markup).not.toContain('Доступно')
+  })
+
+  it('renders full large and negative amounts in all three cards', () => {
+    queryState.summary = { balance: 142001.98, expenses: 123456789.12, income: -9876543.21 }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    const amounts = [...markup.matchAll(/<p class="dashboard-summary__amount">([^<]+)<\/p>/g)].map((match) => match[1])
+    expect(amounts).toEqual(['USD 142 001,98', 'USD 123 456 789,12', 'USD -9 876 543,21'])
+  })
+})
 
 describe('Dashboard period visibility', () => {
   it('keeps the base profile currency when selecting another display currency', () => {
