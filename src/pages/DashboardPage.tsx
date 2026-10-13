@@ -172,6 +172,7 @@ function ChartBlock({
       <div style={{ marginTop: 8 }}>
         {visibleEntries.map((s, i) => {
           const isNegative = s.amount < 0
+          const transactionsHref = s.legendTransactionsHref ?? s.transactionsHref
           const content = (
             <>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -209,13 +210,15 @@ function ChartBlock({
               </span>
             </>
           )
-          return s.legendTransactionsHref ? (
+          return transactionsHref ? (
             <IonRouterLink
               key={i}
               className="dashboard-chart-legend-link"
-              routerLink={s.legendTransactionsHref}
+              routerLink={transactionsHref}
               routerDirection="forward"
-              aria-label={`Транзакции по счету ${s.name}`}
+              aria-label={s.iconType === 'account'
+                ? `Транзакции по счету ${s.name}`
+                : `Транзакции категории ${s.name}`}
             >
               <div className="dashboard-chart-legend-row dashboard-chart-legend-row--link">
                 {content}
