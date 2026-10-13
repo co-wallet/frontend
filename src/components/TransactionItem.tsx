@@ -19,7 +19,6 @@ import type { Account } from '@/api/accounts'
 import type { Category } from '@/api/categories'
 import type { Currency } from '@/api/currencies'
 import type { Transaction } from '@/api/transactions'
-import { transferAccountLabel } from '@/lib/transferAccounts'
 import {
   CategoryIcon,
   UNCATEGORIZED_CATEGORY_ICON,
@@ -67,10 +66,14 @@ export function TransactionItem({
 }: TransactionItemProps) {
   const description = tx.description?.trim()
   const categoryName = category?.name ?? 'Без категории'
-  const title = description
+  const counterpartyUsername = tx.type === 'transfer'
+    ? (!toAccount && tx.toAccountOwnerUsername) || (!account && tx.accountOwnerUsername)
+    : undefined
+  const titleBase = description
     || (tx.type === 'transfer' ? TRANSACTION_TYPE_LABELS.transfer : categoryName)
+  const title = `${titleBase}${counterpartyUsername ? ` @${counterpartyUsername}` : ''}`
   const accountLabel = tx.type === 'transfer'
-    ? `${transferAccountLabel(account?.name ?? tx.accountName ?? 'Счёт', account ? undefined : tx.accountOwnerUsername)} → ${transferAccountLabel(toAccount?.name ?? tx.toAccountName ?? 'Счёт', toAccount ? undefined : tx.toAccountOwnerUsername)}`
+    ? `${account?.name ?? tx.accountName ?? 'Счёт'} → ${toAccount?.name ?? tx.toAccountName ?? 'Счёт'}`
     : account?.name ?? tx.accountName ?? 'Счёт'
   const meta = description && tx.type !== 'transfer'
     ? `${categoryName} · ${accountLabel}`
