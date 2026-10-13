@@ -14,6 +14,7 @@ import {
 } from '@ionic/react'
 import {
   homeOutline,
+  personOutline,
   downloadOutline,
   walletOutline,
   swapHorizontalOutline,
@@ -132,6 +133,14 @@ export function AppMenu() {
         )}
 
         <IonList lines="none" className="app-menu-settings">
+          <IonMenuToggle autoHide={false}>
+            <IonItem routerLink="/profile" routerDirection="root" detail={false}
+              className={`app-menu-item${isMenuPathActive(location.pathname, '/profile') ? ' app-menu-item--active' : ''}`}
+              aria-current={isMenuPathActive(location.pathname, '/profile') ? 'page' : undefined}>
+              <IonIcon slot="start" icon={personOutline} />
+              <IonLabel>Профиль</IonLabel>
+            </IonItem>
+          </IonMenuToggle>
           <IonMenuToggle autoHide={false}>
             <IonItem routerLink="/imports/monefy" routerDirection="root" detail={false}
               className={`app-menu-item${isMenuPathActive(location.pathname, '/imports/monefy') ? ' app-menu-item--active' : ''}`}
