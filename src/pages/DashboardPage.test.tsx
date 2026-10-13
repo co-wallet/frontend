@@ -6,6 +6,7 @@ import { filterFromParams, periodFromParams, type TransactionPeriod } from '@/li
 import type { ComponentProps } from 'react'
 import { authApi } from '@/api/auth'
 import { useAuthStore } from '@/store/authStore'
+import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 
 vi.mock('@/api/auth', () => ({ authApi: { updateMe: vi.fn() } }))
 vi.mock('@ionic/react', async (importOriginal) => {
@@ -366,6 +367,23 @@ it('shows zero totals without querying analytics when no account types are selec
   expect(markup).toContain('Типы не выбраны')
   expect(markup).toContain('Нет данных о балансе')
   expect(queryState.analyticsQueries.every((query) => !query.enabled)).toBe(true)
+})
+
+it.each([false, true])('shows all kinds selected and queries matching accounts, shared=%s', (includeShared) => {
+  queryState.selectedKinds = ACCOUNT_KIND_OPTIONS.map((option) => option.value)
+  queryState.includeShared = includeShared
+  const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+  expect(markup).toContain('Все типы средств')
+  const popover = queryState.popovers.find((props) => props.trigger === 'dashboard-kind-filter')!
+  expect(renderToStaticMarkup(<>{popover.children}</>)).toMatch(/aria-label="Все типы средств" aria-pressed="true"/)
+  const ids = includeShared
+    ? ['spending', 'deposit', 'shared', 'shared-deposit', 'savings', 'shared-savings-account']
+    : ['spending', 'deposit', 'savings']
+  for (const query of queryState.analyticsQueries) {
+    expect(query.params.account_ids).toBe(ids.join(','))
+    expect(query.params.account_kinds).toBe(queryState.selectedKinds.join(','))
+  }
+  expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(ids)
 })
 
 

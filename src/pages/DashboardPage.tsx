@@ -40,6 +40,7 @@ import { CategoryIcon, UNCATEGORIZED_CATEGORY_ICON } from '@/components/Category
 import { QuickTransactionFab } from '@/components/QuickTransactionFab'
 import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from '@/lib/accountKind'
 import { filterAccountsByKinds } from '@/lib/accountFilters'
+import { AllAccountKindsButton } from '@/components/AllAccountKindsButton'
 import {
   dashboardEntryColor,
   DASHBOARD_TOOLTIP_WIDTH,
@@ -451,6 +452,8 @@ export function DashboardPage() {
                 aria-label="Тип средств"
               >
                 <div className="dashboard-kind-options">
+                  <AllAccountKindsButton selectedKinds={selectedKinds} onChange={setSelectedKinds}
+                    className="dashboard-kind-option" unselectedFill="clear" />
                   {ACCOUNT_KIND_OPTIONS.map((option) => {
                     const selected = selectedKinds.includes(option.value)
                     return (

@@ -20,6 +20,7 @@ import {
 import { closeOutline, funnelOutline } from 'ionicons/icons'
 import { accountsApi, type AccountKind } from '@/api/accounts'
 import { AccountIcon } from '@/components/AccountIcon'
+import { AllAccountKindsButton } from '@/components/AllAccountKindsButton'
 import { FilterOptionList } from '@/components/FilterOptionList'
 import { CategoryIcon } from '@/components/CategoryIcon'
 import { categoriesApi, type Category } from '@/api/categories'
@@ -209,6 +210,8 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
               Тип средств
             </IonNote>
             <div className="filter-sheet-options">
+              <AllAccountKindsButton selectedKinds={accountKinds} onChange={setAccountKinds}
+                className="filter-sheet-option" />
               {ACCOUNT_KIND_OPTIONS.map((option) => {
                 const selected = accountKinds.includes(option.value)
                 return (

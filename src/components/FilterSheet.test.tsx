@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FilterSheet } from '@/components/FilterSheet'
+import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 
 const categoryFixture = vi.hoisted(() => ({ emptyType: '', onlyHidden: false }))
 beforeEach(() => {
@@ -49,6 +50,13 @@ vi.mock('@tanstack/react-query', () => ({
 }))
 
 describe('FilterSheet', () => {
+  it.each([false, true])('marks the all-kinds option selected only for a complete selection: %s', (all) => {
+    const markup = renderToStaticMarkup(<FilterSheet
+      value={all ? { accountKinds: ACCOUNT_KIND_OPTIONS.map((option) => option.value) } : {}}
+      onChange={vi.fn()} />)
+    expect(markup).toContain(`aria-label="Все типы средств" aria-pressed="${all}"`)
+    expect(markup).toContain('value="personal"')
+  })
   it('keeps dates in the period control and announces the active filter count', () => {
     const markup = renderToStaticMarkup(
       <FilterSheet
