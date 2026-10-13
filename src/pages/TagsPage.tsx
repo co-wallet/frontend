@@ -13,6 +13,7 @@ import axios from 'axios'
 import { tagsApi, type Tag } from '@/api/tags'
 import { usePeriodStore } from '@/store/periodStore'
 import { filteredTransactionsHref } from '@/lib/transactionNavigation'
+import { resetTransactionFilter } from '@/lib/accountFilters'
 import './TagsPage.css'
 
 export function TagsPage() {
@@ -117,7 +118,7 @@ export function TagsPage() {
                 <IonLabel className="tag-list-row__label">
                   <IonRouterLink
                     className="tag-list-row__link"
-                    routerLink={filteredTransactionsHref({ tagIds: [tag.id] }, period)}
+                    routerLink={filteredTransactionsHref({ ...resetTransactionFilter({}), tagIds: [tag.id] }, period)}
                     routerDirection="forward"
                     aria-label={`Транзакции с тегом ${tag.name}`}
                   >

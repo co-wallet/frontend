@@ -9,6 +9,7 @@ import {
   transactionAccountScope,
   transactionAccountScopeFilter,
   transactionAccountKinds,
+  transactionAccountRestrictionLabels,
   transactionFilterAccounts,
   toggleAccountKind,
 } from './accountFilters'
@@ -23,6 +24,13 @@ const accounts = [
 ] as Account[]
 
 describe('account analytics filters', () => {
+  it('reports only effective kind and access restrictions', () => {
+    expect(transactionAccountRestrictionLabels({})).toEqual(['Текущие средства', 'личные счета'])
+    expect(transactionAccountRestrictionLabels({ accountKinds: [], includeShared: true })).toEqual([])
+    expect(transactionAccountRestrictionLabels({ accountKinds: ['spending', 'savings', 'deposit', 'savings_account', 'investment'], includeShared: true })).toEqual([])
+    expect(transactionAccountRestrictionLabels({ accountKinds: ['deposit'], includeShared: true })).toEqual(['Вклад'])
+    expect(transactionAccountRestrictionLabels({ accountKinds: [], onlyShared: true })).toEqual(['общие счета'])
+  })
   it('resets all restrictions while keeping transfer display preferences', () => {
     const result = resetTransactionFilter({ accountKinds: ['spending'], accountIds: ['spending'],
       onlyShared: true, categoryIds: ['food'], tagIds: ['home'], tagMode: 'and',

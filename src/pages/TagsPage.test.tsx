@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { type Tag } from '@/api/tags'
 import { TagsPage } from './TagsPage'
+import { filterFromParams } from '@/lib/transactionNavigation'
 
 const queryState = vi.hoisted(() => ({ tags: [] as Tag[] }))
 
@@ -25,8 +26,13 @@ describe('TagsPage', () => {
 
     const markup = renderToStaticMarkup(<TagsPage />)
 
-    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-1&amp;period=')
-    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-2&amp;period=')
+    const href = markup.match(/href="([^"]*tag_ids=tag-1[^"]*)"/)![1].replace(/&amp;/g, '&')
+    expect(filterFromParams(new URL(href, 'http://localhost').searchParams)).toEqual({
+      tagIds: ['tag-1'], accountKinds: [], includeShared: true,
+    })
+
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-1&amp;account_kinds=all&amp;include_shared=true&amp;period=')
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag-2&amp;account_kinds=all&amp;include_shared=true&amp;period=')
     expect(markup).toContain('Транзакций: 4')
     expect(markup).not.toContain('Операции')
     expect(markup).toMatch(/<ion-router-link[^>]*href="[^"]+"[^>]*><h2>#Отпуск<\/h2>/)
@@ -44,7 +50,7 @@ describe('TagsPage', () => {
 
     const markup = renderToStaticMarkup(<TagsPage />)
 
-    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag%26account_ids%3Dother&amp;period=')
+    expect(markup).toContain('href="/transactions/filtered/1?tag_ids=tag%26account_ids%3Dother&amp;account_kinds=all&amp;include_shared=true&amp;period=')
   })
 
   it('shows the empty state without transaction links when there are no tags', () => {

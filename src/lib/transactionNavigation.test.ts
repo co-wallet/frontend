@@ -126,7 +126,7 @@ describe('tag navigation', () => {
 })
 
 describe('account navigation', () => {
-  it('selects a personal account with its kind and preserves the period', () => {
+  it('selects only a personal account without kind or access restrictions and preserves the period', () => {
     const href = accountTransactionsHref({
       id: 'deposit & one',
       kind: 'deposit',
@@ -135,7 +135,7 @@ describe('account navigation', () => {
 
     expect(filterFromParams(query(href))).toEqual({
       accountIds: ['deposit & one'],
-      accountKinds: ['deposit'],
+      accountKinds: [], includeShared: true,
     })
     expect(periodFromParams(query(href), { ...period, periodOffset: 0 })).toEqual(period)
   })
@@ -150,7 +150,7 @@ describe('account navigation', () => {
     expect(href).toContain('/transactions/filtered/3?')
     expect(filterFromParams(query(href))).toEqual({
       accountIds: ['shared-account'],
-      accountKinds: ['savings_account'],
+      accountKinds: [],
       includeShared: true,
     })
   })

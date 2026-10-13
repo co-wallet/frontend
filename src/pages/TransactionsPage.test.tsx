@@ -406,6 +406,31 @@ describe('transaction analytics grouping', () => {
 
 
 describe('active filter summary', () => {
+  it('puts category and tag selections before secondary account restrictions', () => {
+    const markup = renderPage('/transactions/filtered/1?category_ids=c1&tag_ids=t1&account_kinds=deposit')
+    const summary = markup.match(/<div class="transactions-active-filters"[\s\S]*?<\/div>/)![0]
+    expect(summary.indexOf('Категории: Продукты')).toBeLessThan(summary.indexOf('Вклад · личные счета'))
+    expect(summary.indexOf('Теги: #путешествия')).toBeLessThan(summary.indexOf('Вклад · личные счета'))
+  })
+
+  it.each(['category_ids=c1', 'tag_ids=t1', 'account_ids=a3'])('uses only the entity filter with unrestricted types and access: %s', (entity) => {
+    const markup = renderPage(`/transactions/filtered/1?${entity}&account_kinds=all&include_shared=true`)
+    const summary = markup.match(/<div class="transactions-active-filters"[\s\S]*?<\/div>/)![0]
+    expect(summary).not.toContain('Типов средств')
+    expect(summary).not.toContain('личные')
+    expect(summary).not.toContain('общие')
+    expect(markup).toContain('Фильтры, активно: 1')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: entity.startsWith('account') ? ['a3'] : ['a1', 'a2', 'a3'] })
+  })
+
+  it('omits unrestricted kinds and access from the summary and badge even with all five kinds selected', () => {
+    const markup = renderPage('/transactions/filtered/1?category_ids=c1&account_kinds=spending,savings,deposit,savings_account,investment&include_shared=true')
+    const summary = markup.match(/<div class="transactions-active-filters"[\s\S]*?<\/div>/)![0]
+    expect(summary).toContain('Продукты')
+    expect(summary).not.toContain('Типов средств')
+    expect(summary).not.toContain('личные и общие')
+    expect(markup).toContain('Фильтры, активно: 1')
+  })
   it('shows a clear unfiltered state without empty groups', () => {
     const markup = renderPage('/transactions')
     expect(markup).toContain('Текущие средства · личные счета')
@@ -451,7 +476,7 @@ describe('active filter summary', () => {
 
   it.each(['all', 'none'])('requests all kinds for an empty selection encoded as %s', (kinds) => {
     const markup = renderPage(`/transactions?account_kinds=${kinds}`)
-    expect(markup).toContain('Все типы средств')
+    expect(markup).toContain('личные счета')
     expect(pagination.options?.enabled).toBe(true)
     const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
     expect(summary.enabled).toBe(true)

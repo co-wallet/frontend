@@ -259,7 +259,7 @@ describe('Dashboard account transaction navigation', () => {
     expect(markup).toContain('<ion-router-link')
     expect(markup).toMatch(/<ion-router-link[^>]*><div class="dashboard-chart-legend-row dashboard-chart-legend-row--link">/)
     expect(markup).toContain('aria-label="Транзакции по счету Личная"')
-    expect(markup).toContain('account_ids=spending&amp;account_kinds=spending&amp;period=month')
+    expect(markup).toContain('account_ids=spending&amp;account_kinds=all&amp;include_shared=true&amp;period=month')
   })
 
   it('does not turn category legend entries into account links', () => {

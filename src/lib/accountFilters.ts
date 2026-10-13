@@ -1,5 +1,6 @@
 import type { Account, AccountKind } from '@/api/accounts'
 import type { TransactionFilter } from '@/api/transactions'
+import { ACCOUNT_KIND_OPTIONS, accountKindShortLabel } from './accountKind'
 
 export const DEFAULT_TRANSACTION_ACCOUNT_KINDS: AccountKind[] = ['spending']
 export type TransactionAccountScope = 'personal' | 'shared' | 'all'
@@ -29,6 +30,16 @@ export function transactionAccountKinds(filter: TransactionFilter): AccountKind[
 export function transactionAccountScope(filter: TransactionFilter): TransactionAccountScope {
   if (filter.onlyShared) return 'shared'
   return filter.includeShared ? 'all' : 'personal'
+}
+
+export function transactionAccountRestrictionLabels(filter: TransactionFilter): string[] {
+  const kinds = transactionAccountKinds(filter)
+  const scope = transactionAccountScope(filter)
+  return [
+    ...(kinds.length && !ACCOUNT_KIND_OPTIONS.every((option) => kinds.includes(option.value))
+      ? [kinds.length === 1 ? accountKindShortLabel(kinds[0]) : `Типов средств: ${kinds.length}`] : []),
+    ...(scope === 'all' ? [] : [scope === 'shared' ? 'общие счета' : 'личные счета']),
+  ]
 }
 
 export function transactionAccountScopeFilter(

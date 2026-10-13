@@ -3,6 +3,7 @@ import type { History, LocationDescriptorObject } from 'history'
 import { isAccountKind } from '@/lib/accountKind'
 import { PERIOD_LABELS, type Period } from '@/store/periodStore'
 import type { AccountAccessMode, AccountKind } from '@/api/accounts'
+import { resetTransactionFilter } from './accountFilters'
 
 export interface TransactionPeriod {
   period: Period
@@ -166,9 +167,8 @@ export function accountTransactionsHref(
   sourcePath = '',
 ): string {
   return filteredTransactionsHref({
+    ...resetTransactionFilter({}),
     accountIds: [account.id],
-    accountKinds: [account.kind],
-    ...(account.accessMode === 'shared' ? { includeShared: true } : {}),
   }, period, sourcePath)
 }
 

@@ -206,7 +206,7 @@ describe('transaction list helpers', () => {
     expect(hasTransactionFilters({ includeShared: true, onlyShared: true })).toBe(true)
     expect(hasTransactionFilters({ includeTransferExpenses: true })).toBe(true)
     expect(hasTransactionFilters({ types: ['expense'] })).toBe(true)
-    expect(hasTransactionFilters({})).toBe(false)
+    expect(hasTransactionFilters({})).toBe(true)
   })
 
   it('includes the without-tags condition in analytics parameters', () => {

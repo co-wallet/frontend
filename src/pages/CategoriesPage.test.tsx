@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 import type { Category } from '@/api/categories'
 import CategoriesPage from './CategoriesPage'
+import { filterFromParams } from '@/lib/transactionNavigation'
 
 const state = vi.hoisted(() => ({ categories: [] as Category[] }))
 vi.mock('@tanstack/react-query', () => ({
@@ -14,6 +15,16 @@ const visible: Category = { id: 'food', userId: 'u1', name: 'Еда', type: 'exp
 const hidden: Category = { ...visible, id: 'hidden', name: 'Архивная', hidden: true }
 
 describe('CategoriesPage visibility', () => {
+  it('links a category with no restrictions on account kinds or access', () => {
+    state.categories = [visible]
+    const markup = renderToStaticMarkup(<CategoriesPage />)
+    const href = markup.match(/href="([^"]*category_ids=food[^"]*)"/)![1].replace(/&amp;/g, '&')
+    expect(filterFromParams(new URL(href, 'http://localhost').searchParams)).toEqual({
+      categoryIds: ['food'], accountKinds: [], includeShared: true,
+    })
+    expect(markup).toContain('aria-label="Транзакции по категории Еда"')
+    expect(markup).toContain('router-direction="forward"')
+  })
   it('shows visible categories and a collapsed reveal button', () => {
     state.categories = [visible, hidden]
     const markup = renderToStaticMarkup(<CategoriesPage />)

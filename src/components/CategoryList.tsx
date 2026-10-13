@@ -1,4 +1,4 @@
-import { IonButton, IonButtons, IonIcon, IonItem, IonLabel } from '@ionic/react'
+import { IonButton, IonButtons, IonIcon, IonItem, IonLabel, IonRouterLink } from '@ionic/react'
 import { createOutline, trashOutline, eyeOutline, eyeOffOutline } from 'ionicons/icons'
 
 import type { Category } from '@/api/categories'
@@ -6,19 +6,26 @@ import { CategoryIcon } from './CategoryIcon'
 
 import './CategoryList.css'
 
-export function CategoryList({ categories, onEdit, onDelete, onToggleHidden, visibilityPending }: {
+export function CategoryList({ categories, onEdit, onDelete, onToggleHidden, visibilityPending, transactionHref }: {
   categories: Category[]
   onEdit: (category: Category) => void
   onDelete: (category: Category) => void
   onToggleHidden?: (category: Category) => void
   visibilityPending?: boolean
+  transactionHref?: (category: Category) => string
 }) {
   return <>{categories.map((category) => (
     <IonItem key={category.id} className="category-list-row">
       <span slot="start" className="category-list-row__icon">
         <CategoryIcon value={category.icon} type={category.type} size={32} />
       </span>
-      <IonLabel className="category-list-row__label">{category.name}{category.hidden && <p>Скрыта для меня</p>}</IonLabel>
+      <IonLabel className="category-list-row__label">
+        {transactionHref ? <IonRouterLink routerLink={transactionHref(category)} routerDirection="forward"
+          className="category-list-row__link" aria-label={`Транзакции по категории ${category.name}`}>
+          {category.name}
+        </IonRouterLink> : category.name}
+        {category.hidden && <p>Скрыта для меня</p>}
+      </IonLabel>
       <IonButtons slot="end" className="category-list-row__actions">
         {onToggleHidden && <IonButton
           fill="clear" color="medium" disabled={visibilityPending}

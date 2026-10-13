@@ -14,6 +14,9 @@ import {
 } from 'ionicons/icons';
 import { categoriesApi, Category, CategoryType, CreateCategoryReq } from '../api/categories';
 import { CategoryList } from '../components/CategoryList';
+import { filteredTransactionsHref } from '@/lib/transactionNavigation';
+import { resetTransactionFilter } from '@/lib/accountFilters';
+import { usePeriodStore } from '@/store/periodStore';
 import {
   defaultCategoryIconValue,
   normalizeCategoryIconValue,
@@ -31,6 +34,7 @@ function emptyFormData(type: CategoryType) {
 }
 
 export default function CategoriesPage() {
+  const period = usePeriodStore();
   const [showHidden, setShowHidden] = useState(false);
   const [activeTab, setActiveTab] = useState<CategoryType>('expense');
   const [showForm, setShowForm] = useState(false);
@@ -172,6 +176,9 @@ export default function CategoriesPage() {
           <IonList>
             <CategoryList
               categories={visibleCategories}
+              transactionHref={(category) => filteredTransactionsHref({
+                ...resetTransactionFilter({}), categoryIds: [category.id],
+              }, period)}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onToggleHidden={(category) => visibilityMutation.mutate(category)}

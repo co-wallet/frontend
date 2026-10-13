@@ -3,6 +3,7 @@ import type { AmountMode, AnalyticsParams } from '@/api/analytics'
 import type { Currency } from '@/api/currencies'
 import type { Transaction, TransactionFilter, TransactionType } from '@/api/transactions'
 import type { Period } from '@/store/periodStore'
+import { transactionAccountRestrictionLabels } from './accountFilters'
 
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   expense: 'Расход',
@@ -224,8 +225,7 @@ export function hasTransactionFilters(filter: TransactionFilter): boolean {
   return Boolean(
     filter.accountIds?.length
     || filter.types?.length
-    || filter.accountKinds?.length
-    || filter.onlyShared === true
+    || transactionAccountRestrictionLabels(filter).length
     || filter.includeTransferExpenses === true
     || filter.includeTransferIncome === false
     || filter.categoryIds?.length
