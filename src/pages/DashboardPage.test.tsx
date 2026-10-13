@@ -32,6 +32,7 @@ const queryState = vi.hoisted(() => ({
   transactionQueries: [] as { filter: Record<string, unknown>; enabled: boolean }[],
   chartMode: 'balance' as 'balance' | 'expenses' | 'income',
   transferVisibility: { expenses: false, income: true },
+  summary: { balance: 10, expenses: 10, income: 0 },
   onCurrencyChange: undefined as ComponentProps<typeof import('@ionic/react').IonSelect>['onIonChange'],
   period: { period: 'month', periodOffset: 0, customFrom: '2026-01-01', customTo: '2026-01-10' } as TransactionPeriod,
 }))
@@ -61,7 +62,7 @@ vi.mock('@tanstack/react-query', () => ({
     if (queryKey[1] === 'by-category') return { data: [
       { categoryId: 'transfers:bank', categoryName: queryKey[2] === 'expense' ? "В 'Банк'" : "Из 'Банк'", amount: 50 },
     ] }
-    if (queryKey[1] === 'summary') return { data: { balance: 10, expenses: 10, income: 0 } }
+    if (queryKey[1] === 'summary') return { data: queryState.summary }
     return { data: [] }
   },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -70,8 +71,32 @@ vi.mock('@tanstack/react-query', () => ({
 vi.mock('@/store/amountModeStore', () => ({ useAmountMode: () => ({ mode: queryState.amountMode, setMode: vi.fn() }) }))
 const initialPeriod = { ...queryState.period }
 afterEach(() => { useAuthStore.setState({ user: null }); vi.clearAllMocks() })
+afterEach(() => { queryState.summary = { balance: 10, expenses: 10, income: 0 } })
 afterEach(() => { queryState.amountMode = 'share'; queryState.selectedKinds = ['spending']; queryState.includeShared = false; queryState.accountsLoading = false; queryState.accountsError = false; queryState.onlyShared = false; queryState.analyticsQueries = []; queryState.transactionQueries = []; queryState.period = initialPeriod; queryState.chartMode = 'balance'; queryState.transferVisibility = { expenses: false, income: true } })
 
+
+describe('Dashboard summary cards', () => {
+  it.each([
+    { kinds: ['spending'] }, { kinds: ['deposit'] }, { kinds: ['spending', 'savings'] }, { kinds: [] },
+  ])('keeps an accessible balance name without visible headings for account kinds $kinds', ({ kinds }) => {
+    queryState.selectedKinds = kinds
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    expect(markup).toContain('aria-label="Показать баланс"')
+    expect(markup).not.toContain('<span>Баланс</span>')
+    expect(markup).not.toContain('<span>Расходы</span>')
+    expect(markup).not.toContain('<span>Доходы</span>')
+    expect(markup).not.toContain('Доступно')
+  })
+
+  it('renders full large and negative amounts in all three cards', () => {
+    queryState.summary = { balance: -142001.98, expenses: 123456789.12, income: 9876543.21 }
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    const strip = markup.match(/<section class="summary-strip"[^>]*>([\s\S]*?)<\/section>/)![1]
+    const amounts = [...strip.matchAll(/<strong[^>]*>([^<]+)<\/strong>/g)].map((match) => match[1])
+    expect(amounts).toEqual(['−142 001,98 $', '123 456 789,12 $', '9 876 543,21 $'])
+    expect(strip).not.toContain('ion-icon')
+  })
+})
 
 describe('Dashboard period visibility', () => {
   it('keeps the base profile currency when selecting another display currency', () => {
@@ -89,6 +114,8 @@ describe('Dashboard period visibility', () => {
   it('hides period controls in the initial balance view', () => {
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
     expect(markup).toContain('Баланс по счетам')
+    expect(markup).not.toMatch(/<ion-card-title[^>]*>Баланс по счетам/)
+    expect(markup).not.toContain('Моя доля')
     expect(markup).not.toContain('Предыдущий период')
     expect(markup).not.toContain('Период доходов и расходов')
   })
@@ -97,7 +124,7 @@ describe('Dashboard period visibility', () => {
     queryState.chartMode = mode
     queryState.period = { period: 'custom', periodOffset: 0, customFrom: '2026-08-01', customTo: '2026-08-20' }
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toMatch(/Доходы[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
+    expect(markup).toMatch(/class="summary-strip"[^]*<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*Предыдущий период[^]*aria-label="День"[^]*aria-label="Год"[^]*<\/section>[^]*(Расходы|Доходы) по категориям/)
     expect(markup).toContain('Выбрать период. Сейчас: 01.08.26 - 20.08.26')
     expect(queryState.analyticsQueries[queryState.analyticsQueries.length - 1]?.params).toMatchObject({ date_from: '2026-08-01', date_to: '2026-08-20' })
   })
@@ -124,8 +151,9 @@ describe('Dashboard transfer visibility', () => {
     expect(markup).not.toContain('dashboard-transfer-hint')
     const periodControls = markup.match(/<section[^>]*aria-label="Период доходов и расходов"[^>]*>[^]*?<\/section>/)?.[0]
     expect(periodControls).not.toContain('ion-checkbox')
-    const chartHeader = markup.match(/<ion-card-header[^>]*>[^]*?(Расходы|Доходы) по категориям[^]*?<\/ion-card-header>/)?.[0]
-    expect(chartHeader).toContain('id="dashboard-chart-settings"')
+    const chartCard = markup.match(/<ion-card aria-label="(Расходы|Доходы) по категориям"[^>]*>[^]*?<\/ion-card>/)?.[0]
+    expect(chartCard).toContain('id="dashboard-chart-settings"')
+    expect(chartCard).not.toContain('ion-card-header')
     expect(queryState.analyticsQueries[queryState.analyticsQueries.length - 1]?.params).toMatchObject({ include_transfer_expenses: false, include_transfer_income: true })
   })
 
@@ -302,7 +330,7 @@ it.each(['balance', 'expenses', 'income'] as const)('uses total amounts in %s wi
   for (const query of queryState.analyticsQueries) expect(query.params).toMatchObject({
     amount_mode: 'total', account_ids: 'shared-savings-account',
   })
-  expect(markup).toContain('Полные суммы')
+  expect(markup).not.toContain('Полные суммы')
   if (mode === 'balance') expect(markup).toContain('240')
   expect(queryState.transactionQueries[0]?.filter.accountIds).toEqual(['shared-savings-account'])
 })

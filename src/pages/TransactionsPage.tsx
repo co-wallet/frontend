@@ -1,7 +1,8 @@
 import { PeriodControl } from '@/components/PeriodControl'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { AmountModeControl, AMOUNT_MODE_LABELS } from '@/components/AmountModeControl'
+import { AmountModeControl } from '@/components/AmountModeControl'
+import { SummaryStrip } from '@/components/SummaryStrip'
 import { useAmountMode } from '@/store/amountModeStore'
 import { useCallback, useMemo, useState } from 'react'
 import { useHistory, useLocation, useRouteMatch } from 'react-router-dom'
@@ -317,6 +318,9 @@ export function TransactionsPage() {
     'income',
     filter.includeTransferIncome ?? true,
   )
+  const balanceFilterActive = !filter.types?.length
+  const balanceLoading = accountsQuery.isLoading || (hasEffectiveAccounts && summaryQuery.isLoading)
+  const balanceError = accountsQuery.isError || (hasEffectiveAccounts && summaryQuery.isError)
   const hasFilters = hasTransactionFilters(filter)
   const accountKinds = transactionAccountKinds(filter)
   const accountScope = transactionAccountScope(filter)
@@ -416,47 +420,29 @@ export function TransactionsPage() {
             </div>
           </div>
 
-          <IonNote className="transactions-amount-mode-label">{AMOUNT_MODE_LABELS[amountMode]}</IonNote>
           {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
         <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {defaultCurrency}.</p></IonText>}
-          <section className="transactions-summary" aria-label="Сводка за период">
-            <button
-              type="button"
-              className={`transactions-summary__item${expenseFilterActive ? ' transactions-summary__item--active transactions-summary__item--expense' : ''}`}
-              aria-pressed={expenseFilterActive}
-              aria-label={expenseFilterActive ? 'Убрать фильтр расходов' : 'Показать расходы'}
-              onClick={() => selectSummaryMode('expenses')}
-            >
-              <span>Расходы</span>
-              {summaryQuery.isLoading ? (
-                <IonSkeletonText animated className="transactions-summary__skeleton" />
-              ) : summaryQuery.isError ? (
-                <strong className="transactions-summary__amount">—</strong>
-              ) : (
-                <strong className="transactions-summary__amount transactions-summary__amount--expense">
-                  {formatCurrencyAmount(-(summaryQuery.data?.expenses ?? 0), defaultCurrency, 2)}
-                </strong>
-              )}
-            </button>
-            <button
-              type="button"
-              className={`transactions-summary__item${incomeFilterActive ? ' transactions-summary__item--active transactions-summary__item--income' : ''}`}
-              aria-pressed={incomeFilterActive}
-              aria-label={incomeFilterActive ? 'Убрать фильтр доходов' : 'Показать доходы'}
-              onClick={() => selectSummaryMode('income')}
-            >
-              <span>Доходы</span>
-              {summaryQuery.isLoading ? (
-                <IonSkeletonText animated className="transactions-summary__skeleton" />
-              ) : summaryQuery.isError ? (
-                <strong className="transactions-summary__amount">—</strong>
-              ) : (
-                <strong className="transactions-summary__amount transactions-summary__amount--income">
-                  {formatCurrencyAmount(summaryQuery.data?.income ?? 0, defaultCurrency, 2)}
-                </strong>
-              )}
-            </button>
-          </section>
+          <SummaryStrip currency={defaultCurrency} label="Сводка за период" items={[
+            {
+              kind: 'balance', label: 'Показать все транзакции',
+              title: 'Текущий баланс выбранных счетов',
+              amount: hasEffectiveAccounts ? summaryQuery.data?.balance ?? 0 : 0,
+              active: balanceFilterActive, loading: balanceLoading, error: balanceError,
+              onSelect: () => setFilter({ ...filter, types: undefined }),
+            },
+            {
+              kind: 'expense', label: expenseFilterActive ? 'Убрать фильтр расходов' : 'Показать расходы',
+              amount: summaryQuery.data?.expenses ?? 0,
+              active: expenseFilterActive, loading: summaryQuery.isLoading, error: summaryQuery.isError,
+              onSelect: () => selectSummaryMode('expenses'),
+            },
+            {
+              kind: 'income', label: incomeFilterActive ? 'Убрать фильтр доходов' : 'Показать доходы',
+              amount: summaryQuery.data?.income ?? 0,
+              active: incomeFilterActive, loading: summaryQuery.isLoading, error: summaryQuery.isError,
+              onSelect: () => selectSummaryMode('income'),
+            },
+          ]} />
 
           {summaryQuery.isError && (
             <div className="transactions-inline-error" role="alert">

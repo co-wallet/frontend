@@ -113,6 +113,28 @@ describe('useRecentTransactionsFit', () => {
     expect(hooks.fit).toEqual({ count: 1, compact: false, hidden: false })
   })
 
+  it('uses all available space for rows when the card has no header', async () => {
+    top = 800
+    const card = hooks.card as { querySelector: (selector: string) => unknown }
+    const querySelector = card.querySelector
+    card.querySelector = (selector) => selector.endsWith('header') ? null : querySelector(selector)
+    await render()
+    flushFrame()
+    expect(hooks.fit).toEqual({ count: 2, compact: false, hidden: false })
+  })
+
+  it.each([
+    { available: 154, count: 1, compact: true },
+    { available: 132, count: 1, compact: true },
+    { available: 131, count: 0, compact: true },
+    { available: 180, count: 1, compact: false },
+  ])('fits $count complete rows in $available px without reserving a hidden header', async (test) => {
+    top = 1000 - test.available - 2
+    await render()
+    flushFrame()
+    expect(hooks.fit).toEqual({ count: test.count, compact: test.compact, hidden: false })
+  })
+
   it('batches resize notifications into one frame and cancels it on unmount', async () => {
     await render()
     notifyResize()

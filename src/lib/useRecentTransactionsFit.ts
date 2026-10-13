@@ -13,7 +13,7 @@ export function useRecentTransactionsFit(contentKey: unknown, status: string) {
     let cleanup = () => {}
     void content.getScrollElement().then((scroll) => {
       if (disposed) return
-      const header = card.querySelector<HTMLElement>('.recent-transactions__header')!
+      const header = card.querySelector<HTMLElement>('.recent-transactions__header')
       const footer = card.querySelector<HTMLElement>('.recent-transactions__footer')!
       const message = card.querySelector<HTMLElement>('.recent-transactions__message')
       const rows = Array.from(card.querySelectorAll<HTMLElement>('.recent-transactions__row'))
@@ -36,11 +36,15 @@ export function useRecentTransactionsFit(contentKey: unknown, status: string) {
         const margin = parseFloat(getComputedStyle(card).marginBottom) || 0
         const available = Math.max(0, bottom - top - margin - 2)
         const footerHeight = footer.getBoundingClientRect().height
-        const headerHeight = header.getBoundingClientRect().height
-        const count = fitRecentTransactions(available, headerHeight, footerHeight,
-          rows.map((row) => row.getBoundingClientRect().height))
-        const compact = rows.length > 0 ? count === 0
+        const headerHeight = header?.getBoundingClientRect().height ?? 0
+        const rowHeights = rows.map((row) => row.getBoundingClientRect().height)
+        const fullCount = fitRecentTransactions(available, headerHeight, footerHeight, rowHeights)
+        const compact = rows.length > 0 ? fullCount === 0
           : headerHeight + footerHeight + (message?.getBoundingClientRect().height ?? 0) > available
+        // Compact mode hides the header, so its height must not prevent rows from fitting.
+        const count = compact && rows.length > 0
+          ? fitRecentTransactions(available, 0, footerHeight, rowHeights)
+          : fullCount
         const hidden = footerHeight > available
         setFit((previous) => previous.count === count && previous.compact === compact && previous.hidden === hidden
           ? previous : { count, compact, hidden })

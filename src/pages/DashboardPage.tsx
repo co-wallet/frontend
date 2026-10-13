@@ -4,7 +4,8 @@ import { PieChartTooltip } from '@/components/PieChartTooltip'
 import { usePieChartTooltip } from '@/lib/usePieChartTooltip'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { AppContent } from '@/components/layout/AppContent'
-import { AmountModeControl, AMOUNT_MODE_LABELS } from '@/components/AmountModeControl'
+import { AmountModeControl } from '@/components/AmountModeControl'
+import { SummaryStrip, type SummaryStripItem } from '@/components/SummaryStrip'
 import { useAmountMode } from '@/store/amountModeStore'
 import { useRef, useState } from 'react'
 import { useHistory, useLocation } from 'react-router-dom'
@@ -17,8 +18,6 @@ import {
   IonButton,
   IonIcon,
   IonCard,
-  IonCardHeader,
-  IonCardTitle,
   IonCardContent,
   IonSelect,
   IonSelectOption,
@@ -26,9 +25,6 @@ import {
   IonRouterLink,
 } from '@ionic/react'
 import {
-  trendingDownOutline,
-  trendingUpOutline,
-  analyticsOutline,
   optionsOutline,
   swapHorizontalOutline,
   chevronDownOutline,
@@ -311,7 +307,7 @@ export function DashboardPage() {
   const selectedCurrency: Currency | undefined = currencies.find((c) => c.code === displayCurrency)
   const sym = selectedCurrency?.symbol ?? displayCurrency
 
-  const { data: summaryRaw } = useQuery({
+  const { data: summaryRaw, isLoading: summaryLoading, isError: summaryError } = useQuery({
     queryKey: ['analytics', 'summary', params],
     queryFn: () => analyticsApi.summary(params),
     enabled: hasAnalyticsAccounts,
@@ -398,16 +394,19 @@ export function DashboardPage() {
 
   const chartTheme = useChartTheme()
 
-  const summaryCards: { mode: ChartMode; icon: string; label: string; value: number; color: string }[] = [
+  const summaryItems: SummaryStripItem[] = [
     {
-      mode: 'balance',
-      icon: analyticsOutline,
-      label: selectedKinds.length === 1 && selectedKinds[0] === 'spending' ? 'Доступно' : 'Баланс',
-      value: summary?.balance ?? 0,
-      color: 'primary',
+      kind: 'balance', label: 'Показать баланс', amount: summary?.balance ?? 0,
+      active: chartMode === 'balance', onSelect: () => setChartMode('balance'),
     },
-    { mode: 'expenses', icon: trendingDownOutline, label: 'Расходы', value: summary?.expenses ?? 0, color: 'danger' },
-    { mode: 'income', icon: trendingUpOutline, label: 'Доходы', value: summary?.income ?? 0, color: 'success' },
+    {
+      kind: 'expense', label: 'Показать расходы', amount: summary?.expenses ?? 0,
+      active: chartMode === 'expenses', onSelect: () => setChartMode('expenses'),
+    },
+    {
+      kind: 'income', label: 'Показать доходы', amount: summary?.income ?? 0,
+      active: chartMode === 'income', onSelect: () => setChartMode('income'),
+    },
   ]
 
   return (
@@ -494,27 +493,11 @@ export function DashboardPage() {
           {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
             <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {displayCurrency}.</p></IonText>}
           {/* Summary cards */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: 16 }}>
-            {summaryCards.map((card) => (
-              <IonCard
-                key={card.mode}
-                button
-                onClick={() => setChartMode(card.mode)}
-                color={chartMode === card.mode ? card.color : undefined}
-                style={{ margin: 0 }}
-              >
-                <IonCardContent className="ion-padding">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 4 }}>
-                    <IonIcon icon={card.icon} style={{ fontSize: 14 }} />
-                    <span style={{ fontSize: '0.75rem' }}>{card.label}</span>
-                  </div>
-                  <p style={{ fontSize: '0.875rem', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>
-                    {formatAmount(card.value, sym)}
-                  </p>
-                </IonCardContent>
-              </IonCard>
-            ))}
-          </div>
+          <SummaryStrip currency={displayCurrency} label="Сводка" items={summaryItems.map((item) => ({
+            ...item,
+            loading: accountsLoading || (hasAnalyticsAccounts && summaryLoading),
+            error: accountsError || (hasAnalyticsAccounts && summaryError),
+          }))} />
 
           {chartMode !== 'balance' && (
             <section className="dashboard-period-controls" aria-label="Период доходов и расходов">
@@ -528,25 +511,17 @@ export function DashboardPage() {
           )}
 
           {/* Pie chart block */}
-          <IonCard className="dashboard-chart-card" style={{ margin: '0 0 16px 0' }}>
-            <IonCardHeader className="dashboard-chart-header">
-              <div className="dashboard-chart-heading">
-                <IonCardTitle style={{ fontSize: '0.875rem' }}>
-                  {chartTitles[chartMode]}
-                  <span className="dashboard-amount-mode-label">{AMOUNT_MODE_LABELS[amountMode]}</span>
-                </IonCardTitle>
-                <IonButton
-                  id="dashboard-chart-settings"
-                  className="dashboard-chart-settings"
-                  fill="clear"
-                  color="medium"
-                  aria-label={chartSettingsLabels[chartMode]}
-                  aria-haspopup="dialog"
-                  >
-                  <IonIcon slot="icon-only" icon={optionsOutline} />
-                </IonButton>
-              </div>
-            </IonCardHeader>
+          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: '0 0 16px 0' }}>
+            <IonButton
+              id="dashboard-chart-settings"
+              className="dashboard-chart-settings"
+              fill="clear"
+              color="medium"
+              aria-label={chartSettingsLabels[chartMode]}
+              aria-haspopup="dialog"
+            >
+              <IonIcon slot="icon-only" icon={optionsOutline} />
+            </IonButton>
             <IonCardContent>
               <ChartBlock
                 data={activePieData}

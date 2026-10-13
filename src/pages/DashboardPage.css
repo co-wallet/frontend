@@ -1,4 +1,5 @@
 .dashboard-chart-card {
+  position: relative;
   border: 1px solid transparent;
 }
 
@@ -57,6 +58,7 @@ body.dark .dashboard-chart-card {
 }
 
 .dashboard-account-filter {
+  --dashboard-filter-height: 46px;
   display: grid;
   grid-template-columns: minmax(0, 1fr) 112px;
   align-items: stretch;
@@ -64,10 +66,13 @@ body.dark .dashboard-chart-card {
 }
 
 .dashboard-currency-select {
+  --padding-top: 0;
+  --padding-bottom: 0;
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  min-height: 48px;
+  height: var(--dashboard-filter-height);
+  min-height: var(--dashboard-filter-height);
   padding: 0 12px;
   border: 1px solid var(--ion-border-color, var(--ion-color-light-shade));
   border-radius: 12px;
@@ -85,13 +90,16 @@ body.dark .dashboard-chart-card {
   --border-radius: 12px;
   --padding-start: 12px;
   --padding-end: 12px;
+  --padding-top: 0;
+  --padding-bottom: 0;
   --color: var(--ion-text-color);
   min-width: 0;
   text-transform: none;
   font-weight: 400;
   font-size: 1rem;
   margin: 0;
-  min-height: 48px;
+  height: var(--dashboard-filter-height);
+  min-height: var(--dashboard-filter-height);
 }
 
 .dashboard-period-controls .period-control__row { margin-bottom: 0; }
@@ -101,39 +109,22 @@ body.dark .dashboard-chart-card {
   margin-bottom: 16px;
 }
 
-/* One wrapper preserves heading/action order in both Ionic platform modes. */
-.dashboard-chart-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.dashboard-chart-heading ion-card-title {
-  flex: 1;
-  min-width: 0;
-}
-
 .dashboard-chart-settings {
+  position: absolute;
+  inset-block-start: 4px;
+  inset-inline-end: 4px;
+  z-index: 1;
   --padding-start: 10px;
   --padding-end: 10px;
   flex-shrink: 0;
   min-width: 44px;
   height: 44px;
-  margin: -8px -8px -8px 0;
+  margin: 0;
 }
 
 .dashboard-chart-popover {
   --width: 264px;
   --max-width: calc(100vw - 32px);
-}
-
-.dashboard-amount-mode-label {
-  display: block;
-  margin-top: 4px;
-  color: var(--ion-color-medium);
-  font-size: 0.75rem;
-  font-weight: 400;
 }
 
 .dashboard-chart-popover-content {

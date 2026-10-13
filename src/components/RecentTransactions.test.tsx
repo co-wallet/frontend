@@ -41,6 +41,14 @@ afterEach(() => {
 })
 
 describe('RecentTransactions', () => {
+  it('keeps the preview accessible without a visible heading', () => {
+    const markup = render()
+    expect(markup).not.toContain('ion-card-header')
+    expect(markup).not.toContain('ion-card-title')
+    expect(markup).toContain('aria-label="Последние транзакции"')
+    expect(markup).toContain('Все транзакции')
+  })
+
   it('passes current rates to recent rows when the saved currency differs', () => {
     state.items = [{
       id: 'converted', accountId: 'selected', type: 'expense', amount: 100, currency: 'USD',
