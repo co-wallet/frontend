@@ -11,6 +11,14 @@ export interface User {
   updatedAt: string
 }
 
+export interface UpdateProfileReq {
+  username?: string
+  email?: string
+  currentPassword?: string
+  newPassword?: string
+  defaultCurrency?: string
+}
+
 export interface TokenPair {
   accessToken: string
   refreshToken: string
@@ -53,8 +61,8 @@ export const authApi = {
     return data
   },
 
-  updateMe: async (defaultCurrency: string): Promise<User> => {
-    const { data } = await apiClient.patch<User>('/users/me', { defaultCurrency })
+  updateMe: async (request: UpdateProfileReq | string): Promise<User> => {
+    const { data } = await apiClient.patch<User>('/users/me', typeof request === 'string' ? { defaultCurrency: request } : request)
     return data
   },
 }
