@@ -317,6 +317,10 @@ export function TransactionsPage() {
     'income',
     filter.includeTransferIncome ?? true,
   )
+  const balanceFilterActive = !filter.types?.length
+  const balanceLoading = accountsQuery.isLoading || (hasEffectiveAccounts && summaryQuery.isLoading)
+  const balanceError = accountsQuery.isError || (hasEffectiveAccounts && summaryQuery.isError)
+  const balanceAmount = formatCurrencyAmount(hasEffectiveAccounts ? summaryQuery.data?.balance ?? 0 : 0, defaultCurrency, 2)
   const hasFilters = hasTransactionFilters(filter)
   const accountKinds = transactionAccountKinds(filter)
   const accountScope = transactionAccountScope(filter)
@@ -420,6 +424,25 @@ export function TransactionsPage() {
           {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0) > 0) &&
         <IonText color="warning"><p role="status">Итоги неполные: для {((summaryQuery.data?.expensesMissingAmounts ?? 0) + (summaryQuery.data?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {defaultCurrency}.</p></IonText>}
           <section className="transactions-summary" aria-label="Сводка за период">
+            <button
+              type="button"
+              className={`transactions-summary__item${balanceFilterActive ? ' transactions-summary__item--active transactions-summary__item--balance' : ''}`}
+              aria-pressed={balanceFilterActive}
+              aria-label="Показать все транзакции"
+              title="Текущий баланс выбранных счетов"
+              onClick={() => setFilter({ ...filter, types: undefined })}
+            >
+              <span>Баланс</span>
+              {balanceLoading ? (
+                <IonSkeletonText animated className="transactions-summary__skeleton" />
+              ) : balanceError ? (
+                <strong className="transactions-summary__amount">—</strong>
+              ) : (
+                <strong className="transactions-summary__amount transactions-summary__amount--balance" title={balanceAmount}>
+                  {balanceAmount}
+                </strong>
+              )}
+            </button>
             <button
               type="button"
               className={`transactions-summary__item${expenseFilterActive ? ' transactions-summary__item--active transactions-summary__item--expense' : ''}`}

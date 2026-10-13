@@ -54,6 +54,12 @@ const pagination = vi.hoisted(() => ({
   currencies: [] as Currency[],
   missingAmounts: 0,
   categoryStats: [] as CategoryStat[],
+  balance: 1250.5,
+  summaryLoading: false,
+  summaryError: false,
+  accountsLoading: false,
+  accountsError: false,
+  onBalanceClick: undefined as (() => void) | undefined,
 }))
 beforeEach(() => {
   pagination.data = { pages: [[]] }
@@ -69,6 +75,26 @@ beforeEach(() => {
   pagination.currencies = []
   pagination.missingAmounts = 0
   pagination.categoryStats = [{ categoryId: 'c1', categoryName: 'Продукты', amount: 125, icon: 'preset:groceries' }]
+  pagination.balance = 1250.5
+  pagination.summaryLoading = false
+  pagination.summaryError = false
+  pagination.accountsLoading = false
+  pagination.accountsError = false
+  pagination.onBalanceClick = undefined
+})
+
+vi.mock('react/jsx-dev-runtime', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('react/jsx-dev-runtime')>()
+  return {
+    ...actual,
+    jsxDEV: (...args: Parameters<typeof actual.jsxDEV>) => {
+      const props = args[1] as ComponentProps<'button'>
+      if (args[0] === 'button' && props['aria-label'] === 'Показать все транзакции') {
+        pagination.onBalanceClick = () => props.onClick?.({} as Parameters<NonNullable<typeof props.onClick>>[0])
+      }
+      return actual.jsxDEV(...args)
+    },
+  }
 })
 
 vi.mock('react', async (importOriginal) => {
@@ -113,9 +139,12 @@ vi.mock('@tanstack/react-query', () => ({
           : queryKey[0] === 'currencies'
             ? pagination.currencies
             : queryKey[0] === 'analytics' && queryKey[1] === 'summary'
-              ? { expensesMissingAmounts: pagination.missingAmounts, incomeMissingAmounts: 0 }
+              ? { balance: pagination.balance, expensesMissingAmounts: pagination.missingAmounts, incomeMissingAmounts: 0 }
           : [],
-    isLoading: false,
+    isLoading: queryKey[0] === 'accounts' ? pagination.accountsLoading
+      : queryKey[1] === 'summary' && pagination.summaryLoading,
+    isError: queryKey[0] === 'accounts' ? pagination.accountsError
+      : queryKey[1] === 'summary' && pagination.summaryError,
     })
   },
   useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -139,6 +168,67 @@ it('shows the owner login and transfer icon in an external transfer legend', () 
   expect(markup).toContain('aria-label="Перевод"')
   expect(markup).toContain('var(--account-icon-color-blue)')
   expect(markup).not.toContain('Транзакции с тегом undefined')
+})
+
+describe('transaction account balance', () => {
+  function balanceCard(path = '/transactions') {
+    return renderPage(path).match(/<button[^>]*aria-label="Показать все транзакции"[\s\S]*?<\/button>/)![0]
+  }
+
+  it('shows the server balance before expenses and income for the selected accounts', () => {
+    const markup = renderPage('/transactions?account_ids=a1,a2&include_shared=true')
+    expect(markup.indexOf('<span>Баланс</span>')).toBeLessThan(markup.indexOf('<span>Расходы</span>'))
+    expect(markup).toContain('1 250,50 $')
+    expect(markup).toMatch(/aria-pressed="true" aria-label="Показать все транзакции"/)
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a1,a2', currency: 'USD', amount_mode: 'share' })
+  })
+
+  it('uses the selected amount mode and formats a negative balance', () => {
+    pagination.amountMode = 'total'
+    pagination.balance = -10.25
+    expect(balanceCard('/transactions?account_ids=a2&include_shared=true')).toContain('−10,25 $')
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ account_ids: 'a2', amount_mode: 'total' })
+  })
+
+  it.each(['expense', 'income,transfer', 'transfer', undefined])('clears the %s type filter while preserving all other conditions', (types) => {
+    const history = createMemoryHistory({ initialEntries: [
+      '/transactions/filtered/2?account_ids=a1,a2&include_shared=true&account_kinds=spending&category_ids=c1&tag_ids=t1&tag_mode=and&include_transfer_expenses=true&include_transfer_income=false&period=custom&from=2026-08-01&to=2026-08-31'
+        + (types ? `&types=${types}` : ''),
+    ] })
+    const before = new URLSearchParams(history.location.search)
+    renderToStaticMarkup(<Router history={history}><Route path="/transactions"><TransactionsPage /></Route></Router>)
+    pagination.onBalanceClick!()
+    before.delete('types')
+    expect(Object.fromEntries(new URLSearchParams(history.location.search))).toEqual(Object.fromEntries(before))
+    expect(history.location.pathname).toBe('/transactions/filtered/2')
+    expect(history.length).toBe(1)
+    renderToStaticMarkup(<Router history={history}><Route path="/transactions"><TransactionsPage /></Route></Router>)
+    expect(pagination.options?.queryKey[2]).not.toHaveProperty('types')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ accountIds: ['a1', 'a2'] })
+  })
+
+  it('shows an inactive balance card while filtering operations by type', () => {
+    expect(balanceCard('/transactions?types=expense')).toContain('aria-pressed="false"')
+  })
+
+  it.each(['summaryLoading', 'accountsLoading'] as const)('shows a placeholder during %s', (state) => {
+    pagination[state] = true
+    expect(balanceCard()).toContain('<ion-skeleton-text')
+    expect(balanceCard()).not.toContain('1 250,50 $')
+  })
+
+  it.each(['summaryError', 'accountsError'] as const)('shows an unavailable balance on %s', (state) => {
+    pagination[state] = true
+    expect(balanceCard()).toContain('>—</strong>')
+    expect(balanceCard()).not.toContain('1 250,50 $')
+  })
+
+  it('shows zero when no accounts match instead of using cached summary data', () => {
+    expect(balanceCard('/transactions?account_kinds=none')).toContain('>0 $</strong>')
+    expect(pagination.analyticsQueries.every((query) => query.enabled === false)).toBe(true)
+  })
 })
 
 describe('transaction navigation controls', () => {
