@@ -401,7 +401,7 @@ it.each([false, true])('shows all kinds selected and queries matching accounts, 
   const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
   expect(markup).toContain('Все типы средств')
   const popover = queryState.popovers.find((props) => props.trigger === 'dashboard-kind-filter')!
-  expect(renderToStaticMarkup(<>{popover.children}</>)).toMatch(/aria-label="Все типы средств" aria-pressed="true"/)
+  expect(renderToStaticMarkup(<>{popover.children}</>)).toMatch(/role="checkbox" aria-label="Все типы средств" aria-checked="true"/)
   const ids = includeShared
     ? ['spending', 'deposit', 'shared', 'shared-deposit', 'savings', 'shared-savings-account']
     : ['spending', 'deposit', 'savings']

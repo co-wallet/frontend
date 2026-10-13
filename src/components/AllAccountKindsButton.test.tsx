@@ -9,9 +9,10 @@ const controls = vi.hoisted(() => ({ click: undefined as undefined | (() => void
 vi.mock('@ionic/react', async (importOriginal) => {
   const actual = await importOriginal<typeof import('@ionic/react')>()
   return {
-    IonButton: ({ children, onClick, ...props }: ComponentProps<typeof import('@ionic/react').IonButton>) => {
+    ...actual,
+    IonItem: ({ children, onClick, ...props }: ComponentProps<typeof import('@ionic/react').IonItem>) => {
       controls.click = () => onClick?.({} as Parameters<NonNullable<typeof onClick>>[0])
-      return <actual.IonButton {...props}>{children}</actual.IonButton>
+      return <actual.IonItem {...props}>{children}</actual.IonItem>
     },
   }
 })
@@ -29,10 +30,10 @@ describe('AllAccountKindsButton', () => {
       controls.click!()
       const initiallyAll = initial.length === allKinds.length
       expect(onChange).toHaveBeenCalledExactlyOnceWith(initiallyAll ? [] : allKinds)
-      expect(render()).toContain(`aria-pressed="${!initiallyAll}"`)
+      expect(render()).toContain(`aria-checked="${!initiallyAll}"`)
       controls.click!()
       expect(selectedKinds).toEqual(initiallyAll ? allKinds : [])
-      expect(render()).toContain(`aria-pressed="${initiallyAll}"`)
+      expect(render()).toContain(`aria-checked="${initiallyAll}"`)
       expect(onChange).toHaveBeenCalledTimes(2)
     },
   )
@@ -40,10 +41,10 @@ describe('AllAccountKindsButton', () => {
   it('announces a partial selection after excluding one kind', () => {
     const markup = renderToStaticMarkup(<AllAccountKindsButton
       selectedKinds={allKinds.filter((kind) => kind !== 'deposit')}
-      onChange={vi.fn()} className="dashboard-kind-option" unselectedFill="clear" />)
+      onChange={vi.fn()} className="dashboard-kind-option" />)
     expect(markup).toContain('aria-label="Все типы средств"')
-    expect(markup).toContain('aria-pressed="false"')
-    expect(markup).toContain('fill="clear"')
-    expect(markup).toContain('<span>Все</span>')
+    expect(markup).toContain('aria-checked="false"')
+    expect(markup).toContain('role="checkbox"')
+    expect(markup).toContain('Все</ion-label>')
   })
 })

@@ -23,11 +23,15 @@ import {
   IonSelectOption,
   IonText,
   IonRouterLink,
+  IonItem,
+  IonLabel,
+  IonList,
 } from '@ionic/react'
 import {
   optionsOutline,
   swapHorizontalOutline,
   funnelOutline,
+  checkmark,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
@@ -449,6 +453,7 @@ export function DashboardPage() {
                 id="dashboard-kind-filter"
                 className="dashboard-kind-trigger"
                 fill="clear"
+                color="medium"
                 aria-label="Тип средств"
                 aria-haspopup="dialog"
               >
@@ -463,37 +468,37 @@ export function DashboardPage() {
                 trigger="dashboard-kind-filter"
                 className="dashboard-kind-popover"
                 reference="trigger"
-                size="cover"
                 side="bottom"
-                alignment="start"
-                arrow={false}
+                alignment="center"
                 aria-label="Тип средств"
               >
-                <div className="dashboard-kind-options">
+                <IonList className="dashboard-kind-options">
                   <AllAccountKindsButton selectedKinds={selectedKinds} onChange={setSelectedKinds}
-                    className="dashboard-kind-option" unselectedFill="clear" />
+                    className="dashboard-kind-option" />
                   {ACCOUNT_KIND_OPTIONS.map((option) => {
                     const selected = selectedKinds.includes(option.value)
                     return (
-                      <IonButton
+                      <IonItem button detail={false}
                         key={option.value}
                         className="dashboard-kind-option"
-                        fill={selected ? 'solid' : 'clear'}
-                        color={selected ? 'primary' : 'medium'}
-                        aria-pressed={selected}
+                        role="checkbox"
+                        aria-label={option.shortLabel}
+                        aria-checked={selected}
                         onClick={() => setSelectedKinds((previous) => previous.includes(option.value)
                           ? previous.filter((kind) => kind !== option.value)
                           : [...previous, option.value])}
                       >
-                        <span>{option.shortLabel}</span>
-                      </IonButton>
+                        <IonLabel>{option.shortLabel}</IonLabel>
+                        {selected && <IonIcon slot="end" icon={checkmark} color="primary" aria-hidden="true" />}
+                      </IonItem>
                     )
                   })}
-                </div>
+                </IonList>
               </IonPopover>
               <div className="dashboard-chart-toolbar-actions">
                 <IonSelect
                   aria-label="Валюта"
+                  color="medium"
                   interface="popover"
                   value={displayCurrency}
                   onIonChange={(e) => {

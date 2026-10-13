@@ -17,6 +17,10 @@
   pointer-events: none;
 }
 
+.dashboard-chart-card ion-card-content {
+  padding-top: 0;
+}
+
 .dashboard-chart-card,
 .dashboard-chart-card ion-card-content,
 .dashboard-chart-card .recharts-responsive-container,
@@ -100,7 +104,7 @@ body.dark .dashboard-chart-card {
   font-size: 0.875rem;
   font-weight: 400;
   text-transform: none;
-  --color: var(--ion-text-color);
+  --color: var(--ion-color-medium);
   --padding-start: 4px;
   --padding-end: 4px;
 }
@@ -116,7 +120,7 @@ body.dark .dashboard-chart-card {
   padding: 0 4px;
   font-size: 0.875rem;
   font-weight: 500;
-  color: var(--ion-text-color);
+  color: var(--ion-color-medium);
   --padding-top: 0;
   --padding-bottom: 0;
 }
@@ -127,6 +131,10 @@ body.dark .dashboard-chart-card {
 
 .dashboard-currency-select::part(icon) {
   display: none;
+}
+
+.dashboard-currency-select::part(text) {
+  color: var(--ion-color-medium);
 }
 
 .dashboard-period-controls .period-control__row { margin-bottom: 0; }
@@ -203,25 +211,25 @@ ion-content.app-content.dashboard-content {
 }
 
 .dashboard-kind-popover {
+  --width: 280px;
   --max-width: calc(100vw - 32px);
 }
 
 .dashboard-kind-options {
-  display: grid;
-  padding: 8px;
-  gap: 4px;
+  padding-block: 0;
 }
 
 .dashboard-kind-option {
-  margin: 0;
-  min-width: 0;
-  min-height: 44px;
-  --border-radius: 8px;
-  text-transform: none;
+  --min-height: 48px;
+  --background: var(--ion-item-background, var(--ion-background-color));
+  --padding-start: 16px;
+  --inner-padding-end: 16px;
+}
+
+.dashboard-kind-option ion-label {
   white-space: normal;
 }
 
-.dashboard-kind-option span {
-  width: 100%;
-  text-align: start;
+.dashboard-kind-option ion-icon {
+  font-size: 20px;
 }

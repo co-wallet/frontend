@@ -1,4 +1,5 @@
-import { IonButton } from '@ionic/react'
+import { IonIcon, IonItem, IonLabel } from '@ionic/react'
+import { checkmark } from 'ionicons/icons'
 import type { AccountKind } from '@/api/accounts'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 
@@ -6,23 +7,22 @@ interface AllAccountKindsButtonProps {
   selectedKinds: AccountKind[]
   onChange: (kinds: AccountKind[]) => void
   className: string
-  unselectedFill?: 'clear' | 'outline'
 }
 
 export function AllAccountKindsButton({
-  selectedKinds, onChange, className, unselectedFill = 'outline',
+  selectedKinds, onChange, className,
 }: AllAccountKindsButtonProps) {
   const selected = ACCOUNT_KIND_OPTIONS.every((option) => selectedKinds.includes(option.value))
   return (
-    <IonButton
+    <IonItem button detail={false}
       className={className}
-      fill={selected ? 'solid' : unselectedFill}
-      color={selected ? 'primary' : undefined}
+      role="checkbox"
       aria-label="Все типы средств"
-      aria-pressed={selected}
+      aria-checked={selected}
       onClick={() => onChange(selected ? [] : ACCOUNT_KIND_OPTIONS.map((option) => option.value))}
     >
-      <span>Все</span>
-    </IonButton>
+      <IonLabel>Все</IonLabel>
+      {selected && <IonIcon slot="end" icon={checkmark} color="primary" aria-hidden="true" />}
+    </IonItem>
   )
 }
