@@ -24,6 +24,7 @@ import { type TransactionFilter } from '@/api/transactions'
 import { ACCOUNT_KIND_OPTIONS } from '@/lib/accountKind'
 import {
   DEFAULT_TRANSACTION_ACCOUNT_KINDS,
+  resetTransactionFilter,
   transactionAccountScope,
   transactionAccountScopeFilter,
   transactionFilterAccounts,
@@ -43,7 +44,7 @@ const ACCESS_OPTIONS = [{ id: 'personal', name: 'Личные' }, { id: 'shared'
 
 function scopeIds(value: TransactionFilter): string[] {
   const scope = transactionAccountScope(value)
-  return scope === 'all' ? ACCESS_OPTIONS.map((option) => option.id) : [scope]
+  return scope === 'all' ? [] : [scope]
 }
 
 export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterSheetProps) {
@@ -119,23 +120,20 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
 
   function reset() {
     setAccountIds([])
-    setAccountKinds([...DEFAULT_TRANSACTION_ACCOUNT_KINDS])
-    setAccountScopes(['personal'])
+    setAccountKinds([])
+    setAccountScopes([])
     setCategoryIds([])
     setTagIds([])
     setTagMode('or')
-    onChange({
-      ...(value.includeTransferExpenses ? { includeTransferExpenses: true } : {}),
-      ...(value.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
-    })
+    onChange(resetTransactionFilter(value))
     setOpen(false)
   }
 
   const activeCount = [
     (value.accountIds?.length ?? 0) > 0,
     (value.types?.length ?? 0) > 0,
-    value.accountKinds !== undefined,
-    value.includeShared === true || value.onlyShared === true,
+    (value.accountKinds?.length ?? 0) > 0,
+    value.onlyShared === true,
     (value.categoryIds?.length ?? 0) > 0,
     (value.tagIds?.length ?? 0) > 0,
   ].filter(Boolean).length

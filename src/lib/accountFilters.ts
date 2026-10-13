@@ -4,6 +4,15 @@ import type { TransactionFilter } from '@/api/transactions'
 export const DEFAULT_TRANSACTION_ACCOUNT_KINDS: AccountKind[] = ['spending']
 export type TransactionAccountScope = 'personal' | 'shared' | 'all'
 
+export function resetTransactionFilter(filter: TransactionFilter): TransactionFilter {
+  return {
+    accountKinds: [],
+    includeShared: true,
+    ...(filter.includeTransferExpenses ? { includeTransferExpenses: true } : {}),
+    ...(filter.includeTransferIncome === false ? { includeTransferIncome: false } : {}),
+  }
+}
+
 export function filterAccountsByKinds(accounts: Account[], kinds: AccountKind[]): Account[] {
   return kinds.length ? accounts.filter((account) => kinds.includes(account.kind)) : accounts
 }

@@ -224,8 +224,7 @@ export function hasTransactionFilters(filter: TransactionFilter): boolean {
   return Boolean(
     filter.accountIds?.length
     || filter.types?.length
-    || filter.accountKinds !== undefined
-    || filter.includeShared === true
+    || filter.accountKinds?.length
     || filter.onlyShared === true
     || filter.includeTransferExpenses === true
     || filter.includeTransferIncome === false

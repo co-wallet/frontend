@@ -4,6 +4,7 @@ import type { Account } from '@/api/accounts'
 
 import {
   filterAccountsByKinds,
+  resetTransactionFilter,
   selectedVisibleAccountIds,
   transactionAccountScope,
   transactionAccountScopeFilter,
@@ -22,6 +23,15 @@ const accounts = [
 ] as Account[]
 
 describe('account analytics filters', () => {
+  it('resets all restrictions while keeping transfer display preferences', () => {
+    const result = resetTransactionFilter({ accountKinds: ['spending'], accountIds: ['spending'],
+      onlyShared: true, categoryIds: ['food'], tagIds: ['home'], tagMode: 'and',
+      withoutTags: true, types: ['expense'], includeTransferExpenses: true, includeTransferIncome: false })
+    expect(result).toEqual({ accountKinds: [], includeShared: true,
+      includeTransferExpenses: true, includeTransferIncome: false })
+    expect(transactionFilterAccounts(accounts, result)).toEqual(accounts)
+    expect(resetTransactionFilter({})).toEqual({ accountKinds: [], includeShared: true })
+  })
   it('filters accounts by selected kinds', () => {
     expect(filterAccountsByKinds(accounts, ['spending']).map((account) => account.id)).toEqual([
       'spending',

@@ -172,12 +172,26 @@ describe('FilterSheet multiselects', () => {
 
   it('resets filters while retaining transfer display preferences', () => {
     const onChange = vi.fn()
-    render({ value: { accountIds: ['shared'], tagIds: ['tag'], includeTransferIncome: false }, onChange })
+    render({ value: { accountIds: ['shared'], accountKinds: ['spending'], onlyShared: true,
+      categoryIds: ['expense'], tagIds: ['tag'], types: ['expense'], withoutTags: true,
+      tagMode: 'and', includeTransferIncome: false }, onChange })
     controls.buttons.get('Сбросить')!()
-    expect(onChange).toHaveBeenCalledExactlyOnceWith({ includeTransferIncome: false })
+    expect(onChange).toHaveBeenCalledExactlyOnceWith({ accountKinds: [], includeShared: true, includeTransferIncome: false })
     render()
-    expect(field('Доступ к счёту').selectedIds).toEqual(['personal'])
-    expect(field('Тип средств').selectedIds).toEqual(['spending'])
+    expect(field('Доступ к счёту').selectedIds).toEqual([])
+    expect(field('Тип средств').selectedIds).toEqual([])
+    expect(field('Конкретные счета').selectedIds).toEqual([])
+    expect(field('Категории расходов').selectedIds).toEqual([])
+    expect(field('Теги').selectedIds).toEqual([])
+    expect(field('Совпадение тегов').selectedIds).toEqual(['or'])
+  })
+
+  it('opens cleared type and access fields without an active filter badge after reset', () => {
+    const markup = render({ value: { accountKinds: [], includeShared: true } })
+    expect(field('Тип средств').selectedIds).toEqual([])
+    expect(field('Доступ к счёту').selectedIds).toEqual([])
+    expect(markup).toContain('aria-label="Фильтры"')
+    expect(markup).not.toContain('Фильтры, активно:')
   })
 
   it('announces active filters without counting transfer preferences', () => {

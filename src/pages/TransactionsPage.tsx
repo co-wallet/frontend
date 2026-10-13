@@ -73,6 +73,7 @@ import { useAuthStore } from '@/store/authStore'
 import { accountKindShortLabel } from '@/lib/accountKind'
 import {
   transactionAccountKinds,
+  resetTransactionFilter,
   transactionAccountScope,
   transactionFilterAccounts,
 } from '@/lib/accountFilters'
@@ -664,7 +665,7 @@ export function TransactionsPage() {
                   ? 'Измените условия или сбросьте активные фильтры.'
                   : 'Добавьте первую операцию за выбранный период.'}
               </p>
-              <IonButton fill="outline" onClick={hasFilters ? () => setFilter({}) : () => addTransaction('expense')}>
+              <IonButton fill="outline" onClick={hasFilters ? () => setFilter(resetTransactionFilter(filter)) : () => addTransaction('expense')}>
                 {hasFilters ? 'Сбросить фильтры' : 'Добавить транзакцию'}
               </IonButton>
             </div>
