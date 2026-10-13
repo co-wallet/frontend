@@ -27,7 +27,7 @@ import {
 import {
   optionsOutline,
   swapHorizontalOutline,
-  chevronDownOutline,
+  funnelOutline,
 } from 'ionicons/icons'
 import { useAuthStore } from '@/store/authStore'
 import { usePeriodStore, computeDateRange } from '@/store/periodStore'
@@ -424,13 +424,31 @@ export function DashboardPage() {
         }
       >
         <div>
-          <section className="dashboard-view-controls" aria-label="Параметры отображения">
-            {/* Account filter */}
-            <div className="dashboard-account-filter">
+          {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
+            <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {displayCurrency}.</p></IonText>}
+          {/* Summary cards */}
+          <SummaryStrip currency={displayCurrency} label="Сводка" items={summaryItems.map((item) => ({
+            ...item,
+            loading: accountsLoading || (hasAnalyticsAccounts && summaryLoading),
+            error: accountsError || (hasAnalyticsAccounts && summaryError),
+          }))} />
+
+          <section className="dashboard-period-controls" aria-label="Период транзакций">
+            <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
+              if (next.period !== undefined) setPeriod(next.period)
+              if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
+              if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
+              if (next.customTo !== undefined) setCustomTo(next.customTo)
+            }} />
+          </section>
+
+          {/* Pie chart block */}
+          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: '0 0 16px 0' }}>
+            <div className="dashboard-chart-toolbar" role="group" aria-label="Параметры отображения">
               <IonButton
                 id="dashboard-kind-filter"
                 className="dashboard-kind-trigger"
-                fill="outline"
+                fill="clear"
                 aria-label="Тип средств"
                 aria-haspopup="dialog"
               >
@@ -439,7 +457,7 @@ export function DashboardPage() {
                   : selectedKinds.length === ACCOUNT_KIND_OPTIONS.length
                     ? 'Все типы средств'
                     : `Типов средств: ${selectedKinds.length}`}</span>
-                <IonIcon icon={chevronDownOutline} aria-hidden="true" /></span>
+                <IonIcon icon={funnelOutline} aria-hidden="true" /></span>
               </IonButton>
               <IonPopover
                 trigger="dashboard-kind-filter"
@@ -473,59 +491,38 @@ export function DashboardPage() {
                   })}
                 </div>
               </IonPopover>
-              <IonSelect
-                aria-label="Валюта"
-                interface="popover"
-                value={displayCurrency}
-                onIonChange={(e) => {
-                  const code = e.detail.value as string
-                  if (code && code !== displayCurrency) {
-                    setDisplayCurrency(code)
-                  }
-                }}
-                selectedText={displayCurrency}
-                className="dashboard-currency-select"
-              >
-                {currencies.map((c) => (
-                  <IonSelectOption key={c.code} value={c.code}>
-                    {c.symbol} {c.code}
-                  </IonSelectOption>
-                ))}
-              </IonSelect>
+              <div className="dashboard-chart-toolbar-actions">
+                <IonSelect
+                  aria-label="Валюта"
+                  interface="popover"
+                  value={displayCurrency}
+                  onIonChange={(e) => {
+                    const code = e.detail.value as string
+                    if (code && code !== displayCurrency) {
+                      setDisplayCurrency(code)
+                    }
+                  }}
+                  selectedText={displayCurrency}
+                  className="dashboard-currency-select"
+                >
+                  {currencies.map((c) => (
+                    <IonSelectOption key={c.code} value={c.code}>
+                      {c.symbol} {c.code}
+                    </IonSelectOption>
+                  ))}
+                </IonSelect>
+                <IonButton
+                  id="dashboard-chart-settings"
+                  className="dashboard-chart-settings"
+                  fill="clear"
+                  color="medium"
+                  aria-label={chartSettingsLabels[chartMode]}
+                  aria-haspopup="dialog"
+                >
+                  <IonIcon slot="icon-only" icon={optionsOutline} />
+                </IonButton>
+              </div>
             </div>
-
-          </section>
-
-          {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0) > 0) &&
-            <IonText color="warning"><p role="status">Итоги неполные: для {((summary?.expensesMissingAmounts ?? 0) + (summary?.incomeMissingAmounts ?? 0))} операций нет курса для пересчёта в {displayCurrency}.</p></IonText>}
-          {/* Summary cards */}
-          <SummaryStrip currency={displayCurrency} label="Сводка" items={summaryItems.map((item) => ({
-            ...item,
-            loading: accountsLoading || (hasAnalyticsAccounts && summaryLoading),
-            error: accountsError || (hasAnalyticsAccounts && summaryError),
-          }))} />
-
-          <section className="dashboard-period-controls" aria-label="Период транзакций">
-            <PeriodControl value={{ period, periodOffset, customFrom, customTo }} onChange={(next) => {
-              if (next.period !== undefined) setPeriod(next.period)
-              if (next.periodOffset !== undefined) setPeriodOffset(next.periodOffset)
-              if (next.customFrom !== undefined) setCustomFrom(next.customFrom)
-              if (next.customTo !== undefined) setCustomTo(next.customTo)
-            }} />
-          </section>
-
-          {/* Pie chart block */}
-          <IonCard className="dashboard-chart-card" aria-label={chartTitles[chartMode]} style={{ margin: '0 0 16px 0' }}>
-            <IonButton
-              id="dashboard-chart-settings"
-              className="dashboard-chart-settings"
-              fill="clear"
-              color="medium"
-              aria-label={chartSettingsLabels[chartMode]}
-              aria-haspopup="dialog"
-            >
-              <IonIcon slot="icon-only" icon={optionsOutline} />
-            </IonButton>
             <IonCardContent>
               <ChartBlock
                 data={activePieData}

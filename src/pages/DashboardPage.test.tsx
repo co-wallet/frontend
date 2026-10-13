@@ -115,6 +115,13 @@ describe('Dashboard period visibility', () => {
     expect(markup).toContain('Период транзакций')
     expect(markup).not.toContain('dashboard-chart-plot--compact')
     expect(markup).not.toContain('dashboard-balance-content')
+    expect(markup).not.toContain('dashboard-view-controls')
+    const toolbar = markup.match(/<div class="dashboard-chart-toolbar"[\s\S]*?<\/ion-card>/)![0]
+    expect(toolbar).toContain('id="dashboard-kind-filter"')
+    expect(toolbar).toContain('aria-label="Валюта"')
+    expect(toolbar).toContain('id="dashboard-chart-settings"')
+    expect(toolbar.indexOf('dashboard-kind-filter')).toBeLessThan(toolbar.indexOf('aria-label="Валюта"'))
+    expect(toolbar.indexOf('aria-label="Валюта"')).toBeLessThan(toolbar.indexOf('dashboard-chart-settings'))
   })
   it('keeps the base profile currency when selecting another display currency', () => {
     useAuthStore.setState({ user: {
