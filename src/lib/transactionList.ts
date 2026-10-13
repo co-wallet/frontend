@@ -218,6 +218,7 @@ export function buildTransactionAnalyticsParams(
       tag_mode: filter.tagMode ?? 'or',
     } : {}),
     ...(filter.withoutTags ? { without_tags: true } : {}),
+    ...(filter.withoutCategory ? { without_category: true } : {}),
   }
 }
 
@@ -231,6 +232,7 @@ export function hasTransactionFilters(filter: TransactionFilter): boolean {
     || filter.categoryIds?.length
     || filter.tagIds?.length
     || filter.withoutTags
+    || filter.withoutCategory
   )
 }
 

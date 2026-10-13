@@ -82,6 +82,7 @@ export interface TransactionFilter {
   tagIds?: string[]
   tagMode?: 'or' | 'and'
   withoutTags?: boolean
+  withoutCategory?: boolean
   dateFrom?: string
   dateTo?: string
   page?: number
@@ -97,6 +98,7 @@ export const transactionsApi = {
     if (filter.tagIds?.length) params.tag_ids = filter.tagIds.join(',')
     if (filter.tagMode === 'and') params.tag_mode = 'and'
     if (filter.withoutTags) params.without_tags = 'true'
+    if (filter.withoutCategory) params.without_category = 'true'
     if (filter.dateFrom) params.date_from = filter.dateFrom
     if (filter.dateTo) params.date_to = filter.dateTo
     if (filter.page) params.page = String(filter.page)

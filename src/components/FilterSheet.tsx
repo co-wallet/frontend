@@ -131,6 +131,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
     Object.assign(f, transactionAccountScopeFilter(accountScope))
     if (visibleSelectedAccountIds.length) f.accountIds = visibleSelectedAccountIds
     if (categoryIds.length) f.categoryIds = categoryIds
+    else if (value.withoutCategory) f.withoutCategory = true
     if (tagIds.length) { f.tagIds = tagIds; f.tagMode = tagMode }
     else if (value.withoutTags) f.withoutTags = true
     onChange(f)
@@ -151,7 +152,7 @@ export function FilterSheet({ value, onChange, isOpen, onOpenChange }: FilterShe
   const activeCount = transactionAccountRestrictionLabels(value).length + [
     (value.accountIds?.length ?? 0) > 0,
     (value.types?.length ?? 0) > 0,
-    (value.categoryIds?.length ?? 0) > 0,
+    (value.categoryIds?.length ?? 0) > 0 || value.withoutCategory === true,
     (value.tagIds?.length ?? 0) > 0,
   ].filter(Boolean).length
 

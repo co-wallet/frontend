@@ -271,6 +271,16 @@ describe('Dashboard account transaction navigation', () => {
 })
 
 describe('Dashboard category legend navigation', () => {
+  it.each(['expenses', 'income'] as const)('links uncategorized %s with the current scope and period', (mode) => {
+    queryState.chartMode = mode
+    queryState.categoryStats = [{ categoryId: 'uncategorized', categoryName: 'Без категории', amount: 100 }]
+    const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
+    const href = markup.match(/href="([^"]*without_category=true[^"]*)"/)![1].replace(/&amp;/g, '&')
+    expect(filterFromParams(new URL(href, 'http://localhost').searchParams)).toEqual({
+      withoutCategory: true, accountKinds: ['spending'],
+    })
+    expect(markup).toContain('Без категории')
+  })
   it.each(['expenses', 'income'] as const)('links %s categories with the current period and account scope', (mode) => {
     queryState.chartMode = mode
     queryState.categoryStats = [
@@ -316,12 +326,10 @@ describe('Dashboard category legend navigation', () => {
   it.each(['expenses', 'income'] as const)('keeps synthetic %s groups without invalid category links', (mode) => {
     queryState.chartMode = mode
     queryState.categoryStats = [
-      { categoryId: 'uncategorized', categoryName: 'Без категории', amount: 100 },
-      { categoryId: 'transfers', categoryName: 'Переводы', amount: 50 },
+            { categoryId: 'transfers', categoryName: 'Переводы', amount: 50 },
       { categoryId: 'transfers:bank', categoryName: 'Банк', amount: 20 },
     ]
     const markup = renderToStaticMarkup(<MemoryRouter><DashboardPage /></MemoryRouter>)
-    expect(markup).toContain('Без категории')
     expect(markup).toContain('Переводы')
     expect(markup).toContain('Банк')
     expect(markup).not.toContain('class="dashboard-chart-legend-link"')

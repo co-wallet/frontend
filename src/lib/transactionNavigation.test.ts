@@ -174,7 +174,20 @@ describe('category navigation', () => {
     expect(periodFromParams(query(href!), { ...period, periodOffset: 0 })).toEqual(period)
   })
 
-  it.each(['uncategorized', 'transfers', 'transfers:bank'])(
+  it('links uncategorized transactions without losing context or retaining incompatible category IDs', () => {
+    const href = categoryTransactionsHref('uncategorized', {
+      categoryIds: ['old'], accountKinds: ['deposit'], includeShared: true, tagIds: ['tag'],
+    }, period, '/transactions/filtered/1')!
+    expect(filterFromParams(query(href))).toEqual({
+      withoutCategory: true, accountKinds: ['deposit'], includeShared: true, tagIds: ['tag'],
+    })
+    expect(periodFromParams(query(href), period)).toEqual(period)
+    expect(href).toContain('/transactions/filtered/2?')
+    expect(filterFromParams(query(categoryTransactionsHref('food', { withoutCategory: true }, period)!)))
+      .toEqual({ categoryIds: ['food'] })
+  })
+
+  it.each(['transfers', 'transfers:bank'])(
     'does not create an invalid transaction filter for %s analytics',
     (categoryId) => {
       expect(categoryTransactionsHref(categoryId, {}, period)).toBeUndefined()

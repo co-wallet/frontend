@@ -10,6 +10,11 @@ vi.mock('./client', () => ({
 }))
 
 describe('transactionsApi.list', () => {
+  it('serializes the uncategorized filter', async () => {
+    vi.mocked(apiClient.get).mockResolvedValue({ data: [] })
+    await transactionsApi.list({ withoutCategory: true })
+    expect(apiClient.get).toHaveBeenCalledWith('/transactions', { params: { without_category: 'true' } })
+  })
   beforeEach(() => {
     vi.mocked(apiClient.get).mockReset()
     vi.mocked(apiClient.get).mockResolvedValue({ data: [] })

@@ -327,6 +327,8 @@ export function TransactionsPage() {
       items: (filter.accountIds ?? []).map((id) => ({ id, name: accountsById.get(id)?.name ?? 'Счёт' })) },
     { kind: 'categoryIds', label: 'Категории',
       items: (filter.categoryIds ?? []).map((id) => ({ id, name: categoriesById.get(id)?.name ?? 'Категория' })) },
+    { kind: 'withoutCategory', label: 'Категории',
+      items: filter.withoutCategory ? [{ id: 'uncategorized', name: 'Без категории' }] : [] },
     { kind: 'tagIds', label: 'Теги',
       items: (filter.tagIds ?? []).map((id) => ({ id, name: tags.find((tag) => tag.id === id)?.name ?? 'Тег' })) },
     { kind: 'withoutTags', label: 'Теги',

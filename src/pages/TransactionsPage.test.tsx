@@ -406,6 +406,14 @@ describe('transaction analytics grouping', () => {
 
 
 describe('active filter summary', () => {
+  it('shows and applies the uncategorized filter to list and analytics', () => {
+    const markup = renderPage('/transactions?without_category=true&account_kinds=all&include_shared=true')
+    expect(markup).toContain('Категории: Без категории. Открыть фильтры')
+    expect(markup).toContain('Фильтры, активно: 1')
+    expect(pagination.options?.queryKey[2]).toMatchObject({ withoutCategory: true })
+    const summary = pagination.analyticsQueries.find((query) => query.queryKey[1] === 'summary')!
+    expect(summary.queryKey[summary.queryKey.length - 1]).toMatchObject({ without_category: true })
+  })
   it('separates categories and tags from explicit accounts and hides overridden restrictions', () => {
     const markup = renderPage('/transactions?category_ids=c1&tag_ids=t1&account_ids=a1&account_kinds=spending')
     const primary = markup.match(/aria-label="Категории и теги"[\s\S]*?<\/div>/)![0]

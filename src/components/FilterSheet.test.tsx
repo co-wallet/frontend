@@ -60,6 +60,17 @@ beforeEach(() => { controls.state = [] })
 const field = (label: string) => controls.fields.get(label)!
 
 describe('FilterSheet multiselects', () => {
+  it('preserves uncategorized filtering until selecting a concrete category', () => {
+    const onChange = vi.fn()
+    const props = { value: { withoutCategory: true }, onChange }
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenLastCalledWith({ accountKinds: ['spending'], withoutCategory: true })
+    field('Категории расходов').onChange(['expense'])
+    render(props)
+    controls.buttons.get('Применить')!()
+    expect(onChange).toHaveBeenLastCalledWith({ accountKinds: ['spending'], categoryIds: ['expense'] })
+  })
   it('shows seven uniform fields with a single-select tag matching rule', () => {
     const markup = render()
     expect([...controls.fields.keys()]).toEqual([
