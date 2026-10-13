@@ -614,8 +614,9 @@ export function TransactionsPage() {
             key={chartMode}
             trigger="transactions-analytics-settings"
             className="transactions-analytics__popover"
+            reference="trigger"
             side="bottom"
-            alignment="end"
+            alignment="center"
             aria-label={chartSettingsLabel}
           >
             <div className="transactions-analytics__popover-content">

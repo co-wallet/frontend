@@ -1,5 +1,5 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import type { ComponentProps, ReactNode } from 'react'
+import type { ComponentProps } from 'react'
 import { MemoryRouter, Route, Router } from 'react-router-dom'
 import { createMemoryHistory } from 'history'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -31,8 +31,8 @@ vi.mock('@ionic/react', async (importOriginal) => {
       if (props.children === 'Показывать полные суммы') pagination.onAmountModeChange = props.onIonChange
       return <actual.IonCheckbox {...props} />
     },
-    IonPopover: (props: { children: ReactNode; className?: string; trigger?: string; 'aria-label'?: string }) => (
-      <div className={props.className} data-trigger={props.trigger} aria-label={props['aria-label']}>
+    IonPopover: (props: ComponentProps<typeof actual.IonPopover>) => (
+      <div className={props.className} data-trigger={props.trigger} data-reference={props.reference} data-alignment={props.alignment} aria-label={props['aria-label']}>
         {props.children}
       </div>
     ),
@@ -61,6 +61,11 @@ const pagination = vi.hoisted(() => ({
   accountsError: false,
   onBalanceClick: undefined as (() => void) | undefined,
 }))
+
+it('anchors the analytics settings arrow to the trigger center', () => {
+  const markup = renderToStaticMarkup(<MemoryRouter><TransactionsPage /></MemoryRouter>)
+  expect(markup).toMatch(/data-trigger="transactions-analytics-settings" data-reference="trigger" data-alignment="center"/)
+})
 beforeEach(() => {
   pagination.data = { pages: [[]] }
   pagination.isError = false

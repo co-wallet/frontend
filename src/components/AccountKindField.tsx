@@ -79,6 +79,7 @@ export function AccountKindField({
       <IonPopover
         trigger={helpTriggerId}
         triggerAction="click"
+        reference="trigger"
         side="bottom"
         alignment="center"
         size="auto"
