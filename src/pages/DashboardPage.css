@@ -7,9 +7,31 @@
   height: 200px;
 }
 
-@media (max-width: 600px) and (max-height: 850px) {
+@media (max-width: 600px) {
   .dashboard-chart-plot--compact {
-    height: 140px;
+    height: clamp(80px, calc(100dvh - 650px), 140px);
+  }
+
+  .dashboard-balance-content .dashboard-view-controls {
+    margin-bottom: 12px;
+  }
+
+  .dashboard-balance-content .dashboard-period-controls {
+    margin-bottom: 8px;
+  }
+
+  .dashboard-balance-content .dashboard-chart-card ion-card-content {
+    padding-block: 12px;
+  }
+
+  .dashboard-balance-content .recent-transactions__footer {
+    padding-bottom: 0;
+  }
+
+  .dashboard-balance-content .recent-transactions__footer ion-button {
+    height: 44px;
+    min-height: 44px;
+    margin: 0;
   }
 }
 
