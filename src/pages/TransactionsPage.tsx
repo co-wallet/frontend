@@ -378,7 +378,6 @@ export function TransactionsPage() {
             trailingControl={<FilterSheet value={filter} onChange={setFilter} isOpen={showFilters} onOpenChange={setShowFilters} />} />
 
           <div className="transactions-filter-status" aria-live="polite">
-            <span className="transactions-filter-status__label">Фильтры:</span>
             <div className="transactions-active-filters" aria-label="Активные фильтры">
               {[
                 { label: 'Категории и теги', groups: filterGroups.filter((group) => group.kind !== 'accountIds'), scope: '' },

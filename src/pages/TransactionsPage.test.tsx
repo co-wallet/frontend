@@ -424,6 +424,8 @@ describe('active filter summary', () => {
     const summary = markup.slice(markup.indexOf('class="transactions-filter-status"'), markup.indexOf('class="summary-strip"'))
     expect(summary.indexOf('Категории: Продукты')).toBeLessThan(summary.indexOf('Вклад · личные счета'))
     expect(summary.indexOf('Теги: #путешествия')).toBeLessThan(summary.indexOf('Вклад · личные счета'))
+    expect(summary).not.toContain('Фильтры:')
+    expect(summary).not.toContain('transactions-filter-status__label')
   })
 
   it.each(['category_ids=c1', 'tag_ids=t1', 'account_ids=a3'])('uses only the entity filter with unrestricted types and access: %s', (entity) => {
